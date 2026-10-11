@@ -1,0 +1,366 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /*
+     | One corner radius for every control (buttons, icon buttons and fields).
+     | It is used by the component classes below and, as "rounded-control", by
+     | the views, so all controls share the same 8 px corners.
+     */
+    --radius-control: 0.5rem;
+
+    /*
+     | Coolventory palette: a fresh, cool "türkis" as the brand colour of the
+     | freezer app plus a small set of neutral, slightly blueish greys.
+     */
+    --color-brand-50: #ecfdfb;
+    --color-brand-100: #d1faf5;
+    --color-brand-200: #a5f2ec;
+    --color-brand-300: #6de4dd;
+    --color-brand-400: #34cec9;
+    --color-brand-500: #16b2b1;
+    --color-brand-600: #0d8f90;
+    --color-brand-700: #107274;
+    --color-brand-800: #135b5e;
+    --color-brand-900: #144b4e;
+    --color-brand-950: #052e31;
+
+    --color-frost-50: #f6fafb;
+    --color-frost-100: #e9f2f5;
+    --color-frost-200: #d5e5ea;
+    --color-frost-300: #b3cdd6;
+    --color-frost-400: #8aacb8;
+    --color-frost-500: #6b909d;
+    --color-frost-600: #557482;
+    --color-frost-700: #475f6a;
+    --color-frost-800: #3e5059;
+    --color-frost-900: #37454c;
+    --color-frost-950: #242d32;
+}
+
+@layer base {
+    /*
+     | The progress bar Livewire shows for wire:navigate links, painted in the
+     | brand colour so it matches the bar of this app (see resources/js/app.js).
+     */
+    :root {
+        --livewire-progress-bar-color: var(--color-brand-500);
+    }
+
+    html {
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+        background-color: var(--color-frost-100);
+        color: var(--color-frost-900);
+    }
+
+    /*
+     | Every control starts with the shared 8 px radius; utilities and the
+     | component classes below may override it where a different shape is
+     | wanted (cards, badges, avatars).
+     */
+    button,
+    input,
+    select,
+    textarea {
+        border-radius: var(--radius-control);
+    }
+
+    /* Keep iOS from zooming into form fields with small font sizes. */
+    input,
+    select,
+    textarea {
+        font-size: 1rem;
+    }
+}
+
+@layer components {
+    .shell {
+        width: 100%;
+        max-width: 32rem;
+        margin-inline: auto;
+        padding-inline: 1rem;
+    }
+
+    .safe-bottom {
+        padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+    }
+
+    .card {
+        border-radius: 1.25rem;
+        background-color: #fff;
+        box-shadow: 0 1px 2px rgb(36 45 50 / 0.06), 0 8px 24px -12px rgb(36 45 50 / 0.18);
+    }
+
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        border-radius: var(--radius-control);
+        padding: 0.75rem 1rem;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        text-align: center;
+        transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+    }
+
+    .btn:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+    }
+
+    .btn-primary {
+        background-color: var(--color-brand-600);
+        color: #fff;
+        box-shadow: 0 1px 2px rgb(13 143 144 / 0.35);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+        background-color: var(--color-brand-700);
+    }
+
+    .btn-secondary {
+        background-color: var(--color-brand-50);
+        color: var(--color-brand-700);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+        background-color: var(--color-brand-100);
+    }
+
+    .btn-ghost {
+        background-color: transparent;
+        color: var(--color-frost-700);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+        background-color: var(--color-frost-200);
+    }
+
+    .btn-danger {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .btn-danger:hover:not(:disabled) {
+        background-color: #fecaca;
+    }
+
+    .btn-icon {
+        padding: 0.5rem;
+        border-radius: var(--radius-control);
+    }
+
+    .label {
+        display: block;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--color-frost-700);
+        margin-bottom: 0.25rem;
+    }
+
+    .input {
+        display: block;
+        width: 100%;
+        border-radius: var(--radius-control);
+        border: 1px solid var(--color-frost-300);
+        background-color: #fff;
+        padding: 0.625rem 0.875rem;
+        color: var(--color-frost-900);
+        outline: none;
+    }
+
+    .input:focus {
+        border-color: var(--color-brand-500);
+        box-shadow: 0 0 0 3px var(--color-brand-100);
+    }
+
+    .input-error {
+        border-color: #f87171;
+    }
+
+    /*
+     | Checkboxes („Angemeldet bleiben“) follow the design instead of the
+     | browser: same 8 px corners, brand colour when ticked, white check mark.
+     */
+    .checkbox {
+        appearance: none;
+        -webkit-appearance: none;
+        flex: none;
+        width: 1.25rem;
+        height: 1.25rem;
+        border-radius: var(--radius-control);
+        border: 1.5px solid var(--color-frost-300);
+        background-color: #fff;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 0.875rem 0.875rem;
+        cursor: pointer;
+        transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+    }
+
+    .checkbox:hover {
+        border-color: var(--color-brand-400);
+    }
+
+    .checkbox:checked {
+        border-color: var(--color-brand-600);
+        background-color: var(--color-brand-600);
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 13l4.5 4.5L19 6.5'/%3E%3C/svg%3E");
+    }
+
+    .checkbox:focus-visible {
+        outline: none;
+        border-color: var(--color-brand-500);
+        box-shadow: 0 0 0 3px var(--color-brand-100);
+    }
+
+    .field-error {
+        margin-top: 0.25rem;
+        font-size: 0.8125rem;
+        color: #b91c1c;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        border-radius: 9999px;
+        padding: 0.125rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .badge-ok {
+        background-color: var(--color-brand-50);
+        color: var(--color-brand-700);
+    }
+
+    .badge-warn {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+
+    .badge-danger {
+        background-color: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .badge-neutral {
+        background-color: var(--color-frost-200);
+        color: var(--color-frost-700);
+    }
+
+    .drawer-row {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 0.75rem;
+        border-radius: var(--radius-control);
+        background-color: #fff;
+        padding: 0.875rem 1rem;
+        text-align: left;
+        box-shadow: 0 1px 2px rgb(36 45 50 / 0.06);
+    }
+
+    .drawer-row:hover {
+        background-color: var(--color-frost-50);
+    }
+
+    .bottom-nav-link {
+        display: flex;
+        flex: 1 1 0%;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.125rem;
+        border-radius: var(--radius-control);
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--color-frost-500);
+    }
+
+    .bottom-nav-link[aria-current='page'] {
+        color: var(--color-brand-700);
+        background-color: var(--color-brand-50);
+    }
+
+    /*
+     | Round counter on a navigation item (see components/nav-link.blade.php):
+     | the number of items waiting in that area. One digit fills the circle, a
+     | longer number widens it into a pill.
+     */
+    .nav-badge {
+        position: absolute;
+        top: -0.375rem;
+        right: -0.5rem;
+        display: grid;
+        place-items: center;
+        min-width: 1.25rem;
+        height: 1.25rem;
+        border-radius: 9999px;
+        padding: 0 0.375rem;
+        background-color: #fbbf24;
+        font-size: 0.625rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #451a03;
+    }
+
+    .highlight-item {
+        animation: highlight-pulse 1.6s ease-out 1;
+        border-radius: var(--radius-control);
+    }
+
+    /*
+     | Loading bar
+     |
+     | Sits above everything and fills while a Livewire request is in flight
+     | (see resources/js/app.js). The link navigation of wire:navigate is
+     | covered by Livewire's own bar, which uses --livewire-progress-bar-color.
+     */
+    #loading-bar {
+        position: fixed;
+        inset-inline: 0;
+        top: 0;
+        z-index: 60;
+        height: 0.1875rem;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 200ms ease;
+    }
+
+    #loading-bar[data-active='true'] {
+        opacity: 1;
+    }
+
+    #loading-bar > span {
+        display: block;
+        height: 100%;
+        width: 0;
+        background-color: var(--color-brand-500);
+        box-shadow: 0 0 10px var(--color-brand-500), 0 0 5px var(--color-brand-500);
+    }
+}
+
+@keyframes highlight-pulse {
+    0% {
+        background-color: var(--color-brand-100);
+        box-shadow: 0 0 0 3px var(--color-brand-200);
+    }
+    100% {
+        background-color: transparent;
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
