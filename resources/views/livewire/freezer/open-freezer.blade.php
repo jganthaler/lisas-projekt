@@ -89,11 +89,17 @@
                         <x-icon name="pencil" class="h-5 w-5" />
                     </button>
 
-                    <button type="button" wire:click="deleteDrawer({{ $drawer->id }})"
-                            wire:confirm="Schublade „{{ $drawer->name }}“ löschen?"
-                            class="btn btn-ghost btn-icon text-red-600" aria-label="Schublade löschen">
+                    <button type="button"
+                            wire:click="$dispatch('confirm-dialog', { name: 'drawer-delete-{{ $drawer->id }}' })"
+                            class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Schublade löschen">
                         <x-icon name="trash" class="h-5 w-5" />
                     </button>
+
+                    <x-confirm-dialog
+                        :name="'drawer-delete-'.$drawer->id"
+                        title="Schublade löschen?"
+                        :message="'„'.$drawer->name.'“ wird entfernt. Das geht nur, solange sie leer ist.'"
+                        :action="'deleteDrawer('.$drawer->id.')'" />
                 </div>
             @endif
         @empty

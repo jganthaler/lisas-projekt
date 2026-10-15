@@ -22,7 +22,7 @@ use Illuminate\Support\Str;
  * identical for German umlauts on MySQL and SQLite. The column is mandatory and
  * is filled by the "saving" hook below, so an item can never end up without it.
  */
-#[Fillable(['name', 'quantity', 'best_before'])]
+#[Fillable(['name', 'quantity', 'best_before', 'category'])]
 #[UsePolicy(InventoryItemPolicy::class)]
 class InventoryItem extends Model
 {
@@ -30,6 +30,23 @@ class InventoryItem extends Model
 
     /** Items that expire within this many days trigger the MHD warning. */
     public const WARNING_DAYS = 7;
+
+    /*
+     | The categories an item may be assigned to. The slug is what is stored and
+     | filtered with, the label is what the interface shows - so an umlaut never
+     | has to travel through the database.
+     */
+    public const CATEGORY_FLEISCH = 'fleisch';
+
+    public const CATEGORY_FISCH = 'fisch';
+
+    public const CATEGORY_GEMUESE = 'gemuese';
+
+    public const CATEGORY_SUPPE = 'suppe';
+
+    public const CATEGORY_OBST = 'obst';
+
+    public const CATEGORY_SONSTIGES = 'sonstiges';
 
     public const STATE_EXPIRED = 'expired';
 
@@ -72,6 +89,41 @@ class InventoryItem extends Model
     public static function sortKey(string $name): string
     {
         return Str::lower(Str::ascii(self::normalizeName($name), 'de'));
+    }
+
+    /**
+     * Every category as slug => label, in the order the interface offers them.
+     *
+     * @return array<string, string>
+     */
+    public static function categoryLabels(): array
+    {
+        return [
+            self::CATEGORY_FLEISCH => 'Fleisch',
+            self::CATEGORY_FISCH => 'Fisch',
+            self::CATEGORY_GEMUESE => 'Gemüse',
+            self::CATEGORY_SUPPE => 'Suppe',
+            self::CATEGORY_OBST => 'Obst',
+            self::CATEGORY_SONSTIGES => 'Sonstiges',
+        ];
+    }
+
+    /**
+     * The slugs of every category - what a form may send and a filter accepts.
+     *
+     * @return list<string>
+     */
+    public static function categoryKeys(): array
+    {
+        return array_keys(self::categoryLabels());
+    }
+
+    /**
+     * Label of the assigned category, or null while the item has none.
+     */
+    public function categoryLabel(): ?string
+    {
+        return self::categoryLabels()[$this->category] ?? null;
     }
 
     /**
@@ -123,6 +175,15 @@ class InventoryItem extends Model
     public function alphabetical(Builder $query): void
     {
         $query->orderBy('name_sort')->orderBy('id');
+    }
+
+    /**
+     * Only the items that were sorted into one category.
+     */
+    #[Scope]
+    public function withCategory(Builder $query, string $category): void
+    {
+        $query->where('category', $category);
     }
 
     /**

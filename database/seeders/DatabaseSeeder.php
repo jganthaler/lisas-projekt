@@ -37,18 +37,19 @@ class DatabaseSeeder extends Seeder
 
         $this->fillFreezer($freezer, [
             'Schublade 1' => [
-                ['Erbsen', 3, 120],
-                ['Spinat', 2, 4],
-                ['Pizza', 1, -2],
+                ['Erbsen', 3, 120, InventoryItem::CATEGORY_GEMUESE],
+                ['Spinat', 2, 4, InventoryItem::CATEGORY_GEMUESE],
+                ['Pizza', 1, -2, InventoryItem::CATEGORY_SONSTIGES],
             ],
             'Schublade 2' => [
-                ['Hackfleisch', 2, 30],
-                ['Suppe', 4, 0],
-                ['Beeren', 1, null],
+                ['Hackfleisch', 2, 30, InventoryItem::CATEGORY_FLEISCH],
+                ['Lachs', 2, 60, InventoryItem::CATEGORY_FISCH],
+                ['Suppe', 4, 0, InventoryItem::CATEGORY_SUPPE],
+                ['Beeren', 1, null, InventoryItem::CATEGORY_OBST],
             ],
             'Schublade 3' => [
-                ['Äpfel', 6, 14],
-                ['Brot', 1, -10],
+                ['Äpfel', 6, 14, InventoryItem::CATEGORY_OBST],
+                ['Brot', 1, -10, InventoryItem::CATEGORY_SONSTIGES],
             ],
         ]);
 
@@ -63,11 +64,11 @@ class DatabaseSeeder extends Seeder
 
         $this->fillFreezer($second, [
             'Schublade 1' => [
-                ['Pommes', 2, 200],
-                ['Gemüsemix', 5, 6],
+                ['Pommes', 2, 200, InventoryItem::CATEGORY_GEMUESE],
+                ['Gemüsemix', 5, 6, InventoryItem::CATEGORY_GEMUESE],
             ],
             'Schublade 2' => [
-                ['Eiscreme', 3, 45],
+                ['Eiscreme', 3, 45, InventoryItem::CATEGORY_SONSTIGES],
             ],
         ]);
 
@@ -76,9 +77,10 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * Create the given items inside the matching drawers of a freezer.
+     * Create the given items inside the matching drawers of a freezer. Every row
+     * is [name, quantity, days until the MHD, category].
      *
-     * @param  array<string, array<int, array{0: string, 1: int, 2: int|null}>>  $contents
+     * @param  array<string, array<int, array{0: string, 1: int, 2: int|null, 3: string|null}>>  $contents
      */
     protected function fillFreezer(Freezer $freezer, array $contents): void
     {
@@ -89,7 +91,7 @@ class DatabaseSeeder extends Seeder
                     'name' => $drawerName,
                 ]);
 
-            foreach ($items as [$name, $quantity, $daysUntilBestBefore]) {
+            foreach ($items as [$name, $quantity, $daysUntilBestBefore, $category]) {
                 InventoryItem::factory()->create([
                     'drawer_id' => $drawer->getKey(),
                     'name' => $name,
@@ -97,6 +99,7 @@ class DatabaseSeeder extends Seeder
                     'best_before' => $daysUntilBestBefore === null
                         ? null
                         : Carbon::today()->addDays($daysUntilBestBefore),
+                    'category' => $category,
                 ]);
             }
         }

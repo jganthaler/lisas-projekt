@@ -10,6 +10,8 @@
 
     <title>{{ isset($title) ? $title.' · '.config('app.name') : config('app.name') }}</title>
 
+    <x-theme-script />
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -18,30 +20,33 @@
 
     @php
         $currentUser = auth()->user();
-        $currentFreezer = $currentUser ? \App\Support\FreezerContext::current($currentUser) : null;
+
+        // Resolving the active freezer also provisions the very first one for a
+        // brand new account - every screen of the app frame relies on that.
+        if ($currentUser) {
+            \App\Support\FreezerContext::current($currentUser);
+        }
+
         // Every MHD counter of the app frame - the warning pill in the header and
         // the round counter on the MHD field - refers to all freezers the user may
         // access, not only to the one that is currently selected.
         $watchCount = $currentUser?->warningItemCount() ?? 0;
     @endphp
 
-    <header class="sticky top-0 z-30 border-b border-frost-200 bg-white/90 backdrop-blur">
+    <header class="sticky top-0 z-30 border-b border-frost-200 bg-surface/90 backdrop-blur">
         <div class="shell flex items-center gap-3 py-2.5">
-            <a href="{{ route('freezer.closed') }}" wire:navigate class="flex min-w-0 items-center gap-2.5">
-                <span class="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-brand-600 text-white">
-                    <x-icon name="freezer" class="h-5 w-5" />
-                </span>
-                <span class="min-w-0">
-                    <span class="block truncate text-sm font-semibold text-frost-900">
-                        {{ $currentFreezer?->name ?? config('app.name') }}
-                    </span>
-                    <span class="block truncate text-xs text-frost-500">
-                        {{ $currentUser?->displayName() }}
-                    </span>
+            {{-- The top row carries the word mark of the app, the name of the
+                 active freezer lives on the freezer page itself. --}}
+            <a href="{{ route('freezer.closed') }}" wire:navigate class="min-w-0">
+                <x-logo class="text-base" />
+                <span class="mt-0.5 block truncate text-xs text-frost-500">
+                    {{ $currentUser?->displayName() }}
                 </span>
             </a>
 
             <div class="ml-auto flex items-center gap-1.5">
+                <x-theme-toggle />
+
                 @if ($watchCount > 0)
                     <a href="{{ route('expiring.index') }}" wire:navigate
                        class="badge badge-warn" aria-label="{{ $watchCount }} Artikel prüfen">
@@ -68,7 +73,7 @@
         {{ $slot }}
     </main>
 
-    <nav class="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-frost-200 bg-white/95 backdrop-blur">
+    <nav class="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-frost-200 bg-surface/95 backdrop-blur">
         <div class="shell flex gap-1.5 pt-2">
             <x-nav-link :href="route('freezer.closed')" :active="request()->routeIs('freezer.*')"
                         label="Gefrierschrank" icon="freezer" />

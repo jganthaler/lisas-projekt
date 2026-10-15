@@ -88,3 +88,70 @@ document.addEventListener('livewire:init', () => {
 // Leaving the page (login, logout, …) is a request too.
 window.addEventListener('beforeunload', startLoading);
 window.addEventListener('pageshow', stopLoading);
+
+/*
+ | Copy to clipboard
+ |
+ | The invitation link is copied with this helper. navigator.clipboard only works
+ | on a secure origin (https or localhost); the app is often opened over the local
+ | network, so an insecure origin falls back to selecting a hidden field and using
+ | the old copy command. Returns whether the text ended up in the clipboard.
+ */
+window.copyToClipboard = function (text) {
+    if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text).then(
+            () => true,
+            () => copyWithSelection(text)
+        );
+    }
+
+    return Promise.resolve(copyWithSelection(text));
+};
+
+function copyWithSelection(text) {
+    const field = document.createElement('textarea');
+
+    field.value = text;
+    field.setAttribute('readonly', '');
+    field.style.position = 'fixed';
+    field.style.top = '-1000px';
+    field.style.opacity = '0';
+
+    document.body.appendChild(field);
+    field.select();
+
+    let copied = false;
+
+    try {
+        copied = document.execCommand('copy');
+    } catch (error) {
+        copied = false;
+    }
+
+    document.body.removeChild(field);
+
+    return copied;
+}
+
+/*
+ | Colour scheme
+ |
+ | The button in the header (see components/theme-toggle.blade.php) switches the
+ | class "dark" on <html> and remembers the choice, so the next visit starts with
+ | the same scheme. The class itself is applied before the first paint, see
+ | components/theme-script.blade.php.
+ */
+window.toggleColorScheme = function () {
+    const root = document.documentElement;
+    const dark = !root.classList.contains('dark');
+
+    root.classList.toggle('dark', dark);
+
+    try {
+        localStorage.setItem('color-scheme', dark ? 'dark' : 'light');
+    } catch (error) {
+        // Private mode without storage: the choice lasts for this page only.
+    }
+
+    return dark;
+};

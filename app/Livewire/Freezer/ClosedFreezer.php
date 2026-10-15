@@ -126,6 +126,36 @@ class ClosedFreezer extends Component
         $this->resetErrorBag();
     }
 
+    /**
+     * Delete one of the owned freezers with all of its content. Afterwards the
+     * app falls back to another freezer of the user - or provisions a fresh one,
+     * so the freezer page never ends up without anything to show.
+     */
+    public function deleteFreezer(int $freezerId): void
+    {
+        $freezer = $this->findFreezer($freezerId);
+
+        Gate::authorize('delete', $freezer);
+
+        $name = $freezer->name;
+
+        $freezer->delete();
+
+        // The deleted freezer may have been the active one.
+        if (FreezerContext::id() === $freezerId) {
+            FreezerContext::forget();
+        }
+
+        // Another freezer of the user takes over - or a fresh one is
+        // provisioned, so the freezer page never ends up without anything to
+        // show. (The action redirects, so the render pass does not do this.)
+        FreezerContext::current(auth()->user());
+
+        session()->flash('status', '„'.$name.'“ wurde mit allen Schubladen und Artikeln gelöscht.');
+
+        $this->redirectRoute('freezer.closed', navigate: true);
+    }
+
     public function render()
     {
         $user = auth()->user();
@@ -137,8 +167,6 @@ class ClosedFreezer extends Component
             'drawers' => $freezer->drawers()->get(),
             'summary' => $freezer->drawerSummary(),
             'itemCount' => $freezer->itemCount(),
-            'expiringCount' => $freezer->expiringItemCount(),
-            'expiredCount' => $freezer->expiredItemCount(),
         ]);
     }
 

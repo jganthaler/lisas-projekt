@@ -1,7 +1,3 @@
-@php
-    $attention = $expiringCount + $expiredCount;
-@endphp
-
 <div class="space-y-4">
     {{-- The freezer as you know it from the kitchen: closed. --}}
     <section class="card overflow-hidden">
@@ -20,34 +16,6 @@
                     @endif
                 </p>
             </div>
-
-            @if ($attention > 0)
-                <a href="{{ route('expiring.index') }}" wire:navigate
-                   class="flex w-full items-center gap-3 rounded-control bg-amber-50 px-4 py-3 text-left">
-                    <span class="grid h-9 w-9 shrink-0 place-items-center rounded-control bg-amber-400 text-amber-950">
-                        <x-icon name="alert" class="h-5 w-5" />
-                    </span>
-                    <span class="min-w-0">
-                        <span class="block text-sm font-semibold text-amber-900">
-                            {{ $attention }} Artikel prüfen
-                        </span>
-                        <span class="block text-xs text-amber-800/80">
-                            {{ $expiredCount }} abgelaufen · {{ $expiringCount }} bald abgelaufen
-                        </span>
-                    </span>
-                    <x-icon name="chevron-right" class="ml-auto h-5 w-5 shrink-0 text-amber-700" />
-                </a>
-            @else
-                <p class="badge badge-ok">
-                    <x-icon name="check" class="h-4 w-4" />
-                    Alles frisch
-                </p>
-            @endif
-
-            <a href="{{ route('freezer.open') }}" wire:navigate class="btn btn-primary w-full">
-                <x-icon name="door" class="h-5 w-5" />
-                Gefrierschrank öffnen
-            </a>
         </div>
     </section>
 
@@ -142,6 +110,20 @@
                                 class="btn btn-ghost btn-icon" aria-label="Gefrierschrank umbenennen">
                             <x-icon name="pencil" class="h-5 w-5" />
                         </button>
+
+                        <button type="button"
+                                wire:click="$dispatch('confirm-dialog', { name: 'freezer-delete-{{ $option->id }}' })"
+                                class="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
+                                aria-label="Gefrierschrank löschen">
+                            <x-icon name="trash" class="h-5 w-5" />
+                        </button>
+
+                        <x-confirm-dialog
+                            :name="'freezer-delete-'.$option->id"
+                            title="Gefrierschrank löschen?"
+                            :message="'„'.$option->name.'“ verschwindet mit allen Schubladen und Artikeln für immer.'"
+                            :action="'deleteFreezer('.$option->id.')'"
+                            confirm-label="Endgültig löschen" />
                     @endif
                 </div>
             @endif
@@ -177,4 +159,11 @@
             @endforeach
         </section>
     @endif
+
+    {{-- Managing the drawers sits at the very bottom of the page: the freezer is
+         opened to look something up far more often than it is rearranged. --}}
+    <a href="{{ route('freezer.open') }}" wire:navigate class="btn btn-primary w-full">
+        <x-icon name="pencil" class="h-5 w-5" />
+        Schubladen bearbeiten
+    </a>
 </div>

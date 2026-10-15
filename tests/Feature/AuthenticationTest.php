@@ -31,6 +31,18 @@ class AuthenticationTest extends TestCase
         $this->get(route('register'))->assertOk();
     }
 
+    /**
+     * The auth screens show the word mark of the app instead of the plain name.
+     */
+    public function test_the_auth_screens_carry_the_word_mark_of_the_app(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSeeHtml('aria-label="Coolventory"')
+            ->assertSeeHtml('>cool</span>')
+            ->assertSeeHtml('>ventory</span>');
+    }
+
     public function test_users_can_login_with_their_credentials(): void
     {
         $user = User::factory()->create(['password' => 'geheim1234']);

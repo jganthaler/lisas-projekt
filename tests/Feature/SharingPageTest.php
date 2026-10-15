@@ -92,6 +92,12 @@ class SharingPageTest extends TestCase
             'inviter_id' => $this->owner->getKey(),
             'token_hash' => Invitation::hashToken($token),
         ]);
+
+        // The link comes with a copy button that uses window.copyToClipboard
+        // (see resources/js/app.js), so the plain token never has to be selected by hand.
+        $page->assertSee('Kopieren')
+            ->assertSee('copyToClipboard', false)
+            ->assertSee($link);
     }
 
     public function test_only_the_owner_may_invite(): void

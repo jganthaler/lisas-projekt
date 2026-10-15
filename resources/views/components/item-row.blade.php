@@ -13,9 +13,15 @@
         <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold text-frost-900">{{ $item->name }}</p>
 
-            {{-- An item without a best before date shows no MHD information at all. --}}
-            @if ($item->best_before || $freezerName || $drawerName)
+            {{-- An item without a best before date, category and place shows no
+                 meta information at all. --}}
+            @if ($item->best_before || $item->category || $freezerName || $drawerName)
                 <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-frost-500">
+                    {{-- The category is a tag, not a place - hence its own colour. --}}
+                    @if ($item->category)
+                        <span class="badge badge-ok">{{ $item->categoryLabel() }}</span>
+                    @endif
+
                     @if ($item->best_before)
                         <span class="badge {{ $item->stateBadgeClass() }}">{{ $item->stateLabel() }}</span>
                         <span>{{ $item->bestBeforeLabel() }}</span>
@@ -41,7 +47,7 @@
         <div class="flex shrink-0 items-center gap-1">
             @unless ($confirming)
                 <button type="button" wire:click="confirmDelete({{ $item->id }})"
-                        class="btn btn-ghost btn-icon text-red-600" aria-label="Artikel löschen">
+                        class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Artikel löschen">
                     <x-icon name="trash" class="h-4 w-4" />
                 </button>
             @endunless

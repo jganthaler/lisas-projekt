@@ -6,9 +6,9 @@
 
 @if ($user && $user->avatarUrl())
     <img src="{{ $user->avatarUrl() }}" alt="{{ $user->displayName() }}"
-         class="{{ $size }} shrink-0 rounded-full object-cover ring-2 ring-white">
+         class="{{ $size }} shrink-0 rounded-full object-cover ring-2 ring-surface">
 @else
-    <span class="{{ $size }} grid shrink-0 place-items-center rounded-full bg-brand-600 text-xs font-semibold text-white ring-2 ring-white">
+    <span class="{{ $size }} grid shrink-0 place-items-center rounded-full bg-brand-600 text-xs font-semibold text-white ring-2 ring-surface">
         {{ $user?->initials() ?? '?' }}
     </span>
 @endif

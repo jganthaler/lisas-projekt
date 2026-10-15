@@ -15,9 +15,9 @@ use Livewire\Component;
 /**
  * The complete inventory of every freezer the user may access - the own ones
  * and the shared ones at the same time. Searchable and always sorted
- * alphabetically (locale safe through name_sort). The freezer filter sits
- * behind the filter button next to the search field, so the list stays
- * uncluttered.
+ * alphabetically (locale safe through name_sort). The freezer and the category
+ * filter sit behind the filter button next to the search field, so the list
+ * stays uncluttered.
  */
 #[Layout('layouts.app')]
 #[Title('Inventar')]
@@ -29,12 +29,15 @@ class InventoryOverview extends Component
 
     public string $freezerFilter = '';
 
+    /** Empty means "every category". */
+    public string $categoryFilter = '';
+
     /** Whether the filter panel behind the filter button is open. */
     public bool $showFilters = false;
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'freezerFilter');
+        $this->reset('search', 'freezerFilter', 'categoryFilter');
     }
 
     public function toggleFilters(): void
@@ -43,11 +46,12 @@ class InventoryOverview extends Component
     }
 
     /**
-     * Back to the inventory of every freezer, but keep what was searched for.
+     * Back to the inventory of every freezer and every category, but keep what
+     * was searched for.
      */
     public function clearFilterSelection(): void
     {
-        $this->reset('freezerFilter');
+        $this->reset('freezerFilter', 'categoryFilter');
     }
 
     /**
@@ -56,6 +60,15 @@ class InventoryOverview extends Component
     public function filterByFreezer(string $freezerId): void
     {
         $this->freezerFilter = $freezerId;
+    }
+
+    /**
+     * Narrow the list down to one category. An unknown category - just like an
+     * unknown freezer - simply means "every category".
+     */
+    public function filterByCategory(string $category): void
+    {
+        $this->categoryFilter = in_array($category, InventoryItem::categoryKeys(), true) ? $category : '';
     }
 
     public function render()
@@ -72,6 +85,7 @@ class InventoryOverview extends Component
 
         // An unknown or foreign id simply means "all freezers".
         $selectedFreezer = $freezers->firstWhere('id', (int) $this->freezerFilter);
+        $selectedCategory = $this->categoryFilter !== '' ? $this->categoryFilter : null;
         $search = trim($this->search);
 
         $items = $this->items($freezers)
@@ -79,6 +93,7 @@ class InventoryOverview extends Component
                 'drawer',
                 fn (Builder $drawer) => $drawer->where('freezer_id', $selectedFreezer->getKey()),
             ))
+            ->when($selectedCategory !== null, fn (Builder $query) => $query->withCategory($selectedCategory))
             ->when($search !== '', fn (Builder $query) => $query->where('name', 'like', '%'.$search.'%'))
             ->alphabetical()
             ->get();
@@ -86,11 +101,13 @@ class InventoryOverview extends Component
         return view('livewire.inventory-overview', [
             'freezers' => $freezers,
             'selectedFreezer' => $selectedFreezer,
+            'selectedCategory' => $selectedCategory,
+            'categories' => InventoryItem::categoryLabels(),
             'items' => $items,
             'totalCount' => $this->items($freezers)->count(),
-            'isFiltered' => $search !== '' || $selectedFreezer !== null,
+            'isFiltered' => $search !== '' || $selectedFreezer !== null || $selectedCategory !== null,
             // Lights up the dot on the filter button.
-            'hasFilterSelection' => $selectedFreezer !== null,
+            'hasFilterSelection' => $selectedFreezer !== null || $selectedCategory !== null,
         ]);
     }
 

@@ -1,7 +1,7 @@
 <div class="space-y-4">
     @if ($invitation === null || $invitation->freezer === null)
         <div class="card px-5 py-8 text-center">
-            <span class="mx-auto grid h-14 w-14 place-items-center rounded-control bg-red-50 text-red-600">
+            <span class="mx-auto grid h-14 w-14 place-items-center rounded-control bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-300">
                 <x-icon name="alert" class="h-7 w-7" />
             </span>
 
@@ -47,7 +47,7 @@
                     </button>
                 </div>
             @else
-                <p class="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <p class="mt-5 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200">
                     Diese Einladung ist
                     {{ $invitation->isExpired() ? 'abgelaufen' : 'bereits verwendet worden' }}.
                     Bitte lasse dir einen neuen Link schicken.

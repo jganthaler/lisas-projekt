@@ -128,6 +128,27 @@ class EmailVerificationTest extends TestCase
         Notification::assertSentTo($user, VerifyEmailNotification::class);
     }
 
+    public function test_the_verification_mail_is_written_in_german(): void
+    {
+        Notification::fake();
+
+        $user = $this->unverified();
+
+        Livewire::actingAs($user)->test(VerifyEmail::class)->call('send');
+
+        Notification::assertSentTo(
+            $user,
+            VerifyEmailNotification::class,
+            function (VerifyEmailNotification $notification) use ($user): bool {
+                $mail = $notification->toMail($user);
+
+                return $mail->subject === 'Bitte bestätige deine E-Mail-Adresse'
+                    && $mail->greeting === 'Hallo '.$user->displayName().'!'
+                    && $mail->actionText === 'E-Mail-Adresse bestätigen';
+            },
+        );
+    }
+
     public function test_the_new_link_is_not_sent_endlessly(): void
     {
         Notification::fake();

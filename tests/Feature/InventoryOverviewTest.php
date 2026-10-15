@@ -40,17 +40,17 @@ class InventoryOverviewTest extends TestCase
 
         [$this->firstDrawer, $this->secondDrawer] = $freezer->drawers()->get()->all();
 
-        InventoryItem::factory()->fresh()->create([
+        InventoryItem::factory()->fresh()->category(InventoryItem::CATEGORY_OBST)->create([
             'drawer_id' => $this->firstDrawer->getKey(),
             'name' => 'Äpfel',
         ]);
 
-        InventoryItem::factory()->expired()->create([
+        InventoryItem::factory()->expired()->category(InventoryItem::CATEGORY_SONSTIGES)->create([
             'drawer_id' => $this->firstDrawer->getKey(),
             'name' => 'Brot',
         ]);
 
-        InventoryItem::factory()->fresh()->create([
+        InventoryItem::factory()->fresh()->category(InventoryItem::CATEGORY_OBST)->create([
             'drawer_id' => $this->secondDrawer->getKey(),
             'name' => 'Zitrone',
         ]);
@@ -63,7 +63,7 @@ class InventoryOverviewTest extends TestCase
 
         $this->sharedDrawer = $this->sharedFreezer->drawers()->firstOrFail();
 
-        InventoryItem::factory()->fresh()->create([
+        InventoryItem::factory()->fresh()->category(InventoryItem::CATEGORY_GEMUESE)->create([
             'drawer_id' => $this->sharedDrawer->getKey(),
             'name' => 'Pommes',
         ]);
@@ -110,9 +110,13 @@ class InventoryOverviewTest extends TestCase
         $items = Livewire::actingAs($lisa)->test(InventoryOverview::class)->viewData('items');
 
         $this->assertSame(
-            ['Äpfel', 'Beeren', 'Brot', 'Eiscreme', 'Erbsen', 'Gemüsemix', 'Hackfleisch', 'Pizza', 'Pommes', 'Spinat', 'Suppe'],
+            ['Äpfel', 'Beeren', 'Brot', 'Eiscreme', 'Erbsen', 'Gemüsemix', 'Hackfleisch', 'Lachs', 'Pizza', 'Pommes', 'Spinat', 'Suppe'],
             $items->pluck('name')->all()
         );
+
+        // The demo is sorted into categories as well, so the new filter has
+        // something to show right away.
+        $this->assertNotContains(null, $items->pluck('category')->all());
     }
 
     public function test_items_can_be_searched(): void
@@ -130,6 +134,75 @@ class InventoryOverviewTest extends TestCase
         $this->assertSame(['Pommes'], $page->viewData('items')->pluck('name')->all());
         $this->assertTrue($page->viewData('isFiltered'));
         $this->assertTrue($page->viewData('selectedFreezer')->is($this->sharedFreezer));
+    }
+
+    public function test_items_can_be_filtered_by_category(): void
+    {
+        $page = $this->page()->call('filterByCategory', InventoryItem::CATEGORY_OBST);
+
+        $this->assertSame(['Äpfel', 'Zitrone'], $page->viewData('items')->pluck('name')->all());
+        $this->assertSame(InventoryItem::CATEGORY_OBST, $page->viewData('selectedCategory'));
+        $this->assertTrue($page->viewData('isFiltered'));
+        $this->assertTrue($page->viewData('hasFilterSelection'));
+    }
+
+    /**
+     * The category filter narrows down the list that the freezer filter already
+     * produced - the two are not alternatives.
+     */
+    public function test_the_category_filter_can_be_combined_with_the_freezer_filter(): void
+    {
+        $page = $this->page()
+            ->call('filterByFreezer', (string) $this->sharedFreezer->getKey())
+            ->call('filterByCategory', InventoryItem::CATEGORY_OBST);
+
+        // The shared freezer only holds vegetables, so both filters together find
+        // nothing - while the category on its own does.
+        $this->assertSame([], $page->viewData('items')->pluck('name')->all());
+
+        $this->assertSame(
+            ['Äpfel', 'Zitrone'],
+            $this->page()->call('filterByCategory', InventoryItem::CATEGORY_OBST)
+                ->viewData('items')->pluck('name')->all()
+        );
+    }
+
+    public function test_an_unknown_category_means_every_category(): void
+    {
+        $page = $this->page()->call('filterByCategory', 'gibt-es-nicht');
+
+        $this->assertSame('', $page->get('categoryFilter'));
+        $this->assertNull($page->viewData('selectedCategory'));
+        $this->assertFalse($page->viewData('hasFilterSelection'));
+        $this->assertSame(4, $page->viewData('items')->count());
+    }
+
+    /**
+     * The panel offers every category plus the way back to the full list.
+     */
+    public function test_the_filter_panel_offers_every_category(): void
+    {
+        $page = $this->page()->call('toggleFilters');
+
+        foreach (['Fleisch', 'Fisch', 'Gemüse', 'Suppe', 'Obst', 'Sonstiges'] as $label) {
+            $page->assertSee($label);
+        }
+
+        $page->assertSee('Alle Kategorien')
+            ->assertSeeHtml('wire:click="filterByCategory(\''.InventoryItem::CATEGORY_OBST.'\')"');
+    }
+
+    /**
+     * One button drops everything at once - the search text included. It only
+     * appears while something is actually filtered.
+     */
+    public function test_the_filter_panel_offers_to_clear_every_filter(): void
+    {
+        $this->page()
+            ->call('toggleFilters')
+            ->assertDontSee('Alle Filter löschen')
+            ->set('search', 'brot')
+            ->assertSee('Alle Filter löschen');
     }
 
     public function test_a_foreign_freezer_cannot_be_filtered(): void
@@ -163,9 +236,11 @@ class InventoryOverviewTest extends TestCase
         $page = $this->page()
             ->set('search', 'brot')
             ->set('freezerFilter', (string) $this->sharedFreezer->getKey())
+            ->set('categoryFilter', InventoryItem::CATEGORY_SONSTIGES)
             ->call('clearFilters')
             ->assertSet('search', '')
-            ->assertSet('freezerFilter', '');
+            ->assertSet('freezerFilter', '')
+            ->assertSet('categoryFilter', '');
 
         $this->assertSame(4, $page->viewData('items')->count());
         $this->assertFalse($page->viewData('isFiltered'));
@@ -236,11 +311,14 @@ class InventoryOverviewTest extends TestCase
         $page = $this->page()
             ->set('search', 'o')
             ->call('filterByFreezer', (string) $this->sharedFreezer->getKey())
+            ->call('filterByCategory', InventoryItem::CATEGORY_GEMUESE)
             ->call('clearFilterSelection')
             ->assertSet('freezerFilter', '')
+            ->assertSet('categoryFilter', '')
             ->assertSet('search', 'o');
 
         $this->assertNull($page->viewData('selectedFreezer'));
+        $this->assertNull($page->viewData('selectedCategory'));
         $this->assertFalse($page->viewData('hasFilterSelection'));
     }
 

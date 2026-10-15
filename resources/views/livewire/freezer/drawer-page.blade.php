@@ -48,6 +48,21 @@
             </div>
         </div>
 
+        {{-- Sorting an item into a category is optional, but only then can the
+             inventory be filtered by it later on. --}}
+        <div>
+            <label class="label" for="category">Kategorie (optional)</label>
+            <select id="category" wire:model="category" class="input @error('category') input-error @enderror">
+                <option value="">Ohne Kategorie</option>
+                @foreach ($categories as $value => $label)
+                    <option value="{{ $value }}">{{ $label }}</option>
+                @endforeach
+            </select>
+            @error('category')
+                <p class="field-error">{{ $message }}</p>
+            @enderror
+        </div>
+
         <button type="submit" class="btn btn-primary w-full" wire:loading.attr="disabled" wire:target="addItem">
             <x-icon name="plus" class="h-5 w-5" />
             Hinzufügen
@@ -87,6 +102,20 @@
                                 <p class="field-error">{{ $message }}</p>
                             @enderror
                         </div>
+                    </div>
+
+                    <div>
+                        <label class="label" for="editCategory">Kategorie</label>
+                        <select id="editCategory" wire:model="editCategory"
+                                class="input @error('editCategory') input-error @enderror">
+                            <option value="">Ohne Kategorie</option>
+                            @foreach ($categories as $value => $label)
+                                <option value="{{ $value }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('editCategory')
+                            <p class="field-error">{{ $message }}</p>
+                        @enderror
                     </div>
 
                     <div class="flex gap-2">

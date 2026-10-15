@@ -36,7 +36,7 @@
                 <x-icon name="filter" class="h-5 w-5" />
 
                 @if ($hasFilterSelection)
-                    <span class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-white"></span>
+                    <span class="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-brand-500 ring-2 ring-surface"></span>
                 @endif
             </button>
         </div>
@@ -48,7 +48,7 @@
 
                     @if ($hasFilterSelection)
                         <button type="button" wire:click="clearFilterSelection"
-                                class="text-xs font-semibold text-brand-700 underline-offset-2 hover:underline">
+                                class="text-xs font-semibold text-brand-700 underline-offset-2 hover:underline dark:text-brand-400">
                             Filter zurücksetzen
                         </button>
                     @endif
@@ -72,7 +72,36 @@
                         </div>
                     </div>
                 @else
-                    <p class="text-sm text-frost-500">Nur ein Gefrierschrank – hier gibt es nichts zu filtern.</p>
+                    <p class="text-sm text-frost-500">Nur ein Gefrierschrank – nach der Kategorie kannst du trotzdem filtern.</p>
+                @endif
+
+                {{-- The category filter is always available, no matter how many
+                     freezers the household has. --}}
+                <div>
+                    <p class="label">Kategorie</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" wire:click="filterByCategory('')"
+                                class="badge rounded-control px-3 py-1.5 {{ $selectedCategory === null ? 'badge-ok' : 'badge-neutral' }}">
+                            Alle Kategorien
+                        </button>
+
+                        @foreach ($categories as $value => $label)
+                            <button type="button" wire:click="filterByCategory('{{ $value }}')"
+                                    class="badge rounded-control px-3 py-1.5 {{ $selectedCategory === $value ? 'badge-ok' : 'badge-neutral' }}">
+                                {{ $label }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Drops everything at once: the search text, the freezer and the
+                     category. The link above only clears the two selections and
+                     keeps what was searched for. --}}
+                @if ($isFiltered)
+                    <button type="button" wire:click="clearFilters" class="btn btn-secondary w-full">
+                        <x-icon name="close" class="h-4 w-4" />
+                        Alle Filter löschen
+                    </button>
                 @endif
             </div>
         @endif
@@ -88,7 +117,7 @@
             @if ($isFiltered)
                 <button type="button" wire:click="clearFilters" class="btn btn-secondary mt-3">
                     <x-icon name="close" class="h-4 w-4" />
-                    Filter zurücksetzen
+                    Alle Filter löschen
                 </button>
             @endif
         </div>

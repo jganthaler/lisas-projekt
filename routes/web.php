@@ -3,8 +3,10 @@
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\VerifyEmailController;
+use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
 use App\Livewire\Auth\Register;
+use App\Livewire\Auth\ResetPassword;
 use App\Livewire\Auth\VerifyEmail;
 use App\Livewire\ExpiringItems;
 use App\Livewire\Freezer\ClosedFreezer;
@@ -22,10 +24,18 @@ Route::redirect('/', '/freezer');
 |--------------------------------------------------------------------------
 | Authentication
 |--------------------------------------------------------------------------
+| The password reset lives here as well: asking for the link and choosing the
+| new password are both only interesting for visitors without a session.
 */
 Route::middleware('guest')->group(function () {
     Route::livewire('/login', Login::class)->name('login');
     Route::livewire('/register', Register::class)->name('register');
+
+    Route::livewire('/forgot-password', ForgotPassword::class)->name('password.request');
+
+    // The name "password.reset" is the one Laravel's reset notification builds
+    // its link with; the address of the account travels in the query string.
+    Route::livewire('/reset-password/{token}', ResetPassword::class)->name('password.reset');
 });
 
 /*

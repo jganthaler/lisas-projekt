@@ -46,6 +46,6 @@
 
     <p class="mt-5 text-center text-sm text-frost-600">
         Schon registriert?
-        <a href="{{ route('login') }}" wire:navigate class="font-semibold text-brand-700">Zur Anmeldung</a>
+        <a href="{{ route('login') }}" wire:navigate class="font-semibold text-brand-700 dark:text-brand-400">Zur Anmeldung</a>
     </p>
 </div>

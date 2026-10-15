@@ -81,21 +81,44 @@
             </button>
 
             @if ($inviteLink)
-                <div x-data="{ copied: false, link: @js($inviteLink) }" class="space-y-2">
+                <div x-data="{ state: 'idle', link: @js($inviteLink) }" class="space-y-2">
                     <label class="label" for="inviteLink">Einladungslink</label>
 
                     <div class="flex gap-2">
                         <input id="inviteLink" type="text" readonly value="{{ $inviteLink }}"
                                onfocus="this.select()" class="input text-xs">
 
+                        {{--
+                         | Copying runs through window.copyToClipboard (see
+                         | resources/js/app.js): the clipboard API of the browser only
+                         | exists on a secure origin, otherwise the old copy command is
+                         | used. The label tells the user which of the two happened.
+                        --}}
                         <button type="button" class="btn btn-secondary shrink-0"
-                                @click="navigator.clipboard?.writeText(link); copied = true; setTimeout(() => copied = false, 2000)">
-                            <x-icon name="copy" class="h-4 w-4" />
-                            <span x-text="copied ? 'Kopiert' : 'Kopieren'">Kopieren</span>
+                                x-on:click="
+                                    if (state !== 'idle') {
+                                        return;
+                                    }
+
+                                    state = 'busy';
+
+                                    window.copyToClipboard(link).then((ok) => {
+                                        state = ok ? 'copied' : 'failed';
+
+                                        setTimeout(() => state = 'idle', 2500);
+                                    });
+                                ">
+                            <x-icon name="copy" class="h-4 w-4" x-show="state !== 'copied'" />
+                            <x-icon name="check" class="h-4 w-4" x-cloak x-show="state === 'copied'" />
+
+                            <span x-show="state === 'idle'">Kopieren</span>
+                            <span x-cloak x-show="state === 'busy'">Einen Moment …</span>
+                            <span x-cloak x-show="state === 'copied'">Kopiert</span>
+                            <span x-cloak x-show="state === 'failed'">Bitte markieren</span>
                         </button>
                     </div>
 
-                    <p class="text-xs text-amber-700">
+                    <p class="text-xs text-amber-700 dark:text-amber-300">
                         Der Link wird nur jetzt angezeigt – er ist nirgendwo gespeichert.
                     </p>
                 </div>
@@ -127,11 +150,19 @@
                     @if ($membership->isOwner())
                         <span class="badge badge-ok">Besitzer</span>
                     @elseif ($isOwner)
-                        <button type="button" wire:click="removeMember({{ $membership->user_id }})"
-                                wire:confirm="Zugriff für {{ $membership->user?->displayName() }} wirklich entziehen?"
-                                class="btn btn-ghost btn-icon text-red-600" aria-label="Mitglied entfernen">
+                        <button type="button"
+                                wire:click="$dispatch('confirm-dialog', { name: 'member-remove-{{ $membership->id }}' })"
+                                class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Mitglied entfernen">
                             <x-icon name="close" class="h-5 w-5" />
                         </button>
+
+                        <x-confirm-dialog
+                            :name="'member-remove-'.$membership->id"
+                            title="Zugriff entziehen?"
+                            :message="'„'.($membership->user?->displayName() ?? 'Diese Person').'“ kann den Gefrierschrank danach nicht mehr sehen.'"
+                            :action="'removeMember('.$membership->user_id.')'"
+                            confirm-label="Entziehen"
+                            icon="close" />
                     @else
                         <span class="badge badge-neutral">Mitglied</span>
                     @endif
@@ -159,11 +190,18 @@
                             <p class="truncate text-xs text-frost-500">Noch nicht verwendet</p>
                         </div>
 
-                        <button type="button" wire:click="revokeInvitation({{ $invitation->id }})"
-                                wire:confirm="Einladung zurückziehen?"
-                                class="btn btn-ghost btn-icon text-red-600" aria-label="Einladung zurückziehen">
+                        <button type="button"
+                                wire:click="$dispatch('confirm-dialog', { name: 'invitation-revoke-{{ $invitation->id }}' })"
+                                class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Einladung zurückziehen">
                             <x-icon name="trash" class="h-5 w-5" />
                         </button>
+
+                        <x-confirm-dialog
+                            :name="'invitation-revoke-'.$invitation->id"
+                            title="Einladung zurückziehen?"
+                            message="Der Link funktioniert danach nicht mehr."
+                            :action="'revokeInvitation('.$invitation->id.')'"
+                            confirm-label="Zurückziehen" />
                     </div>
                 @endforeach
             </div>
@@ -179,23 +217,38 @@
                 Beim Löschen verschwinden der Gefrierschrank, alle Schubladen und alle Artikel für immer.
             </p>
 
-            <button type="button" wire:click="deleteFreezer"
-                    wire:confirm="„{{ $freezer->name }}“ mit allen Artikeln löschen?"
+            <button type="button"
+                    wire:click="$dispatch('confirm-dialog', { name: 'freezer-delete' })"
                     class="btn btn-danger w-full">
                 <x-icon name="trash" class="h-5 w-5" />
                 Gefrierschrank löschen
             </button>
+
+            <x-confirm-dialog
+                name="freezer-delete"
+                title="Gefrierschrank löschen?"
+                :message="'„'.$freezer->name.'“ verschwindet mit allen Schubladen und Artikeln für immer.'"
+                action="deleteFreezer"
+                confirm-label="Endgültig löschen" />
         @else
             <p class="text-xs text-frost-500">
                 Du kannst den Gefrierschrank jederzeit verlassen – dein Zugriff wird dann entfernt.
             </p>
 
-            <button type="button" wire:click="leaveFreezer"
-                    wire:confirm="„{{ $freezer->name }}“ verlassen?"
+            <button type="button"
+                    wire:click="$dispatch('confirm-dialog', { name: 'freezer-leave' })"
                     class="btn btn-danger w-full">
                 <x-icon name="logout" class="h-5 w-5" />
                 Gefrierschrank verlassen
             </button>
+
+            <x-confirm-dialog
+                name="freezer-leave"
+                title="Gefrierschrank verlassen?"
+                :message="'Dein Zugriff auf „'.$freezer->name.'“ wird entfernt. Die Artikel bleiben für die anderen erhalten.'"
+                action="leaveFreezer"
+                confirm-label="Verlassen"
+                icon="logout" />
         @endif
     </section>
 </div>

@@ -32,8 +32,14 @@
         </button>
     </form>
 
+    <p class="mt-4 text-center text-sm">
+        <a href="{{ route('password.request') }}" wire:navigate class="font-medium text-frost-600 dark:text-frost-400">
+            Passwort vergessen?
+        </a>
+    </p>
+
     <p class="mt-5 text-center text-sm text-frost-600">
         Noch kein Konto?
-        <a href="{{ route('register') }}" wire:navigate class="font-semibold text-brand-700">Jetzt registrieren</a>
+        <a href="{{ route('register') }}" wire:navigate class="font-semibold text-brand-700 dark:text-brand-400">Jetzt registrieren</a>
     </p>
 </div>

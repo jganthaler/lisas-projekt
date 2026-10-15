@@ -43,11 +43,19 @@
             </button>
 
             @if ($user->hasAvatar())
-                <button type="button" wire:click="removeAvatar" wire:confirm="Profilbild entfernen?"
+                <button type="button"
+                        wire:click="$dispatch('confirm-dialog', { name: 'avatar-remove' })"
                         class="btn btn-ghost">
                     <x-icon name="trash" class="h-5 w-5" />
                     Entfernen
                 </button>
+
+                <x-confirm-dialog
+                    name="avatar-remove"
+                    title="Profilbild entfernen?"
+                    message="Dein Bild wird gelöscht – danach sind wieder deine Initialen zu sehen."
+                    action="removeAvatar"
+                    confirm-label="Entfernen" />
             @endif
         </div>
     </form>

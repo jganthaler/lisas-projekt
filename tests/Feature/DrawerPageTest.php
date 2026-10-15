@@ -60,6 +60,7 @@ class DrawerPageTest extends TestCase
             ->assertSet('name', '')
             ->assertSet('quantity', '1')
             ->assertSet('bestBefore', '')
+            ->assertSet('category', '')
             ->assertSet('itemFeedback', 'Artikel hinzugefügt.');
 
         $item = InventoryItem::query()->firstWhere('name', 'Erbsen fein');
@@ -69,6 +70,26 @@ class DrawerPageTest extends TestCase
         $this->assertSame(3, $item->quantity);
         $this->assertSame('erbsen fein', $item->name_sort);
         $this->assertSame('2026-12-24', $item->best_before?->toDateString());
+        $this->assertNull($item->category);
+    }
+
+    /**
+     * Sorting an item into a category is optional, but it is what the inventory
+     * filter later works with.
+     */
+    public function test_an_item_can_be_added_with_a_category(): void
+    {
+        $this->page()
+            ->set('name', 'Erbsen')
+            ->set('category', InventoryItem::CATEGORY_GEMUESE)
+            ->call('addItem')
+            ->assertHasNoErrors()
+            ->assertSet('category', '');
+
+        $item = InventoryItem::query()->firstWhere('name', 'Erbsen');
+
+        $this->assertSame(InventoryItem::CATEGORY_GEMUESE, $item->category);
+        $this->assertSame('Gemüse', $item->categoryLabel());
     }
 
     public function test_an_item_without_a_best_before_date_can_be_added(): void
@@ -79,7 +100,21 @@ class DrawerPageTest extends TestCase
             ->call('addItem')
             ->assertHasNoErrors();
 
-        $this->assertNull(InventoryItem::query()->firstWhere('name', 'Eiswürfel')?->best_before);
+        $item = InventoryItem::query()->firstWhere('name', 'Eiswürfel');
+
+        $this->assertNull($item->best_before);
+        $this->assertNull($item->category);
+    }
+
+    public function test_an_item_can_only_be_sorted_into_a_known_category(): void
+    {
+        $this->page()
+            ->set('name', 'Erbsen')
+            ->set('category', 'gibt-es-nicht')
+            ->call('addItem')
+            ->assertHasErrors(['category' => 'in']);
+
+        $this->assertDatabaseCount('inventory_items', 0);
     }
 
     public function test_adding_an_item_validates_its_input(): void
@@ -130,9 +165,11 @@ class DrawerPageTest extends TestCase
             ->assertSet('editName', 'Spinat')
             ->assertSet('editQuantity', '2')
             ->assertSet('editBestBefore', '2026-12-24')
+            ->assertSet('editCategory', '')
             ->set('editName', 'Spinat fein')
             ->set('editQuantity', '5')
             ->set('editBestBefore', '')
+            ->set('editCategory', InventoryItem::CATEGORY_GEMUESE)
             ->call('saveItem')
             ->assertHasNoErrors()
             ->assertSet('editingItemId', null)
@@ -143,6 +180,28 @@ class DrawerPageTest extends TestCase
         $this->assertSame('Spinat fein', $item->name);
         $this->assertSame(5, $item->quantity);
         $this->assertNull($item->best_before);
+        $this->assertSame(InventoryItem::CATEGORY_GEMUESE, $item->category);
+    }
+
+    /**
+     * Sorting an item into a category is not a one-way street: it can be dropped
+     * again while editing.
+     */
+    public function test_the_category_of_an_item_can_be_removed(): void
+    {
+        $item = InventoryItem::factory()->category(InventoryItem::CATEGORY_OBST)->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Äpfel',
+        ]);
+
+        $this->page()
+            ->call('startEditingItem', $item->getKey())
+            ->assertSet('editCategory', InventoryItem::CATEGORY_OBST)
+            ->set('editCategory', '')
+            ->call('saveItem')
+            ->assertHasNoErrors();
+
+        $this->assertNull($item->refresh()->category);
     }
 
     public function test_editing_can_be_cancelled(): void
@@ -155,7 +214,8 @@ class DrawerPageTest extends TestCase
             ->assertSet('editingItemId', null)
             ->assertSet('editName', '')
             ->assertSet('editQuantity', '1')
-            ->assertSet('editBestBefore', '');
+            ->assertSet('editBestBefore', '')
+            ->assertSet('editCategory', '');
     }
 
     public function test_an_item_can_be_deleted(): void

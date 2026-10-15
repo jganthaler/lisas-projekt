@@ -56,4 +56,14 @@ class InventoryItemFactory extends Factory
             'best_before' => null,
         ]);
     }
+
+    /**
+     * Sort the item into one of the categories of the inventory filter.
+     */
+    public function category(string $category): static
+    {
+        return $this->state(fn (): array => [
+            'category' => $category,
+        ]);
+    }
 }

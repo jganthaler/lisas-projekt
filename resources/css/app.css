@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+/*
+ | Dark scheme
+ |
+ | The scheme is switched by the class "dark" on <html> - set before the first
+ | paint by components/theme-script.blade.php and toggled by the button in the
+ | header (components/theme-toggle.blade.php). Tailwind's dark variant therefore
+ | follows that class instead of the preference of the operating system.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
@@ -13,6 +23,14 @@
      | the views, so all controls share the same 8 px corners.
      */
     --radius-control: 0.5rem;
+
+    /*
+     | Surfaces that are not part of the palette below: cards and bars ("surface")
+     | and form fields ("field"). Both switch their value with the dark class, so
+     | the views can use bg-surface / bg-field instead of a hard coded white.
+     */
+    --color-surface: #ffffff;
+    --color-field: #ffffff;
 
     /*
      | Coolventory palette: a fresh, cool "türkis" as the brand colour of the
@@ -56,6 +74,11 @@
         -webkit-tap-highlight-color: transparent;
     }
 
+    /* Dialogs (see components/confirm-dialog.blade.php) stay hidden until Alpine took over. */
+    [x-cloak] {
+        display: none !important;
+    }
+
     body {
         background-color: var(--color-frost-100);
         color: var(--color-frost-900);
@@ -79,6 +102,33 @@
     textarea {
         font-size: 1rem;
     }
+
+    /*
+     | Dark scheme: the neutral ramp of the palette is turned around, so the views
+     | keep their meaning. "frost-100" stays the background of the page (now dark)
+     | and "frost-900" stays the strongest text (now light); "frost-50" is the
+     | slightly brighter surface for hover states. The surface tokens swap from
+     | white to a dark slate. The brand and status colours keep their value and are
+     | only darkened where they are used as a background (see below).
+     */
+    .dark {
+        color-scheme: dark;
+
+        --color-surface: #18232a;
+        --color-field: #101a1e;
+
+        --color-frost-50: #1d2a30;
+        --color-frost-100: #131c20;
+        --color-frost-200: #26343b;
+        --color-frost-300: #384b55;
+        --color-frost-400: #5d727d;
+        --color-frost-500: #8ba1ab;
+        --color-frost-600: #a3b7c0;
+        --color-frost-700: #c2d0d6;
+        --color-frost-800: #d7e2e6;
+        --color-frost-900: #ecf3f5;
+        --color-frost-950: #f7fbfc;
+    }
 }
 
 @layer components {
@@ -95,7 +145,7 @@
 
     .card {
         border-radius: 1.25rem;
-        background-color: #fff;
+        background-color: var(--color-surface);
         box-shadow: 0 1px 2px rgb(36 45 50 / 0.06), 0 8px 24px -12px rgb(36 45 50 / 0.18);
     }
 
@@ -173,7 +223,7 @@
         width: 100%;
         border-radius: var(--radius-control);
         border: 1px solid var(--color-frost-300);
-        background-color: #fff;
+        background-color: var(--color-field);
         padding: 0.625rem 0.875rem;
         color: var(--color-frost-900);
         outline: none;
@@ -200,7 +250,7 @@
         height: 1.25rem;
         border-radius: var(--radius-control);
         border: 1.5px solid var(--color-frost-300);
-        background-color: #fff;
+        background-color: var(--color-field);
         background-position: center;
         background-repeat: no-repeat;
         background-size: 0.875rem 0.875rem;
@@ -267,7 +317,7 @@
         align-items: center;
         gap: 0.75rem;
         border-radius: var(--radius-control);
-        background-color: #fff;
+        background-color: var(--color-surface);
         padding: 0.875rem 1rem;
         text-align: left;
         box-shadow: 0 1px 2px rgb(36 45 50 / 0.06);
@@ -351,12 +401,93 @@
         background-color: var(--color-brand-500);
         box-shadow: 0 0 10px var(--color-brand-500), 0 0 5px var(--color-brand-500);
     }
+
+    /*
+     | Dark scheme of the components above: the pale brand and status tints of the
+     | light scheme would glare on a dark surface, so they get their own, darker
+     | value. Cards and rows draw a hairline instead of a shadow, which is hardly
+     | visible on a dark background.
+     */
+    .dark .card {
+        box-shadow: inset 0 0 0 1px var(--color-frost-200), 0 1px 2px rgb(0 0 0 / 0.35);
+    }
+
+    .dark .drawer-row {
+        box-shadow: inset 0 0 0 1px var(--color-frost-200);
+    }
+
+    .dark .btn-primary:hover:not(:disabled) {
+        background-color: var(--color-brand-500);
+    }
+
+    .dark .btn-secondary {
+        background-color: #123f41;
+        color: #7fe3de;
+    }
+
+    .dark .btn-secondary:hover:not(:disabled) {
+        background-color: #17504f;
+    }
+
+    .dark .btn-danger {
+        background-color: #4a1c1c;
+        color: #fca5a5;
+    }
+
+    .dark .btn-danger:hover:not(:disabled) {
+        background-color: #5a2323;
+    }
+
+    .dark .input:focus,
+    .dark .checkbox:focus-visible {
+        box-shadow: 0 0 0 3px #14403f;
+    }
+
+    .dark .field-error {
+        color: #fca5a5;
+    }
+
+    .dark .badge-ok {
+        background-color: #123f41;
+        color: #7fe3de;
+    }
+
+    .dark .badge-warn {
+        background-color: #422f09;
+        color: #fcd34d;
+    }
+
+    .dark .badge-danger {
+        background-color: #4a1c1c;
+        color: #fca5a5;
+    }
+
+    .dark .bottom-nav-link[aria-current='page'] {
+        background-color: #123f41;
+        color: #7fe3de;
+    }
+
+    .dark .highlight-item {
+        animation-name: highlight-pulse-dark;
+    }
 }
 
 @keyframes highlight-pulse {
     0% {
         background-color: var(--color-brand-100);
         box-shadow: 0 0 0 3px var(--color-brand-200);
+    }
+    100% {
+        background-color: transparent;
+        box-shadow: 0 0 0 0 transparent;
+    }
+}
+
+/* The flash on a freshly added item, for the dark scheme. */
+@keyframes highlight-pulse-dark {
+    0% {
+        background-color: #123f41;
+        box-shadow: 0 0 0 3px #17504f;
     }
     100% {
         background-color: transparent;

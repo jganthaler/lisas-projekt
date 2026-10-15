@@ -8,20 +8,24 @@
 
     <title>{{ isset($title) ? $title.' · '.config('app.name') : config('app.name') }}</title>
 
+    <x-theme-script />
+
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
-<body class="flex min-h-screen flex-col bg-brand-900 antialiased">
+<body class="relative flex min-h-screen flex-col bg-brand-900 antialiased dark:bg-brand-950">
     <div id="loading-bar" data-active="false" aria-hidden="true"><span></span></div>
+
+    {{-- The auth pages have their own dark background, so the toggle stays light. --}}
+    <x-theme-toggle class="absolute right-3 top-3 text-brand-100 hover:bg-brand-500/20" />
 
     <div class="flex flex-1 items-center justify-center px-4 py-10">
         <div class="w-full max-w-sm">
             <div class="mb-6 text-center">
-                <span class="mx-auto grid h-14 w-14 place-items-center rounded-control bg-brand-500/20 text-brand-100">
-                    <x-icon name="freezer" class="h-8 w-8" />
-                </span>
-                <h1 class="mt-3 text-2xl font-bold tracking-tight text-white">{{ config('app.name') }}</h1>
-                <p class="mt-1 text-sm text-brand-100/80">Gemeinsam den Überblick behalten.</p>
+                <h1>
+                    <x-logo variant="on-dark" class="text-2xl" />
+                </h1>
+                <p class="mt-2 text-sm text-brand-100/80">Gemeinsam den Überblick behalten.</p>
             </div>
 
             <div class="card p-5">

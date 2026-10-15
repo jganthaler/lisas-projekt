@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Livewire\Freezer\ClosedFreezer;
 use App\Models\Freezer;
 use App\Models\FreezerMembership;
+use App\Models\InventoryItem;
 use App\Models\User;
 use App\Support\FreezerContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -78,6 +79,40 @@ class ClosedFreezerTest extends TestCase
             ->assertSee('Truhe im Keller')
             // The form for another freezer only appears on request.
             ->assertDontSee('Neuer Gefrierschrank');
+    }
+
+    /**
+     * The start page no longer nags about items whose MHD is due: the warning pill
+     * of the app frame and the MHD page carry that information.
+     */
+    public function test_the_start_page_does_not_warn_about_the_mhd(): void
+    {
+        InventoryItem::factory()->expired()->create([
+            'drawer_id' => $this->freezer->drawers()->firstOrFail()->getKey(),
+        ]);
+
+        $this->page($this->owner)
+            ->assertDontSee('Artikel prüfen')
+            ->assertDontSee('Alles frisch')
+            ->assertDontSee('abgelaufen');
+    }
+
+    /**
+     * Managing the drawers is the last thing on the start page - and it is called
+     * "Schubladen bearbeiten" now.
+     */
+    public function test_the_drawer_button_sits_at_the_bottom_of_the_page(): void
+    {
+        $html = $this->page($this->owner)->html();
+
+        $this->assertStringContainsString('Schubladen bearbeiten', $html);
+        $this->assertStringNotContainsString('Gefrierschrank öffnen', $html);
+
+        // Nothing but the drawers themselves comes before the button.
+        $this->assertGreaterThan(
+            strrpos($html, 'drawer-row'),
+            strpos($html, 'Schubladen bearbeiten'),
+        );
     }
 
     public function test_the_form_for_a_new_freezer_appears_on_the_plus_button(): void
@@ -246,5 +281,75 @@ class ClosedFreezerTest extends TestCase
             ->assertNotFound();
 
         $this->assertSame($this->freezer->getKey(), FreezerContext::id());
+    }
+
+    public function test_the_delete_button_asks_through_the_dialog_first(): void
+    {
+        $this->page($this->owner)
+            ->assertSeeHtml("name: 'freezer-delete-".$this->freezer->getKey()."'")
+            ->assertSee('Gefrierschrank löschen?')
+            ->assertSee('„Gefrierschrank Küche“ verschwindet mit allen Schubladen und Artikeln für immer.')
+            ->assertSeeHtml('wire:click="deleteFreezer('.$this->freezer->getKey().')"');
+    }
+
+    public function test_the_owner_can_delete_a_freezer_with_its_content(): void
+    {
+        $drawer = $this->freezer->drawers()->firstOrFail();
+
+        InventoryItem::factory()->create(['drawer_id' => $drawer->getKey()]);
+
+        $this->page($this->owner)
+            ->call('deleteFreezer', $this->freezer->getKey())
+            ->assertRedirect(route('freezer.closed'));
+
+        $this->assertDatabaseMissing('freezers', ['id' => $this->freezer->getKey()]);
+        $this->assertDatabaseMissing('drawers', ['freezer_id' => $this->freezer->getKey()]);
+        $this->assertDatabaseCount('inventory_items', 0);
+
+        // The page never stands there without a freezer, so a fresh one takes over.
+        $fresh = $this->owner->freezers()->firstOrFail();
+
+        $this->assertNotSame($this->freezer->getKey(), $fresh->getKey());
+        $this->assertSame(Freezer::DEFAULT_DRAWER_COUNT, $fresh->drawers()->count());
+        $this->assertTrue(FreezerContext::current($this->owner)->is($fresh));
+    }
+
+    public function test_deleting_the_active_freezer_switches_to_another_one(): void
+    {
+        $other = Freezer::factory()->withDrawers()->create([
+            'owner_id' => $this->owner->getKey(),
+            'name' => 'Truhe im Keller',
+        ]);
+
+        FreezerContext::select($this->freezer);
+
+        $this->page($this->owner)
+            ->call('deleteFreezer', $this->freezer->getKey())
+            ->assertRedirect(route('freezer.closed'));
+
+        $this->assertDatabaseMissing('freezers', ['id' => $this->freezer->getKey()]);
+        $this->assertTrue(FreezerContext::current($this->owner)->is($other));
+    }
+
+    public function test_a_member_may_not_delete_a_shared_freezer(): void
+    {
+        $member = $this->member();
+
+        $this->page($member)
+            ->call('deleteFreezer', $this->freezer->getKey())
+            ->assertForbidden();
+
+        $this->assertDatabaseHas('freezers', ['id' => $this->freezer->getKey()]);
+    }
+
+    public function test_a_foreign_freezer_cannot_be_deleted(): void
+    {
+        $foreign = Freezer::factory()->create();
+
+        $this->page($this->owner)
+            ->call('deleteFreezer', $foreign->getKey())
+            ->assertNotFound();
+
+        $this->assertDatabaseHas('freezers', ['id' => $foreign->getKey()]);
     }
 }

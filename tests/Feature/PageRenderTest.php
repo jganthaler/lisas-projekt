@@ -21,6 +21,28 @@ class PageRenderTest extends TestCase
         $this->get('/')->assertRedirect('/freezer');
     }
 
+    /**
+     * The top row of the app frame carries the word mark of the app instead of the
+     * name of the active freezer.
+     */
+    public function test_the_app_frame_shows_the_word_mark_in_the_top_row(): void
+    {
+        $owner = User::factory()->create();
+
+        Freezer::factory()->withDrawers()->create([
+            'owner_id' => $owner->getKey(),
+            'name' => 'Gefrierschrank Küche',
+        ]);
+
+        $html = $this->actingAs($owner)->get(route('freezer.closed'))->assertOk()->getContent();
+
+        $start = strpos($html, '<header');
+        $header = substr($html, $start, strpos($html, '</header>') - $start);
+
+        $this->assertStringContainsString('aria-label="Coolventory"', $header);
+        $this->assertStringNotContainsString('Gefrierschrank Küche', $header);
+    }
+
     public function test_every_page_renders_for_the_owner(): void
     {
         $owner = User::factory()->create();

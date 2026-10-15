@@ -29,6 +29,8 @@
         'search' => '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
         'filter' => '<path d="M20.5 4.5h-17L10 12v6l4 2v-8z"/>',
         'dot' => '<circle cx="12" cy="12" r="3.2"/>',
+        'sun' => '<circle cx="12" cy="12" r="4"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M5.6 5.6 7 7"/><path d="M17 17l1.4 1.4"/><path d="M18.4 5.6 17 7"/><path d="M7 17l-1.4 1.4"/>',
+        'moon' => '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
     ];
 @endphp
 
