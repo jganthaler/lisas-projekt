@@ -74,6 +74,6 @@ trait InteractsWithItems
         $item->delete();
 
         $this->confirmingItemId = null;
-        $this->itemFeedback = 'Artikel gelöscht.';
+        $this->itemFeedback = __('items.deleted');
     }
 }

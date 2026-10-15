@@ -3,7 +3,8 @@
  | flashes white. This has to be a small, blocking script in <head>; everything
  | else (the toggle in the header) lives in resources/js/app.js.
  |
- | Without a saved choice the setting of the operating system decides.
+ | The light scheme (day mode) is the default: only a saved choice switches the
+ | page to dark, the setting of the operating system is deliberately ignored.
 --}}
 <script>
     (function () {
@@ -12,15 +13,9 @@
 
             if (stored === 'dark' || stored === 'light') {
                 document.documentElement.classList.toggle('dark', stored === 'dark');
-
-                return;
             }
         } catch (error) {
-            // Storage is blocked (private mode) - fall back to the system setting.
-        }
-
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            document.documentElement.classList.add('dark');
+            // Storage is blocked (private mode) - the light default stays.
         }
     })();
 </script>

@@ -25,40 +25,83 @@
     --radius-control: 0.5rem;
 
     /*
-     | Surfaces that are not part of the palette below: cards and bars ("surface")
-     | and form fields ("field"). Both switch their value with the dark class, so
-     | the views can use bg-surface / bg-field instead of a hard coded white.
+     | Surfaces that are not part of the palette below: cards and bars ("surface"),
+     | form fields ("field") and the layer that dims the page behind a dialog
+     | ("scrim"). They switch their value with the dark class, so the views can use
+     | bg-surface / bg-field / bg-scrim instead of a hard coded white.
      */
     --color-surface: #ffffff;
     --color-field: #ffffff;
+    --color-scrim: #12171a;
 
     /*
-     | Coolventory palette: a fresh, cool "türkis" as the brand colour of the
-     | freezer app plus a small set of neutral, slightly blueish greys.
+     | Coolventory palette.
+     |
+     | "frost" is the neutral ramp of the app: a light grey for the page, white
+     | cards, and text from a muted grey down to anthracite. It is almost
+     | colourless - only a breath of blue in the hue keeps it from looking muddy
+     | next to the accent - so that the accent stays the only thing that draws the
+     | eye.
+     |
+     | "brand" is that accent: a calm, slightly deep turquoise. A single ramp
+     | serves both schemes - its dark end (600/700) carries white text and text on
+     | light surfaces, its light end (300/400, on the near black 950) does the same
+     | on the dark scheme.
      */
-    --color-brand-50: #ecfdfb;
-    --color-brand-100: #d1faf5;
-    --color-brand-200: #a5f2ec;
-    --color-brand-300: #6de4dd;
-    --color-brand-400: #34cec9;
-    --color-brand-500: #16b2b1;
-    --color-brand-600: #0d8f90;
-    --color-brand-700: #107274;
-    --color-brand-800: #135b5e;
-    --color-brand-900: #144b4e;
-    --color-brand-950: #052e31;
+    --color-brand-50: #edfaf8;
+    --color-brand-100: #d3f2ee;
+    --color-brand-200: #a8e6e1;
+    --color-brand-300: #77d4cd;
+    --color-brand-400: #3fbfb8;
+    --color-brand-500: #17a5a0;
+    --color-brand-600: #0d8280;
+    --color-brand-700: #0a6664;
+    --color-brand-800: #0b5252;
+    --color-brand-900: #0d3f3f;
+    --color-brand-950: #04282a;
 
-    --color-frost-50: #f6fafb;
-    --color-frost-100: #e9f2f5;
-    --color-frost-200: #d5e5ea;
-    --color-frost-300: #b3cdd6;
-    --color-frost-400: #8aacb8;
-    --color-frost-500: #6b909d;
-    --color-frost-600: #557482;
-    --color-frost-700: #475f6a;
-    --color-frost-800: #3e5059;
-    --color-frost-900: #37454c;
-    --color-frost-950: #242d32;
+    --color-frost-50: #f7f8f9;
+    --color-frost-100: #eff1f2;
+    --color-frost-200: #e3e6e8;
+    --color-frost-300: #cbd1d5;
+    --color-frost-400: #98a1a8;
+    --color-frost-500: #636d74;
+    --color-frost-600: #4b545a;
+    --color-frost-700: #3a4247;
+    --color-frost-800: #2a3135;
+    --color-frost-900: #1c2226;
+    --color-frost-950: #12171a;
+
+    /*
+     | Status colours. The app knows three states: fresh (brand), expired
+     | ("danger") and due soon ("warning"). Both ramps are small, slightly
+     | desaturated versions of red and ochre, so a warning next to the turquoise
+     | never looks like a different app. Every pair the views use - a tint plus its
+     | label, in both schemes - reaches at least 4.5:1.
+     */
+    --color-danger-50: #fdf1f0;
+    --color-danger-100: #fbe0de;
+    --color-danger-200: #f6c4c1;
+    --color-danger-300: #ee9d98;
+    --color-danger-400: #e0706a;
+    --color-danger-500: #cd4b45;
+    --color-danger-600: #b1352f;
+    --color-danger-700: #932a26;
+    --color-danger-800: #7a2724;
+    --color-danger-900: #672421;
+    --color-danger-950: #38110f;
+
+    --color-warning-50: #fdf6e7;
+    --color-warning-100: #f9ebcb;
+    --color-warning-200: #f2d79a;
+    --color-warning-300: #e8bd63;
+    --color-warning-400: #dda43a;
+    --color-warning-500: #c98a1c;
+    --color-warning-600: #a86c10;
+    --color-warning-700: #855312;
+    --color-warning-800: #6d4414;
+    --color-warning-900: #5a3914;
+    --color-warning-950: #341e08;
 }
 
 @layer base {
@@ -108,26 +151,30 @@
      | keep their meaning. "frost-100" stays the background of the page (now dark)
      | and "frost-900" stays the strongest text (now light); "frost-50" is the
      | slightly brighter surface for hover states. The surface tokens swap from
-     | white to a dark slate. The brand and status colours keep their value and are
-     | only darkened where they are used as a background (see below).
+     | white to anthracite, and the scrim behind a dialog turns near black instead
+     | of following the ramp - a turned around ramp would lighten the page behind a
+     | dialog instead of dimming it. The brand and status colours keep their value
+     | and are exchanged where they are used as a background (see the dark block at
+     | the end of the component layer).
      */
     .dark {
         color-scheme: dark;
 
-        --color-surface: #18232a;
-        --color-field: #101a1e;
+        --color-surface: #1b2226;
+        --color-field: #14191d;
+        --color-scrim: #05080a;
 
-        --color-frost-50: #1d2a30;
-        --color-frost-100: #131c20;
-        --color-frost-200: #26343b;
-        --color-frost-300: #384b55;
-        --color-frost-400: #5d727d;
-        --color-frost-500: #8ba1ab;
-        --color-frost-600: #a3b7c0;
-        --color-frost-700: #c2d0d6;
-        --color-frost-800: #d7e2e6;
-        --color-frost-900: #ecf3f5;
-        --color-frost-950: #f7fbfc;
+        --color-frost-50: #222a2e;
+        --color-frost-100: #151a1e;
+        --color-frost-200: #2a3237;
+        --color-frost-300: #3c454b;
+        --color-frost-400: #667076;
+        --color-frost-500: #99a2a8;
+        --color-frost-600: #b4bcc1;
+        --color-frost-700: #cfd5d9;
+        --color-frost-800: #e2e7e9;
+        --color-frost-900: #f0f3f4;
+        --color-frost-950: #fafcfc;
     }
 }
 
@@ -146,7 +193,7 @@
     .card {
         border-radius: 1.25rem;
         background-color: var(--color-surface);
-        box-shadow: 0 1px 2px rgb(36 45 50 / 0.06), 0 8px 24px -12px rgb(36 45 50 / 0.18);
+        box-shadow: 0 1px 2px rgb(28 34 38 / 0.05), 0 10px 24px -14px rgb(28 34 38 / 0.18);
     }
 
     .btn {
@@ -168,10 +215,15 @@
         cursor: not-allowed;
     }
 
+    /*
+     | The one filled button of the app. brand-600 carries white text at 4.6:1,
+     | and the shadow repeats the accent instead of a grey, which keeps the button
+     | sitting on the card rather than in it.
+     */
     .btn-primary {
         background-color: var(--color-brand-600);
         color: #fff;
-        box-shadow: 0 1px 2px rgb(13 143 144 / 0.35);
+        box-shadow: 0 1px 2px rgb(13 130 128 / 0.32);
     }
 
     .btn-primary:hover:not(:disabled) {
@@ -196,13 +248,19 @@
         background-color: var(--color-frost-200);
     }
 
+    /*
+     | A destructive action stays a soft, tinted button: the tint carries the
+     | warning, the strong red is left to the label (danger-100 on danger-700
+     | reaches 6.5:1, and the same pair on the near black danger-950 in the dark
+     | scheme 7.9:1).
+     */
     .btn-danger {
-        background-color: #fee2e2;
-        color: #b91c1c;
+        background-color: var(--color-danger-100);
+        color: var(--color-danger-700);
     }
 
     .btn-danger:hover:not(:disabled) {
-        background-color: #fecaca;
+        background-color: var(--color-danger-200);
     }
 
     .btn-icon {
@@ -235,7 +293,7 @@
     }
 
     .input-error {
-        border-color: #f87171;
+        border-color: var(--color-danger-500);
     }
 
     /*
@@ -277,7 +335,7 @@
     .field-error {
         margin-top: 0.25rem;
         font-size: 0.8125rem;
-        color: #b91c1c;
+        color: var(--color-danger-700);
     }
 
     .badge {
@@ -297,13 +355,13 @@
     }
 
     .badge-warn {
-        background-color: #fef3c7;
-        color: #92400e;
+        background-color: var(--color-warning-100);
+        color: var(--color-warning-700);
     }
 
     .badge-danger {
-        background-color: #fee2e2;
-        color: #b91c1c;
+        background-color: var(--color-danger-100);
+        color: var(--color-danger-700);
     }
 
     .badge-neutral {
@@ -320,7 +378,7 @@
         background-color: var(--color-surface);
         padding: 0.875rem 1rem;
         text-align: left;
-        box-shadow: 0 1px 2px rgb(36 45 50 / 0.06);
+        box-shadow: 0 1px 2px rgb(28 34 38 / 0.05);
     }
 
     .drawer-row:hover {
@@ -360,11 +418,11 @@
         height: 1.25rem;
         border-radius: 9999px;
         padding: 0 0.375rem;
-        background-color: #fbbf24;
+        background-color: var(--color-warning-400);
         font-size: 0.625rem;
         font-weight: 700;
         line-height: 1;
-        color: #451a03;
+        color: var(--color-warning-950);
     }
 
     .highlight-item {
@@ -421,50 +479,50 @@
     }
 
     .dark .btn-secondary {
-        background-color: #123f41;
-        color: #7fe3de;
+        background-color: var(--color-brand-950);
+        color: var(--color-brand-300);
     }
 
     .dark .btn-secondary:hover:not(:disabled) {
-        background-color: #17504f;
+        background-color: var(--color-brand-900);
     }
 
     .dark .btn-danger {
-        background-color: #4a1c1c;
-        color: #fca5a5;
+        background-color: var(--color-danger-950);
+        color: var(--color-danger-300);
     }
 
     .dark .btn-danger:hover:not(:disabled) {
-        background-color: #5a2323;
+        background-color: var(--color-danger-900);
     }
 
     .dark .input:focus,
     .dark .checkbox:focus-visible {
-        box-shadow: 0 0 0 3px #14403f;
+        box-shadow: 0 0 0 3px rgb(23 165 160 / 0.28);
     }
 
     .dark .field-error {
-        color: #fca5a5;
+        color: var(--color-danger-300);
     }
 
     .dark .badge-ok {
-        background-color: #123f41;
-        color: #7fe3de;
+        background-color: var(--color-brand-950);
+        color: var(--color-brand-300);
     }
 
     .dark .badge-warn {
-        background-color: #422f09;
-        color: #fcd34d;
+        background-color: var(--color-warning-950);
+        color: var(--color-warning-300);
     }
 
     .dark .badge-danger {
-        background-color: #4a1c1c;
-        color: #fca5a5;
+        background-color: var(--color-danger-950);
+        color: var(--color-danger-300);
     }
 
     .dark .bottom-nav-link[aria-current='page'] {
-        background-color: #123f41;
-        color: #7fe3de;
+        background-color: var(--color-brand-950);
+        color: var(--color-brand-300);
     }
 
     .dark .highlight-item {
@@ -486,8 +544,8 @@
 /* The flash on a freshly added item, for the dark scheme. */
 @keyframes highlight-pulse-dark {
     0% {
-        background-color: #123f41;
-        box-shadow: 0 0 0 3px #17504f;
+        background-color: var(--color-brand-950);
+        box-shadow: 0 0 0 3px rgb(23 165 160 / 0.28);
     }
     100% {
         background-color: transparent;

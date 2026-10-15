@@ -15,7 +15,7 @@ use Livewire\Component;
  * needed to manage the drawers themselves.
  */
 #[Layout('layouts.app')]
-#[Title('Gefrierschrank geöffnet')]
+#[Title('freezer.open_title')]
 class OpenFreezer extends Component
 {
     public string $newDrawerName = '';
@@ -35,7 +35,7 @@ class OpenFreezer extends Component
         $name = trim($this->newDrawerName);
 
         if ($name === '') {
-            $this->addError('newDrawerName', 'Bitte gib der Schublade einen Namen.');
+            $this->addError('newDrawerName', __('freezer.drawer_name_required'));
 
             return;
         }
@@ -47,7 +47,7 @@ class OpenFreezer extends Component
 
         $this->reset('newDrawerName');
         $this->resetErrorBag();
-        $this->feedback = 'Schublade hinzugefügt.';
+        $this->feedback = __('freezer.drawer_added');
     }
 
     public function startRenaming(int $drawerId): void
@@ -70,7 +70,7 @@ class OpenFreezer extends Component
         $name = trim($this->editingDrawerName);
 
         if ($name === '') {
-            $this->addError('editingDrawerName', 'Bitte gib der Schublade einen Namen.');
+            $this->addError('editingDrawerName', __('freezer.drawer_name_required'));
 
             return;
         }
@@ -78,7 +78,7 @@ class OpenFreezer extends Component
         $drawer->update(['name' => mb_substr($name, 0, 60)]);
 
         $this->cancelRenaming();
-        $this->feedback = 'Schublade umbenannt.';
+        $this->feedback = __('freezer.drawer_renamed');
     }
 
     public function cancelRenaming(): void
@@ -95,7 +95,7 @@ class OpenFreezer extends Component
 
         // Deleting would cascade into the items, so an empty drawer is required.
         if ($drawer->items()->exists()) {
-            $this->addError('drawerDeletion', 'Die Schublade ist noch nicht leer. Bitte zuerst alle Artikel entfernen.');
+            $this->addError('drawerDeletion', __('freezer.drawer_not_empty'));
 
             return;
         }
@@ -103,7 +103,7 @@ class OpenFreezer extends Component
         $drawer->delete();
 
         $this->cancelRenaming();
-        $this->feedback = 'Schublade gelöscht.';
+        $this->feedback = __('freezer.drawer_deleted');
     }
 
     public function render()

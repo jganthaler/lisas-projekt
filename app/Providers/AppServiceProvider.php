@@ -23,17 +23,19 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // The app talks German, and so do its mails: the framework would
-        // otherwise send its English default text. Only the footer line of the
-        // mail template ("All rights reserved.") comes from lang/de.json.
+        // The mails speak the language of the account: Laravel renders a
+        // notification inside the locale of its recipient (User::preferredLocale()),
+        // so every text here is translated in that language. Only the footer
+        // line of the mail template ("All rights reserved.") comes from
+        // lang/<language>.json.
         VerifyEmail::toMailUsing(fn (User $notifiable, string $url) => (new MailMessage)
-            ->subject('Bitte bestätige deine E-Mail-Adresse')
-            ->greeting('Hallo '.$notifiable->displayName().'!')
-            ->line('bitte bestätige deine E-Mail-Adresse, damit du '.config('app.name').' nutzen kannst.')
-            ->action('E-Mail-Adresse bestätigen', $url)
-            ->line('Der Link ist eine Stunde lang gültig.')
-            ->line('Wenn du kein Konto angelegt hast, kannst du diese E-Mail einfach ignorieren.')
-            ->salutation('Viele Grüße von '.config('app.name')));
+            ->subject(__('mail.verification.subject'))
+            ->greeting(__('mail.verification.greeting', ['name' => $notifiable->displayName()]))
+            ->line(__('mail.verification.line', ['app' => config('app.name')]))
+            ->action(__('mail.verification.action'), $url)
+            ->line(__('mail.verification.expiry'))
+            ->line(__('mail.verification.ignore'))
+            ->salutation(__('mail.verification.salutation', ['app' => config('app.name')])));
 
         // "Passwort vergessen?" - the link carries the one-time token and the
         // address of the account, so the form is already filled in.
@@ -41,16 +43,16 @@ class AppServiceProvider extends ServiceProvider
             $expire = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
 
             return (new MailMessage)
-                ->subject('Passwort zurücksetzen')
-                ->greeting('Hallo '.$notifiable->displayName().'!')
-                ->line('du hast ein neues Passwort für '.config('app.name').' angefordert.')
-                ->action('Neues Passwort wählen', url(route('password.reset', [
+                ->subject(__('mail.reset.subject'))
+                ->greeting(__('mail.reset.greeting', ['name' => $notifiable->displayName()]))
+                ->line(__('mail.reset.line', ['app' => config('app.name')]))
+                ->action(__('mail.reset.action'), url(route('password.reset', [
                     'token' => $token,
                     'email' => $notifiable->getEmailForPasswordReset(),
                 ], false)))
-                ->line('Der Link ist '.$expire.' Minuten lang gültig.')
-                ->line('Wenn du das nicht angefordert hast, kannst du diese E-Mail einfach ignorieren.')
-                ->salutation('Viele Grüße von '.config('app.name'));
+                ->line(__('mail.reset.expiry', ['minutes' => $expire]))
+                ->line(__('mail.reset.ignore'))
+                ->salutation(__('mail.reset.salutation', ['app' => config('app.name')]));
         });
     }
 }

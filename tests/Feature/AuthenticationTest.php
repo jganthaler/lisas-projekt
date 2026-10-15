@@ -32,15 +32,18 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * The auth screens show the word mark of the app instead of the plain name.
+     * The auth screens show the logo of the app instead of the plain name - on
+     * the same light grey as the app itself. Only on that ground the file keeps
+     * its own colours; the dark scheme inverts it (see x-logo).
      */
-    public function test_the_auth_screens_carry_the_word_mark_of_the_app(): void
+    public function test_the_auth_screens_carry_the_logo_of_the_app(): void
     {
         $this->get(route('login'))
             ->assertOk()
             ->assertSeeHtml('aria-label="Coolventory"')
-            ->assertSeeHtml('>cool</span>')
-            ->assertSeeHtml('>ventory</span>');
+            ->assertSeeHtml('src="'.asset('logo.svg').'"')
+            ->assertSeeHtml('bg-frost-100')
+            ->assertDontSeeHtml('brightness-0 invert');
     }
 
     public function test_users_can_login_with_their_credentials(): void
@@ -91,7 +94,7 @@ class AuthenticationTest extends TestCase
         $freezer = $user->ownedFreezers()->first();
 
         $this->assertNotNull($freezer);
-        $this->assertSame(Freezer::DEFAULT_NAME, $freezer->name);
+        $this->assertSame(__('freezer.default_name'), $freezer->name);
         $this->assertSame(Freezer::DEFAULT_DRAWER_COUNT, $freezer->drawers()->count());
         $this->assertSame(FreezerMembership::ROLE_OWNER, $user->roleIn($freezer));
 

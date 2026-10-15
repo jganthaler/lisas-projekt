@@ -93,6 +93,35 @@ class InvitationTest extends TestCase
         $this->assertSame(2, $freezer->memberships()->count());
     }
 
+    public function test_an_invitation_link_is_only_valid_for_seven_days(): void
+    {
+        $this->invite();
+
+        // The rule itself: a link may be redeemed for seven days.
+        $this->assertSame(7, Invitation::VALID_DAYS);
+
+        $base = Carbon::now();
+        $invitation = Invitation::query()->firstOrFail();
+
+        // It expires exactly seven days after it was created.
+        $this->assertEqualsWithDelta(
+            $base->copy()->addDays(7)->getTimestamp(),
+            $invitation->expires_at->getTimestamp(),
+            1,
+        );
+
+        // On the last day the link can still be redeemed ...
+        Carbon::setTestNow($base->copy()->addDays(7)->subSecond());
+        $this->assertTrue($invitation->fresh()->isUsable());
+
+        // ... one second later it has expired.
+        Carbon::setTestNow($base->copy()->addDays(7)->addSecond());
+        $this->assertTrue($invitation->fresh()->isExpired());
+        $this->assertFalse($invitation->fresh()->isUsable());
+
+        Carbon::setTestNow();
+    }
+
     public function test_an_expired_invitation_cannot_be_accepted(): void
     {
         [$freezer, $owner, $token] = $this->invite();

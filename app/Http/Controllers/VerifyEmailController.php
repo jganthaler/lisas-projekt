@@ -18,7 +18,7 @@ class VerifyEmailController extends Controller
     {
         $request->fulfill();
 
-        session()->flash('status', 'Deine E-Mail-Adresse ist bestätigt. Willkommen!');
+        session()->flash('status', __('auth.verify.confirmed'));
 
         // Whoever was on the way somewhere (for example to an invitation) is
         // brought back there.

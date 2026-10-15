@@ -13,10 +13,9 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   *frisch* oder *ohne MHD*. Die Seite „MHD-Warnungen“ (unten rechts in der
   Navigation) sammelt alle kritischen Artikel über alle Gefrierschränke hinweg –
   unabhängig davon, welcher Gefrierschrank gerade aktiv ist; jede Zeile nennt
-  dazu Gefrierschrank und Schublade. Beide MHD-Zähler der App-Hülle – die runde
-  Zahl am MHD-Feld und der Hinweis oben rechts („X Artikel prüfen“) – zählen
-  über alle zugänglichen Gefrierschränke hinweg, also dieselbe Menge wie die
-  Liste. Artikel ohne Datum
+  dazu Gefrierschrank und Schublade. Der MHD-Zähler der App-Hülle – die runde
+  Zahl am MHD-Feld unten in der Navigation – zählt über alle zugänglichen
+  Gefrierschränke hinweg, also dieselbe Menge wie die Liste. Artikel ohne Datum
   zeigen in den Listen gar keine Angabe – statt „ohne MHD“ bleibt die Zeile
   leer.
 - **Artikelverwaltung** – Menge erhöhen/verringern, umbenennen, löschen und
@@ -49,15 +48,54 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   Bestätigung sperrt die `verified`-Middleware die App, und die Hinweisseite
   verschickt auf Wunsch einen neuen Link. Der Link hängt an Konto (`id`) und
   Adresse (`hash`), läuft nach einer Stunde ab und funktioniert nur für den
-  angemeldeten Nutzer. Die Mail ist deutsch (`VerifyEmail::toMailUsing()` im
-  `AppServiceProvider`).
-- **Profil** – Name, E-Mail, Passwortwechsel und Profilbild; der Avatar wird über
-  `/avatars/{user}` aus dem privaten `local`-Disk ausgeliefert.
+  angemeldeten Nutzer. Die Mail ist in der Sprache des Kontos
+  (`VerifyEmail::toMailUsing()` im `AppServiceProvider`).
+- **Sprachen** – die App spricht Deutsch, Italienisch und Englisch. Die Wahl
+  steht im Profil direkt unter dem Profilbild als „Deutsch“, „Italiano“ und
+  „English“ – jede Sprache immer
+  in ihrer eigenen Schreibweise, damit sie in jeder Oberfläche erkennbar bleibt.
+  Gespeichert wird die Wahl am Konto (`users.locale`), sodass jede weitere
+  Anfrage sie übernimmt (`App\Http\Middleware\SetLocale`); die Antwort auf den
+  Klick kommt bereits in der neuen Sprache. Ohne Wahl bleibt es bei Deutsch,
+  Gäste und brandneue Konten sehen also weiterhin Deutsch. Auch die Mails
+  richten sich nach dem Konto (`HasLocalePreference`), und ein neuer
+  Gefrierschrank samt Schubladen bekommt seinen Namen in der Sprache des
+  Augenblicks. Alle Texte liegen in `lang/de`, `lang/it` und `lang/en`; die
+  deutschen Dateien sind die Quelle der Wahrheit, weil die Tests ihre Wortwahl
+  prüfen.
+- **Profil** – Profilbild, Sprache der App, Name und E-Mail, Passwortwechsel,
+  Rechtliches, das Löschen des Kontos und ganz unten das Abmelden, in dieser
+  Reihenfolge; das Bild wird beim Auswählen sofort gespeichert (`updatedAvatar()`
+  in der Komponente) – ein neues Bild ersetzt das alte samt Datei, ein Knopf zum
+  Speichern gibt es nicht. Ausgeliefert wird der Avatar über `/avatars/{user}`
+  aus dem privaten `local`-Disk; die URL trägt eine Version des gespeicherten
+  Pfades, damit der Browser nach dem Austausch nicht das alte Bild zeigt. Ein
+  zweiter Knopf löscht das Konto samt Profilbild, Sitzungen und eigenen
+  Gefrierschränken (Art. 17 DSGVO) – abgesichert durch die Eingabe des
+  Passworts und die Rückfrage der App.
+- **Rechtliches** – Impressum, Datenschutzerklärung und Nutzungsbedingungen
+  liegen unter `/impressum`, `/datenschutz` und `/nutzungsbedingungen` und sind
+  ohne Anmeldung lesbar (`App\Http\Controllers\LegalController`). Die Texte
+  stehen in `lang/<sprache>/legal.php`, die Angaben zum Anbieter kommen aus der
+  Umgebung (`LEGAL_*`, siehe „Rechtliches“ weiter unten).
 - **Oberfläche** – Buttons, Felder, Auswahlfelder und Kacheln teilen sich einen
   Eckenradius von 8 px (`--radius-control` in `@theme`, in den Views als
   `rounded-control`). Ein schmaler Ladebalken am oberen Rand zeigt laufende
   Livewire-Requests; Seitenwechsel über `wire:navigate` nutzen die Leiste von
   Livewire in derselben Farbe.
+- **Farbschema** – Grau von Hellgrau bis Anthrazit trägt alles außer der
+  Akzentfarbe: `frost` (in `resources/css/app.css`) liefert Seitenhintergrund,
+  Karten, Linien und Texte, `brand` ist das ruhige Türkis für Aktionen und
+  Auswahl. Beide Modi kommen aus derselben Rampe – im Tagmodus die dunklen
+  Stufen (`brand-600` für Flächen mit weißer Schrift, `brand-700` für Text), im
+  Nachtmodus die hellen (`brand-300` auf `brand-950`); der `.dark`-Block dreht
+  nur die Graustufen um, damit `frost-100` in beiden Modi der Seitenhintergrund
+  bleibt – auch auf den Anmeldeseiten, wo die Wortmarke nur auf dem hellen Grau
+  ihre eigenen Farben behalten kann (im Nachtmodus wird sie invertiert).
+  Abgelaufen und bald fällig haben eigene, gedämpfte Rampen (`danger`,
+  `warning`) statt der Tailwind-Farben, und der Dialog-Hintergrund liegt auf
+  `scrim`, damit er in beiden Modi abdunkelt statt im Nachtmodus aufzuhellen.
+  Jedes Paar aus Tönung und Beschriftung erreicht mindestens 4,5:1.
 
 ## Technik
 
@@ -69,12 +107,12 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
 | Tailwind CSS | 4.x über `@tailwindcss/vite` |
 | Vite | 8.x |
 | MySQL | 8.4 |
-| Tests | PHPUnit 12.5 – 114 Tests / 429 Assertions |
+| Tests | PHPUnit 12.5 – 174 Tests / 714 Assertions |
 
 Die Oberfläche besteht vollständig aus Livewire-Komponenten
 (`app/Livewire/**`); die einzigen klassischen Routen sind der Logout, die
-Avatar-Auslieferung und der signierte Bestätigungslink
-(`VerifyEmailController`).
+Avatar-Auslieferung (nur für angemeldete Nutzer), die drei Rechtsseiten und der
+signierte Bestätigungslink (`VerifyEmailController`).
 
 ## Loslegen (Windows + Docker Desktop)
 
@@ -140,11 +178,13 @@ automatisch angelegt) und deckt die fachlichen Zusagen der App ab:
 | `tests/Feature/FreezerAccessTest.php` | Fremde Gefrierschränke/Schubladen/Artikel bleiben unerreichbar |
 | `tests/Feature/DrawerPageTest.php` | Artikel einer Schublade anlegen, ändern, löschen (Rückfrage in der Zeile) |
 | `tests/Feature/InventoryOverviewTest.php` | Übersicht über alle Gefrierschränke, Suche, Filter-Panel, Sortierung, Löschen mit Rückfrage |
-| `tests/Feature/ExpiringItemsTest.php` | Seite „MHD-Warnungen“ über alle Gefrierschränke, Zähler in Kopf- und Fußleiste |
+| `tests/Feature/ExpiringItemsTest.php` | Seite „MHD-Warnungen“ über alle Gefrierschränke, Zähler in der Fußleiste |
 | `tests/Feature/SharingPageTest.php` | Einladen, Umbenennen, Mitglieder entfernen, Verlassen, Löschen |
 | `tests/Feature/ClosedFreezerTest.php` | Gefrierschränke anlegen, wechseln, umbenennen |
 | `tests/Feature/InvitationTest.php` | Einladungslink annehmen, Ablauf, Mehrfachnutzung |
-| `tests/Feature/ProfileTest.php` | Profildaten, Passwort, Avatar-Upload/Entfernen |
+| `tests/Feature/ProfileTest.php` | Profildaten, Passwort, Profilbild (speichert beim Auswählen, ersetzt das alte), Konto löschen |
+| `tests/Feature/LanguageTest.php` | Sprachwahl im Profil, Sprache aller Seiten und Mails |
+| `tests/Feature/LegalPagesTest.php` | Impressum, Datenschutzerklärung, Nutzungsbedingungen: ohne Anmeldung lesbar, Anbieterangaben, Platzhalter, Verlinkung |
 
 ## Aufbau
 
@@ -153,17 +193,96 @@ app/
   Livewire/          Oberfläche: Auth (inkl. E-Mail-Hinweis), Freezer, Invitations,
                      Profile, Sharing, InventoryOverview, ExpiringItems,
                      Concerns\InteractsWithItems
-  Http/Controllers/  Logout, Avatar-Auslieferung, VerifyEmailController (signierter Link)
+  Http/Controllers/  Logout, Avatar-Auslieferung (nur angemeldet), LegalController
+                     (Impressum, Datenschutz, Nutzungsbedingungen),
+                     VerifyEmailController (signierter Link)
+  Http/Middleware/   SetLocale (Sprache der Anfrage aus dem Konto)
   Models/            User, Freezer, FreezerMembership, Drawer, InventoryItem, Invitation
   Policies/          FreezerPolicy, DrawerPolicy, InventoryItemPolicy
-  Support/           FreezerContext (aktiver Gefrierschrank in der Session)
+  Support/           FreezerContext (aktiver Gefrierschrank in der Session),
+                     Locales (die Sprachen der App),
+                     Legal (Anbieterangaben und Platzhalter der Rechtstexte)
+lang/de, lang/it, lang/en    Alle Texte, ein Verzeichnis pro Sprache
 resources/views/livewire/**   Blade-Templates der Komponenten
 resources/views/components/** Wiederverwendbare UI-Bausteine (card, notice, avatar, …)
+resources/views/legal/**      Impressum, Datenschutzerklärung, Nutzungsbedingungen
+                              (eigenes Layout, weil sie ohne Konto lesbar sind)
 database/factories, database/seeders
 ```
 
+## Rechtliches
+
+Die App bringt drei Seiten mit, die ohne Anmeldung erreichbar sind:
+
+| Adresse | Inhalt |
+| --- | --- |
+| `/impressum` | Anbieter, Kontakt, Haftung, Verbraucherstreitbeilegung |
+| `/datenschutz` | Verantwortlicher, Daten, Rechtsgrundlagen, Cookies, Empfänger, Speicherdauer, Rechte, Konto löschen |
+| `/nutzungsbedingungen` | Was die App leistet, Konto, Regeln, Verfügbarkeit, Haftung, Beendigung |
+
+Die Texte liegen in `lang/de|it|en/legal.php` (deutsch ist die Quelle der
+Wahrheit) und sind in Abschnitte gegliedert; gerendert werden sie von
+`resources/views/legal/*` mit `resources/views/layouts/legal.blade.php`.
+
+**Was der Betreiber noch tun muss** (die Seiten sind Vorlagen, keine
+Rechtsberatung – im Zweifel prüfen lassen):
+
+1. **Anbieterangaben hinterlegen.** `LEGAL_OPERATOR_NAME`, `_STREET`, `_CITY`,
+   `_COUNTRY`, `_EMAIL` und optional `_PHONE` in der `.env` (siehe
+   `.env.example`, `config/legal.php`). Solange Name, Anschrift oder E-Mail
+   fehlen, zeigt das Impressum einen **Warnhinweis** – die App soll nicht
+   versehentlich ohne Impressum online gehen. Nach § 5 DDG genügt die
+   E-Mail-Adresse als schnelle elektronische Kontaktaufnahme; eine reine
+   Privatseite ohne geschäftsmäßiges Angebot braucht streng genommen kein
+   Impressum, ein öffentlich erreichbarer Dienst sollte aber eines haben.
+2. **Hoster und Mail-Dienst eintragen** (`LEGAL_HOSTING_*`, `LEGAL_MAIL_*`).
+   Beide sind Empfänger im Sinne der Datenschutzerklärung, und für beide
+   braucht es eine Verarbeitung im Auftrag nach Art. 28 DSGVO
+   (Auftragsverarbeitungsvertrag; bei Hostern und Mail-Diensten meist Teil der
+   AGB). Fehlt die Angabe, steht in der Erklärung ein neutraler Text
+   („beim Anbieter zu erfragen“) statt einer Lücke.
+3. **Stand-Datum setzen** (`LEGAL_UPDATED_AT`, `JJJJ-MM-TT`) – es erscheint
+   unter jeder der drei Seiten.
+4. **Prüfen, ob die Texte zum eigenen Fall passen:** Verkauf oder
+   Werbung (dann Impressumspflicht und ggf. weitere Pflichtangaben), ein
+   kommerzieller Betrieb, ein anderer Hoster, weitere Dienste (Analytics,
+   Karten, Schriften von fremden Servern), Minderjährige als Nutzer.
+
+**Was die App dafür schon tut** (damit die Texte stimmen):
+
+- Kein Tracking, keine Werbung, keine Analyse-Werkzeuge, keine Inhalte von
+  fremden Servern (Schriften liegen im eigenen Build).
+- Nur ein technisch notwendiges Cookie (`laravel_session`) und der Eintrag
+  `color-scheme` im lokalen Speicher des Browsers – deshalb ist **kein
+  Cookie-Banner** nötig (§ 25 Abs. 2 Nr. 2 TDDDG).
+- Passwörter nur als Hash, Profilbilder auf dem privaten `local`-Disk und nur
+  über `/avatars/{user}` für angemeldete Nutzer abrufbar.
+- Einladungen speichern nur den Hash des Tokens; Mails gehen ausschließlich an
+  das Konto selbst (Bestätigung, Passwort-Reset).
+- Konto löschen im Profil (Art. 17 DSGVO): Entfernt das Konto, das Profilbild,
+  die Sitzungen, offene Passwort-Links und die eigenen Gefrierschränke samt
+  Inhalt. Geteilte Gefrierschränke anderer bleiben bestehen, dort verschwindet
+  nur die Mitgliedschaft.
+- Der Hinweis auf Nutzungsbedingungen und Datenschutzerklärung steht im
+  Registrierungsformular (Einbeziehung der Bedingungen, Art. 13 DSGVO).
+
+**Nicht abgedeckt** (bewusst offen gelassen): Auskunfts- und
+Übertragbarkeitsersuchen (Art. 15, 20 DSGVO) beantwortet der Betreiber per
+E-Mail; ein Datenexport in der App gibt es nicht. Ebenso fehlen eigene
+Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
+
 ## Hinweise
 
+- **Datenbank nach dem Update:** Nach einem `git pull` können Migrationen offen
+  sein. Ohne sie bricht zum Beispiel die Sprachwahl mit
+  `Unknown column 'locale' in 'field list'` ab. Dann einmal
+  `docker compose exec --user sail laravel.test php artisan migrate` ausführen –
+  die Tests fallen darauf nicht herein, weil sie ihre Datenbank frisch aufbauen.
+- **Sprachen:** Neue Texte gehören in alle drei Verzeichnisse unter `lang/`
+  (`de`, `it`, `en`); die deutschen Zeilen sind die Quelle der Wahrheit, weil die
+  Tests ihre Wortwahl prüfen. Ein Konto ohne gültige Sprache fällt auf
+  `config('app.locale')` zurück (Deutsch) – so bleibt die App auch ohne
+  Datenmigration für Bestandskonten benutzbar.
 - **Rechte im Container:** Die Container-Prozesse laufen als `sail`
   (uid 1000). Beim Ausführen von Befehlen als root entstehen root-eigene
   Dateien in `storage/` und `bootstrap/cache`, die Laravel im Web-Request nicht

@@ -25,8 +25,6 @@ class Freezer extends Model
 {
     use HasFactory;
 
-    public const DEFAULT_NAME = 'Mein Gefrierschrank';
-
     public const DEFAULT_DRAWER_COUNT = 3;
 
     /**
@@ -36,12 +34,21 @@ class Freezer extends Model
     public const NAME_MAX_LENGTH = 60;
 
     /**
+     * Name of the very first freezer of a new account. The name is translated,
+     * so a new freezer carries the language the user has chosen.
+     */
+    public static function defaultName(): string
+    {
+        return __('freezer.default_name');
+    }
+
+    /**
      * Create the very first freezer of a user: one freezer, three drawers and
      * the owner membership. Called lazily on the first access of the app.
      */
     public static function provisionFor(User $owner): self
     {
-        return self::createFor($owner, self::DEFAULT_NAME);
+        return self::createFor($owner, self::defaultName());
     }
 
     /**
@@ -61,7 +68,7 @@ class Freezer extends Model
 
             for ($position = 1; $position <= self::DEFAULT_DRAWER_COUNT; $position++) {
                 $freezer->drawers()->create([
-                    'name' => "Schublade {$position}",
+                    'name' => __('freezer.drawer_name', ['position' => $position]),
                     'position' => $position,
                 ]);
             }

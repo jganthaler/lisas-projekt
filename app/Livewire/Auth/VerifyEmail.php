@@ -15,7 +15,7 @@ use Livewire\Component;
  * until then - see the "verified" middleware on the app routes.
  */
 #[Layout('layouts.auth')]
-#[Title('E-Mail bestätigen')]
+#[Title('auth.verify.title')]
 class VerifyEmail extends Component
 {
     public ?string $feedback = null;
@@ -45,7 +45,7 @@ class VerifyEmail extends Component
         $key = 'verify-email|'.$user->getKey();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            $this->feedback = 'Bitte warte eine Minute, bevor du einen neuen Link anforderst.';
+            $this->feedback = __('auth.verify.throttled');
 
             return;
         }
@@ -54,7 +54,7 @@ class VerifyEmail extends Component
 
         $user->sendEmailVerificationNotification();
 
-        $this->feedback = 'Wir haben dir einen neuen Link an '.$user->email.' geschickt.';
+        $this->feedback = __('auth.verify.sent', ['email' => $user->email]);
     }
 
     public function render()

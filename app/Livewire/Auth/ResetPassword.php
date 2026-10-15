@@ -19,7 +19,7 @@ use Livewire\Component;
  * is stored - hashed by the "password" cast of the user model.
  */
 #[Layout('layouts.auth')]
-#[Title('Neues Passwort')]
+#[Title('auth.reset.title')]
 class ResetPassword extends Component
 {
     public string $token = '';
@@ -66,12 +66,12 @@ class ResetPassword extends Component
         );
 
         if ($status !== Password::PASSWORD_RESET) {
-            $this->addError('email', 'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen an.');
+            $this->addError('email', __('auth.reset.invalid_link'));
 
             return;
         }
 
-        session()->flash('status', 'Dein Passwort ist geändert. Melde dich jetzt neu an.');
+        session()->flash('status', __('auth.reset.status'));
 
         $this->redirectRoute('login', navigate: true);
     }

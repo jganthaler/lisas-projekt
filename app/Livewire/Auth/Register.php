@@ -11,7 +11,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('layouts.auth')]
-#[Title('Registrieren')]
+#[Title('auth.register.title')]
 class Register extends Component
 {
     public string $name = '';
@@ -45,7 +45,7 @@ class Register extends Component
         // with the signed link is on its way, the reminder page waits.
         $user->sendEmailVerificationNotification();
 
-        session()->flash('status', 'Fast geschafft! Wir haben dir einen Link an '.$user->email.' geschickt.');
+        session()->flash('status', __('auth.register.status', ['email' => $user->email]));
 
         // An intended URL (for example an invitation) stays in the session and
         // is picked up again once the address is confirmed.

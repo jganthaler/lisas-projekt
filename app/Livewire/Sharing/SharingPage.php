@@ -15,7 +15,7 @@ use Livewire\Component;
  * switch between the freezers the user has access to.
  */
 #[Layout('layouts.app')]
-#[Title('Teilen')]
+#[Title('sharing.title')]
 class SharingPage extends Component
 {
     public string $freezerName = '';
@@ -42,7 +42,7 @@ class SharingPage extends Component
         $freezer->update(['name' => $validated['freezerName']]);
 
         // The name is also shown in the header, so the page is loaded again.
-        session()->flash('status', 'Gefrierschrank umbenannt.');
+        session()->flash('status', __('freezer.renamed'));
 
         $this->redirectRoute('sharing.index', navigate: true);
     }
@@ -65,7 +65,7 @@ class SharingPage extends Component
         ['token' => $token] = Invitation::issue($freezer, auth()->user());
 
         $this->inviteLink = route('invitations.accept', ['token' => $token]);
-        $this->feedback = 'Einladungslink erstellt - er ist '.Invitation::VALID_DAYS.' Tage gültig und funktioniert genau einmal.';
+        $this->feedback = __('sharing.link_created', ['days' => Invitation::VALID_DAYS]);
     }
 
     public function revokeInvitation(int $invitationId): void
@@ -80,7 +80,7 @@ class SharingPage extends Component
             $this->inviteLink = null;
         }
 
-        $this->feedback = 'Einladung zurückgezogen.';
+        $this->feedback = __('sharing.invitation_revoked');
     }
 
     public function removeMember(int $userId): void
@@ -90,14 +90,14 @@ class SharingPage extends Component
         Gate::authorize('manageMembers', $freezer);
 
         if ($freezer->owner_id === $userId) {
-            $this->addError('members', 'Der Besitzer kann nicht entfernt werden.');
+            $this->addError('members', __('sharing.owner_removed'));
 
             return;
         }
 
         $freezer->memberships()->where('user_id', $userId)->delete();
 
-        $this->feedback = 'Mitglied entfernt.';
+        $this->feedback = __('sharing.member_removed');
     }
 
     public function leaveFreezer(): void
@@ -106,7 +106,7 @@ class SharingPage extends Component
         $user = auth()->user();
 
         if ($freezer->isOwnedBy($user)) {
-            $this->addError('leave', 'Als Besitzer kannst du den Gefrierschrank nur löschen.');
+            $this->addError('leave', __('sharing.owner_leave'));
 
             return;
         }
@@ -115,7 +115,7 @@ class SharingPage extends Component
 
         FreezerContext::forget();
 
-        session()->flash('status', 'Du hast "'.$freezer->name.'" verlassen.');
+        session()->flash('status', __('sharing.left', ['name' => $freezer->name]));
 
         $this->redirectRoute('freezer.closed', navigate: true);
     }
@@ -132,7 +132,7 @@ class SharingPage extends Component
 
         FreezerContext::forget();
 
-        session()->flash('status', '"'.$name.'" wurde mit allen Schubladen und Artikeln gelöscht.');
+        session()->flash('status', __('freezer.deleted', ['name' => $name]));
 
         $this->redirectRoute('freezer.closed', navigate: true);
     }

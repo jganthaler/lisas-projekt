@@ -3,7 +3,7 @@
     'title',
     'action',
     'message' => null,
-    'confirmLabel' => 'Löschen',
+    'confirmLabel' => __('common.delete'),
     'icon' => 'trash',
     'variant' => 'danger',
 ])
@@ -20,11 +20,12 @@
  |
  |     <button type="button"
  |             wire:click="$dispatch('confirm-dialog', { name: 'drawer-delete' })">
- |         Schublade löschen
+ |         {{ __('freezer.delete_drawer_aria') }}
  |     </button>
  |
- |     <x-confirm-dialog name="drawer-delete" title="Schublade löschen?"
- |                       :message="'„'.$drawer->name.'“ wird mit allen Artikeln entfernt.'"
+ |     <x-confirm-dialog name="drawer-delete"
+ |                       :title="__('freezer.delete_drawer_confirm_title')"
+ |                       :message="__('freezer.delete_drawer_confirm_message', ['name' => $drawer->name])"
  |                       :action="'deleteDrawer('.$drawer->id.')'" />
  |
  | Inside a loop every row gets its own dialog; the name keeps them apart.
@@ -42,7 +43,7 @@
      class="fixed inset-0 z-50 flex items-end justify-center px-4 pb-6 pt-4 sm:items-center"
      role="dialog" aria-modal="true" aria-labelledby="confirm-{{ $name }}-title">
 
-    <div class="absolute inset-0 bg-frost-950/50 backdrop-blur-sm" x-on:click="open = false" aria-hidden="true"></div>
+    <div class="absolute inset-0 bg-scrim/60 backdrop-blur-sm" x-on:click="open = false" aria-hidden="true"></div>
 
     <div class="relative w-full max-w-sm rounded-[1.25rem] bg-surface p-5 shadow-2xl">
         <h3 id="confirm-{{ $name }}-title" class="text-base font-bold text-frost-900">{{ $title }}</h3>
@@ -59,7 +60,7 @@
             </button>
 
             <button type="button" x-on:click="open = false" class="btn btn-ghost sm:flex-1">
-                Abbrechen
+                {{ __('common.cancel') }}
             </button>
         </div>
     </div>

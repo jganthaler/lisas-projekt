@@ -22,7 +22,7 @@ use Livewire\Component;
  * but nothing forces it.
  */
 #[Layout('layouts.app')]
-#[Title('Schublade')]
+#[Title('drawers.title')]
 class DrawerPage extends Component
 {
     use InteractsWithItems;
@@ -80,7 +80,7 @@ class DrawerPage extends Component
         $this->reset('name', 'bestBefore', 'category');
         $this->quantity = '1';
         $this->resetErrorBag();
-        $this->itemFeedback = 'Artikel hinzugefügt.';
+        $this->itemFeedback = __('drawers.item_added');
     }
 
     public function startEditingItem(int $itemId): void
@@ -119,7 +119,7 @@ class DrawerPage extends Component
         ]);
 
         $this->cancelEditingItem();
-        $this->itemFeedback = 'Artikel aktualisiert.';
+        $this->itemFeedback = __('drawers.item_updated');
     }
 
     public function cancelEditingItem(): void

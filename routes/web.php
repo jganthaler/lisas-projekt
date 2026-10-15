@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AvatarController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LogoutController;
 use App\Http\Controllers\VerifyEmailController;
 use App\Livewire\Auth\ForgotPassword;
@@ -69,9 +70,34 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/expiring', ExpiringItems::class)->name('expiring.index');
     Route::livewire('/sharing', SharingPage::class)->name('sharing.index');
     Route::livewire('/profile', ProfilePage::class)->name('profile.edit');
-
-    Route::get('/avatars/{user}', AvatarController::class)->name('avatars.show');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Profile pictures
+|--------------------------------------------------------------------------
+| The uploaded pictures live on the private "local" disk and are streamed by
+| the app. Only signed in people may fetch them - the address carries the id
+| of the account, so it must not be readable by anybody else. An account that
+| has not confirmed its address yet sees no picture, therefore "auth" is
+| enough (the "verified" middleware would only break the header).
+*/
+Route::get('/avatars/{user}', AvatarController::class)
+    ->middleware('auth')
+    ->name('avatars.show');
+
+/*
+|--------------------------------------------------------------------------
+| Legal pages
+|--------------------------------------------------------------------------
+| Imprint, privacy policy and terms of use are reachable without a session:
+| they have to be readable before somebody registers and after somebody
+| deleted their account. The texts are written in the language of the request
+| (the account or the default of the app).
+*/
+Route::get('/impressum', [LegalController::class, 'imprint'])->name('legal.imprint');
+Route::get('/datenschutz', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/nutzungsbedingungen', [LegalController::class, 'terms'])->name('legal.terms');
 
 /*
 |--------------------------------------------------------------------------

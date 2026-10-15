@@ -109,11 +109,11 @@ class ExpiringItemsTest extends TestCase
     }
 
     /**
-     * Both MHD counters of the app frame - the warning pill in the header and the
-     * round counter on the MHD field - cover every freezer the user may access,
-     * not only the one that is currently selected.
+     * The MHD counter of the app frame - the round number on the MHD field of the
+     * bottom bar - covers every freezer the user may access, not only the one that
+     * is currently selected.
      */
-    public function test_the_mhd_counters_cover_every_accessible_freezer(): void
+    public function test_the_mhd_counter_covers_every_accessible_freezer(): void
     {
         $shared = Freezer::factory()
             ->withDrawers(1)
@@ -132,7 +132,6 @@ class ExpiringItemsTest extends TestCase
             ->assertOk()
             // One warning of the owned freezer plus one of the shared one - and
             // the selected freezer has only its own item.
-            ->assertSeeHtml('class="badge badge-warn" aria-label="2 Artikel prüfen"')
             ->assertSeeHtml('<span class="nav-badge">2</span>');
     }
 

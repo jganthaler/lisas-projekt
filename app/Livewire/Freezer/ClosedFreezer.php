@@ -18,7 +18,7 @@ use Livewire\Component;
  * ones can be renamed.
  */
 #[Layout('layouts.app')]
-#[Title('Gefrierschrank')]
+#[Title('freezer.title')]
 class ClosedFreezer extends Component
 {
     public string $newFreezerName = '';
@@ -55,7 +55,7 @@ class ClosedFreezer extends Component
         $name = trim($this->newFreezerName);
 
         if ($name === '') {
-            $this->addError('newFreezerName', 'Bitte gib dem Gefrierschrank einen Namen.');
+            $this->addError('newFreezerName', __('freezer.name_required'));
 
             return;
         }
@@ -66,7 +66,7 @@ class ClosedFreezer extends Component
 
         $this->cancelAddingFreezer();
 
-        session()->flash('status', '„'.$freezer->name.'“ ist angelegt.');
+        session()->flash('status', __('freezer.created', ['name' => $freezer->name]));
 
         // The new freezer is the active one and its name is shown in the
         // header, so the page is loaded again.
@@ -105,7 +105,7 @@ class ClosedFreezer extends Component
         $name = trim($this->editingFreezerName);
 
         if ($name === '') {
-            $this->addError('editingFreezerName', 'Bitte gib dem Gefrierschrank einen Namen.');
+            $this->addError('editingFreezerName', __('freezer.name_required'));
 
             return;
         }
@@ -114,7 +114,7 @@ class ClosedFreezer extends Component
 
         $this->cancelRenaming();
 
-        session()->flash('status', 'Gefrierschrank umbenannt.');
+        session()->flash('status', __('freezer.renamed'));
 
         // The name is also shown in the header, so the page is loaded again.
         $this->redirectRoute('freezer.closed', navigate: true);
@@ -151,7 +151,7 @@ class ClosedFreezer extends Component
         // show. (The action redirects, so the render pass does not do this.)
         FreezerContext::current(auth()->user());
 
-        session()->flash('status', '„'.$name.'“ wurde mit allen Schubladen und Artikeln gelöscht.');
+        session()->flash('status', __('freezer.deleted', ['name' => $name]));
 
         $this->redirectRoute('freezer.closed', navigate: true);
     }

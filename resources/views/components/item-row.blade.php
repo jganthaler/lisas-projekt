@@ -13,15 +13,11 @@
         <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold text-frost-900">{{ $item->name }}</p>
 
-            {{-- An item without a best before date, category and place shows no
-                 meta information at all. --}}
-            @if ($item->best_before || $item->category || $freezerName || $drawerName)
+            {{-- An item without a best before date and place shows no meta
+                 information at all. The category is only used for filtering
+                 (see InventoryOverview), so it never shows up in a list. --}}
+            @if ($item->best_before || $freezerName || $drawerName)
                 <p class="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-frost-500">
-                    {{-- The category is a tag, not a place - hence its own colour. --}}
-                    @if ($item->category)
-                        <span class="badge badge-ok">{{ $item->categoryLabel() }}</span>
-                    @endif
-
                     @if ($item->best_before)
                         <span class="badge {{ $item->stateBadgeClass() }}">{{ $item->stateLabel() }}</span>
                         <span>{{ $item->bestBeforeLabel() }}</span>
@@ -47,21 +43,21 @@
         <div class="flex shrink-0 items-center gap-1">
             @unless ($confirming)
                 <button type="button" wire:click="confirmDelete({{ $item->id }})"
-                        class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Artikel löschen">
+                        class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400" aria-label="{{ __('items.delete_aria') }}">
                     <x-icon name="trash" class="h-4 w-4" />
                 </button>
             @endunless
 
             <div class="flex items-center rounded-control bg-frost-100">
                 <button type="button" wire:click="decrementQuantity({{ $item->id }})"
-                        class="btn btn-ghost btn-icon" aria-label="Menge verringern">
+                        class="btn btn-ghost btn-icon" aria-label="{{ __('items.decrease_aria') }}">
                     <x-icon name="minus" class="h-4 w-4" />
                 </button>
 
                 <span class="min-w-6 text-center text-sm font-semibold text-frost-900">{{ $item->quantity }}</span>
 
                 <button type="button" wire:click="incrementQuantity({{ $item->id }})"
-                        class="btn btn-ghost btn-icon" aria-label="Menge erhöhen">
+                        class="btn btn-ghost btn-icon" aria-label="{{ __('items.increase_aria') }}">
                     <x-icon name="plus" class="h-4 w-4" />
                 </button>
             </div>
@@ -70,21 +66,21 @@
 
     @if ($confirming)
         <div class="mt-2 flex flex-wrap items-center gap-2 border-t border-frost-100 pt-2">
-            <p class="min-w-0 flex-1 text-sm font-medium text-frost-700">Möchtest du „{{ $item->name }}“ wirklich löschen?</p>
+            <p class="min-w-0 flex-1 text-sm font-medium text-frost-700">{{ __('items.confirm_delete', ['name' => $item->name]) }}</p>
 
             <div class="flex gap-2">
                 <button type="button" wire:click="deleteItem({{ $item->id }})" class="btn btn-danger">
                     <x-icon name="trash" class="h-4 w-4" />
-                    Löschen
+                    {{ __('common.delete') }}
                 </button>
 
-                <button type="button" wire:click="cancelDelete" class="btn btn-ghost">Abbrechen</button>
+                <button type="button" wire:click="cancelDelete" class="btn btn-ghost">{{ __('common.cancel') }}</button>
             </div>
         </div>
     @elseif ($editable)
         <div class="mt-2 flex items-center justify-end gap-1 border-t border-frost-100 pt-2">
             <button type="button" wire:click="startEditingItem({{ $item->id }})"
-                    class="btn btn-ghost btn-icon" aria-label="Artikel bearbeiten">
+                    class="btn btn-ghost btn-icon" aria-label="{{ __('items.edit_aria') }}">
                 <x-icon name="pencil" class="h-4 w-4" />
             </button>
         </div>

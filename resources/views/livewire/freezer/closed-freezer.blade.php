@@ -10,9 +10,12 @@
                 <h2 class="text-lg font-bold text-frost-900">{{ $freezer->name }}</h2>
                 <p class="mt-1 text-sm text-frost-500">
                     @if ($itemCount === 0)
-                        Hier ist noch nichts eingefroren.
+                        {{ __('freezer.empty') }}
                     @else
-                        {{ $itemCount }} Artikel in {{ $drawers->count() }} Schubladen
+                        {{ __('freezer.summary', [
+                            'items' => trans_choice('common.items', $itemCount),
+                            'drawers' => trans_choice('common.drawers', $drawers->count()),
+                        ]) }}
                     @endif
                 </p>
             </div>
@@ -22,16 +25,16 @@
     {{-- All freezers of the household: switch between them, rename them and add new ones --}}
     <section class="card p-1">
         <div class="flex items-center gap-2 px-3 pb-1 pt-3">
-            <h3 class="text-sm font-semibold text-frost-700">Meine Gefrierschränke</h3>
+            <h3 class="text-sm font-semibold text-frost-700">{{ __('freezer.mine') }}</h3>
 
             @if ($addingFreezer)
                 <button type="button" wire:click="cancelAddingFreezer" class="btn btn-ghost btn-icon ml-auto"
-                        aria-label="Anlegen abbrechen">
+                        aria-label="{{ __('freezer.add_cancel_aria') }}">
                     <x-icon name="close" class="h-5 w-5" />
                 </button>
             @else
                 <button type="button" wire:click="startAddingFreezer" class="btn btn-ghost btn-icon ml-auto"
-                        aria-label="Gefrierschrank hinzufügen">
+                        aria-label="{{ __('freezer.add_aria') }}">
                     <x-icon name="plus" class="h-5 w-5" />
                 </button>
             @endif
@@ -41,9 +44,9 @@
             {{-- Another freezer, e.g. the chest freezer in the cellar --}}
             <form wire:submit="addFreezer" class="space-y-3 p-3" wire:key="new-freezer">
                 <div>
-                    <label class="label" for="newFreezerName">Neuer Gefrierschrank</label>
+                    <label class="label" for="newFreezerName">{{ __('freezer.new_label') }}</label>
                     <input id="newFreezerName" type="text" wire:model="newFreezerName"
-                           wire:keydown.escape="cancelAddingFreezer" placeholder="z. B. Truhe im Keller"
+                           wire:keydown.escape="cancelAddingFreezer" placeholder="{{ __('freezer.new_placeholder') }}"
                            class="input @error('newFreezerName') input-error @enderror">
                     @error('newFreezerName')
                         <p class="field-error">{{ $message }}</p>
@@ -53,9 +56,9 @@
                 <div class="flex gap-2">
                     <button type="submit" class="btn btn-primary flex-1">
                         <x-icon name="check" class="h-5 w-5" />
-                        Anlegen
+                        {{ __('common.create') }}
                     </button>
-                    <button type="button" wire:click="cancelAddingFreezer" class="btn btn-ghost">Abbrechen</button>
+                    <button type="button" wire:click="cancelAddingFreezer" class="btn btn-ghost">{{ __('common.cancel') }}</button>
                 </div>
             </form>
         @endif
@@ -65,7 +68,7 @@
                 <form wire:submit="renameFreezer" class="space-y-3 p-3"
                       wire:key="rename-freezer-{{ $option->id }}">
                     <div>
-                        <label class="label" for="editingFreezerName">Name des Gefrierschranks</label>
+                        <label class="label" for="editingFreezerName">{{ __('freezer.rename_label') }}</label>
                         <input id="editingFreezerName" type="text" wire:model="editingFreezerName"
                                wire:keydown.escape="cancelRenaming"
                                class="input @error('editingFreezerName') input-error @enderror">
@@ -77,9 +80,9 @@
                     <div class="flex gap-2">
                         <button type="submit" class="btn btn-primary flex-1">
                             <x-icon name="check" class="h-5 w-5" />
-                            Speichern
+                            {{ __('common.save') }}
                         </button>
-                        <button type="button" wire:click="cancelRenaming" class="btn btn-ghost">Abbrechen</button>
+                        <button type="button" wire:click="cancelRenaming" class="btn btn-ghost">{{ __('common.cancel') }}</button>
                     </div>
                 </form>
             @else
@@ -93,9 +96,9 @@
                         <span class="min-w-0 flex-1">
                             <span class="block truncate text-sm font-semibold text-frost-900">{{ $option->name }}</span>
                             <span class="block text-xs text-frost-500">
-                                {{ $option->isOwnedBy(auth()->user()) ? 'Dein Gefrierschrank' : 'Mit dir geteilt' }}
+                                {{ $option->isOwnedBy(auth()->user()) ? __('freezer.owned') : __('freezer.shared') }}
                                 @if ($option->is($freezer))
-                                    · aktiv
+                                    · {{ __('freezer.active') }}
                                 @endif
                             </span>
                         </span>
@@ -107,23 +110,23 @@
 
                     @if ($option->isOwnedBy(auth()->user()))
                         <button type="button" wire:click="startRenaming({{ $option->id }})"
-                                class="btn btn-ghost btn-icon" aria-label="Gefrierschrank umbenennen">
+                                class="btn btn-ghost btn-icon" aria-label="{{ __('freezer.rename_aria') }}">
                             <x-icon name="pencil" class="h-5 w-5" />
                         </button>
 
                         <button type="button"
                                 wire:click="$dispatch('confirm-dialog', { name: 'freezer-delete-{{ $option->id }}' })"
-                                class="btn btn-ghost btn-icon text-red-600 dark:text-red-400"
-                                aria-label="Gefrierschrank löschen">
+                                class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400"
+                                aria-label="{{ __('freezer.delete_aria') }}">
                             <x-icon name="trash" class="h-5 w-5" />
                         </button>
 
                         <x-confirm-dialog
                             :name="'freezer-delete-'.$option->id"
-                            title="Gefrierschrank löschen?"
-                            :message="'„'.$option->name.'“ verschwindet mit allen Schubladen und Artikeln für immer.'"
+                            :title="__('freezer.delete_confirm_title')"
+                            :message="__('freezer.delete_confirm_message', ['name' => $option->name])"
                             :action="'deleteFreezer('.$option->id.')'"
-                            confirm-label="Endgültig löschen" />
+                            :confirm-label="__('common.delete_forever')" />
                     @endif
                 </div>
             @endif
@@ -132,7 +135,7 @@
 
     @if ($drawers->isNotEmpty())
         <section class="space-y-2">
-            <h3 class="px-1 text-sm font-semibold text-frost-700">Schubladen</h3>
+            <h3 class="px-1 text-sm font-semibold text-frost-700">{{ __('freezer.drawers_heading') }}</h3>
 
             @foreach ($drawers as $drawer)
                 @php
@@ -147,7 +150,7 @@
 
                     <span class="min-w-0 flex-1">
                         <span class="block truncate text-sm font-semibold text-frost-900">{{ $drawer->name }}</span>
-                        <span class="block text-xs text-frost-500">{{ $stats['items'] }} Artikel</span>
+                        <span class="block text-xs text-frost-500">{{ trans_choice('common.items', $stats['items']) }}</span>
                     </span>
 
                     @if ($stats['warnings'] > 0)
@@ -164,6 +167,6 @@
          opened to look something up far more often than it is rearranged. --}}
     <a href="{{ route('freezer.open') }}" wire:navigate class="btn btn-primary w-full">
         <x-icon name="pencil" class="h-5 w-5" />
-        Schubladen bearbeiten
+        {{ __('freezer.manage_drawers') }}
     </a>
 </div>

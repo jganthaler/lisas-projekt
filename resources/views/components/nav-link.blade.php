@@ -1,7 +1,7 @@
 @props(['href', 'label', 'icon', 'badge' => 0, 'active' => false])
 
 <a href="{{ $href }}" wire:navigate @if ($active) aria-current="page" @endif
-   @if ($badge > 0) aria-label="{{ $label }}, {{ $badge }} Artikel prüfen" @endif class="bottom-nav-link">
+   @if ($badge > 0) aria-label="{{ __('nav.badge_aria', ['label' => $label, 'count' => $badge]) }}" @endif class="bottom-nav-link">
     <span class="relative">
         <x-icon :name="$icon" class="h-6 w-6" />
 

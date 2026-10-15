@@ -17,7 +17,7 @@ use Livewire\Component;
  * otherwise the form could be used to find out who is registered here.
  */
 #[Layout('layouts.auth')]
-#[Title('Passwort vergessen')]
+#[Title('auth.forgot.title')]
 class ForgotPassword extends Component
 {
     public string $email = '';
@@ -38,7 +38,7 @@ class ForgotPassword extends Component
         $this->sent = false;
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
-            $this->addError('email', 'Zu viele Anfragen. Bitte versuche es in einer Minute erneut.');
+            $this->addError('email', __('auth.forgot.throttled'));
 
             return;
         }
@@ -50,7 +50,7 @@ class ForgotPassword extends Component
         // Only a request that came in too fast is turned down - the broker
         // throttles per account, everything else gets the same answer.
         if ($status === Password::RESET_THROTTLED) {
-            $this->addError('email', 'Es wurde gerade schon ein Link angefordert. Bitte warte eine Minute.');
+            $this->addError('email', __('auth.forgot.already_requested'));
 
             return;
         }

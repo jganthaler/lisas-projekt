@@ -192,19 +192,6 @@ class InventoryOverviewTest extends TestCase
             ->assertSeeHtml('wire:click="filterByCategory(\''.InventoryItem::CATEGORY_OBST.'\')"');
     }
 
-    /**
-     * One button drops everything at once - the search text included. It only
-     * appears while something is actually filtered.
-     */
-    public function test_the_filter_panel_offers_to_clear_every_filter(): void
-    {
-        $this->page()
-            ->call('toggleFilters')
-            ->assertDontSee('Alle Filter löschen')
-            ->set('search', 'brot')
-            ->assertSee('Alle Filter löschen');
-    }
-
     public function test_a_foreign_freezer_cannot_be_filtered(): void
     {
         $foreign = Freezer::factory()->withDrawers(1)->create();

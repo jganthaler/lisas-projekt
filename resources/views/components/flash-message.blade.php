@@ -6,7 +6,7 @@
 @endif
 
 @if (session('error'))
-    <div class="mb-4 flex items-start gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+    <div class="mb-4 flex items-start gap-2 rounded-2xl bg-danger-50 px-4 py-3 text-sm font-medium text-danger-700 dark:bg-danger-950 dark:text-danger-300">
         <x-icon name="alert" class="mt-0.5 h-4 w-4 shrink-0" />
         <span>{{ session('error') }}</span>
     </div>

@@ -34,7 +34,8 @@ class InventoryItem extends Model
     /*
      | The categories an item may be assigned to. The slug is what is stored and
      | filtered with, the label is what the interface shows - so an umlaut never
-     | has to travel through the database.
+     | has to travel through the database. The labels come from the translation
+     | files (lang/<language>/items.php), so every language sees its own words.
      */
     public const CATEGORY_FLEISCH = 'fleisch';
 
@@ -99,12 +100,12 @@ class InventoryItem extends Model
     public static function categoryLabels(): array
     {
         return [
-            self::CATEGORY_FLEISCH => 'Fleisch',
-            self::CATEGORY_FISCH => 'Fisch',
-            self::CATEGORY_GEMUESE => 'Gemüse',
-            self::CATEGORY_SUPPE => 'Suppe',
-            self::CATEGORY_OBST => 'Obst',
-            self::CATEGORY_SONSTIGES => 'Sonstiges',
+            self::CATEGORY_FLEISCH => __('items.categories.fleisch'),
+            self::CATEGORY_FISCH => __('items.categories.fisch'),
+            self::CATEGORY_GEMUESE => __('items.categories.gemuese'),
+            self::CATEGORY_SUPPE => __('items.categories.suppe'),
+            self::CATEGORY_OBST => __('items.categories.obst'),
+            self::CATEGORY_SONSTIGES => __('items.categories.sonstiges'),
         ];
     }
 
@@ -237,12 +238,12 @@ class InventoryItem extends Model
         $days = $this->daysUntilBestBefore();
 
         return match (true) {
-            $days === null => 'kein MHD',
-            $days < -1 => 'MHD vor '.abs($days).' Tagen',
-            $days === -1 => 'MHD seit gestern',
-            $days === 0 => 'MHD heute',
-            $days === 1 => 'MHD morgen',
-            default => 'MHD in '.$days.' Tagen',
+            $days === null => __('items.mhd.none'),
+            $days < -1 => __('items.mhd.days_ago', ['count' => abs($days)]),
+            $days === -1 => __('items.mhd.yesterday'),
+            $days === 0 => __('items.mhd.today'),
+            $days === 1 => __('items.mhd.tomorrow'),
+            default => __('items.mhd.in_days', ['count' => $days]),
         };
     }
 
@@ -262,10 +263,10 @@ class InventoryItem extends Model
     public function stateLabel(): string
     {
         return match ($this->state()) {
-            self::STATE_EXPIRED => 'abgelaufen',
-            self::STATE_SOON => 'bald abgelaufen',
-            self::STATE_FRESH => 'frisch',
-            default => 'ohne MHD',
+            self::STATE_EXPIRED => __('items.state.expired'),
+            self::STATE_SOON => __('items.state.soon'),
+            self::STATE_FRESH => __('items.state.fresh'),
+            default => __('items.state.unknown'),
         };
     }
 }

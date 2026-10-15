@@ -11,12 +11,12 @@
 <div class="space-y-4">
     <div class="flex items-end justify-between gap-3">
         <div class="min-w-0">
-            <h2 class="text-base font-bold text-frost-900">Inventar</h2>
+            <h2 class="text-base font-bold text-frost-900">{{ __('inventory.title') }}</h2>
             <p class="truncate text-xs text-frost-500">
-                {{ $selectedFreezer?->name ?? ($freezers->count() === 1 ? $freezers->first()?->name : 'Alle Gefrierschränke') }}
+                {{ $selectedFreezer?->name ?? ($freezers->count() === 1 ? $freezers->first()?->name : __('inventory.all_freezers')) }}
             </p>
         </div>
-        <span class="badge badge-neutral">{{ $totalCount }} Artikel</span>
+        <span class="badge badge-neutral">{{ trans_choice('common.items', $totalCount) }}</span>
     </div>
 
     <x-notice :message="$itemFeedback" />
@@ -25,14 +25,14 @@
         <div class="flex gap-2">
             <div class="relative min-w-0 flex-1">
                 <x-icon name="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-frost-400" />
-                <input type="search" wire:model.live.debounce.300ms="search" placeholder="Artikel suchen …"
-                       class="input pl-9" aria-label="Artikel suchen">
+                <input type="search" wire:model.live.debounce.300ms="search" placeholder="{{ __('inventory.search_placeholder') }}"
+                       class="input pl-9" aria-label="{{ __('inventory.search_aria') }}">
             </div>
 
             {{-- The freezer filter hides behind this button. --}}
             <button type="button" wire:click="toggleFilters"
                     class="btn btn-secondary btn-icon relative shrink-0"
-                    aria-label="Filter" aria-expanded="{{ $showFilters ? 'true' : 'false' }}">
+                    aria-label="{{ __('inventory.filter_aria') }}" aria-expanded="{{ $showFilters ? 'true' : 'false' }}">
                 <x-icon name="filter" class="h-5 w-5" />
 
                 @if ($hasFilterSelection)
@@ -44,23 +44,23 @@
         @if ($showFilters)
             <div class="space-y-3 border-t border-frost-100 pt-3">
                 <div class="flex items-center justify-between gap-2">
-                    <h3 class="text-sm font-semibold text-frost-700">Filter</h3>
+                    <h3 class="text-sm font-semibold text-frost-700">{{ __('inventory.filter') }}</h3>
 
                     @if ($hasFilterSelection)
                         <button type="button" wire:click="clearFilterSelection"
                                 class="text-xs font-semibold text-brand-700 underline-offset-2 hover:underline dark:text-brand-400">
-                            Filter zurücksetzen
+                            {{ __('inventory.reset_filters') }}
                         </button>
                     @endif
                 </div>
 
                 @if ($showFreezerFilter)
                     <div>
-                        <p class="label">Gefrierschrank</p>
+                        <p class="label">{{ __('nav.freezer') }}</p>
                         <div class="flex flex-wrap gap-1.5">
                             <button type="button" wire:click="filterByFreezer('')"
                                     class="badge rounded-control px-3 py-1.5 {{ $selectedFreezer === null ? 'badge-ok' : 'badge-neutral' }}">
-                                Alle Gefrierschränke
+                                {{ __('inventory.all_freezers') }}
                             </button>
 
                             @foreach ($freezers as $option)
@@ -72,17 +72,17 @@
                         </div>
                     </div>
                 @else
-                    <p class="text-sm text-frost-500">Nur ein Gefrierschrank – nach der Kategorie kannst du trotzdem filtern.</p>
+                    <p class="text-sm text-frost-500">{{ __('inventory.single_freezer') }}</p>
                 @endif
 
                 {{-- The category filter is always available, no matter how many
                      freezers the household has. --}}
                 <div>
-                    <p class="label">Kategorie</p>
+                    <p class="label">{{ __('common.category') }}</p>
                     <div class="flex flex-wrap gap-1.5">
                         <button type="button" wire:click="filterByCategory('')"
                                 class="badge rounded-control px-3 py-1.5 {{ $selectedCategory === null ? 'badge-ok' : 'badge-neutral' }}">
-                            Alle Kategorien
+                            {{ __('inventory.all_categories') }}
                         </button>
 
                         @foreach ($categories as $value => $label)
@@ -93,16 +93,6 @@
                         @endforeach
                     </div>
                 </div>
-
-                {{-- Drops everything at once: the search text, the freezer and the
-                     category. The link above only clears the two selections and
-                     keeps what was searched for. --}}
-                @if ($isFiltered)
-                    <button type="button" wire:click="clearFilters" class="btn btn-secondary w-full">
-                        <x-icon name="close" class="h-4 w-4" />
-                        Alle Filter löschen
-                    </button>
-                @endif
             </div>
         @endif
     </div>
@@ -111,15 +101,8 @@
         <div class="card px-4 py-10 text-center">
             <x-icon name="snowflake" class="mx-auto h-8 w-8 text-frost-300" />
             <p class="mt-2 text-sm font-medium text-frost-700">
-                {{ $isFiltered ? 'Dazu wurde nichts gefunden.' : 'Das Inventar ist noch leer.' }}
+                {{ $isFiltered ? __('inventory.nothing_found') : __('inventory.empty') }}
             </p>
-
-            @if ($isFiltered)
-                <button type="button" wire:click="clearFilters" class="btn btn-secondary mt-3">
-                    <x-icon name="close" class="h-4 w-4" />
-                    Alle Filter löschen
-                </button>
-            @endif
         </div>
     @else
         <div class="space-y-2">

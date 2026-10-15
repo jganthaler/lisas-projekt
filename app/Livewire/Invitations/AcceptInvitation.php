@@ -14,7 +14,7 @@ use Livewire\Component;
  * the component itself only works with the (locked) invitation id afterwards.
  */
 #[Layout('layouts.app')]
-#[Title('Einladung')]
+#[Title('invitations.title')]
 class AcceptInvitation extends Component
 {
     #[Locked]
@@ -37,14 +37,14 @@ class AcceptInvitation extends Component
 
         // accept() locks the row, so the same link can never be used twice.
         if ($invitation === null || ! $invitation->accept(auth()->user())) {
-            $this->error = 'Diese Einladung ist nicht mehr gültig. Bitte lasse dir einen neuen Link schicken.';
+            $this->error = __('invitations.invalid');
 
             return;
         }
 
         FreezerContext::select($invitation->freezer);
 
-        session()->flash('status', 'Du bist jetzt Mitglied von "'.$invitation->freezer->name.'".');
+        session()->flash('status', __('invitations.accepted', ['name' => $invitation->freezer->name]));
 
         $this->redirectRoute('freezer.closed', navigate: true);
     }

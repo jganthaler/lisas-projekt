@@ -18,7 +18,7 @@ use Livewire\Component;
  * urgent item comes first; every row names the freezer it sits in.
  */
 #[Layout('layouts.app')]
-#[Title('MHD-Warnungen')]
+#[Title('expiring.title')]
 class ExpiringItems extends Component
 {
     use InteractsWithItems;

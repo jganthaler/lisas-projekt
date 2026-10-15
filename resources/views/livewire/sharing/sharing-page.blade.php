@@ -1,6 +1,6 @@
 <div class="space-y-4">
     <div>
-        <h2 class="text-base font-bold text-frost-900">Teilen</h2>
+        <h2 class="text-base font-bold text-frost-900">{{ __('sharing.title') }}</h2>
         <p class="text-xs text-frost-500">{{ $freezer->name }}</p>
     </div>
 
@@ -17,7 +17,7 @@
     {{-- Switch between all freezers the user has access to --}}
     @if ($freezers->count() > 1)
         <section class="card p-1">
-            <h3 class="px-3 pb-1 pt-3 text-sm font-semibold text-frost-700">Meine Gefrierschränke</h3>
+            <h3 class="px-3 pb-1 pt-3 text-sm font-semibold text-frost-700">{{ __('freezer.mine') }}</h3>
 
             @foreach ($freezers as $option)
                 <button type="button" wire:click="selectFreezer({{ $option->id }})"
@@ -30,7 +30,7 @@
                     <span class="min-w-0 flex-1">
                         <span class="block truncate text-sm font-semibold text-frost-900">{{ $option->name }}</span>
                         <span class="block text-xs text-frost-500">
-                            {{ $option->isOwnedBy(auth()->user()) ? 'Dein Gefrierschrank' : 'Mit dir geteilt' }}
+                            {{ $option->isOwnedBy(auth()->user()) ? __('freezer.owned') : __('freezer.shared') }}
                         </span>
                     </span>
 
@@ -42,47 +42,25 @@
         </section>
     @endif
 
-    {{-- Name of the freezer --}}
-    @if ($isOwner)
-        <form wire:submit="renameFreezer" class="card space-y-3 p-4">
-            <h3 class="text-sm font-semibold text-frost-900">Name</h3>
-
-            <div>
-                <label class="label" for="freezerName">Gefrierschrank heißt</label>
-                <input id="freezerName" type="text" wire:model="freezerName"
-                       class="input @error('freezerName') input-error @enderror">
-                @error('freezerName')
-                    <p class="field-error">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <button type="submit" class="btn btn-secondary w-full">
-                <x-icon name="check" class="h-5 w-5" />
-                Namen speichern
-            </button>
-        </form>
-    @endif
-
     {{-- Invite somebody new --}}
     @if ($isOwner)
         <section class="card space-y-3 p-4">
             <div>
-                <h3 class="text-sm font-semibold text-frost-900">Person einladen</h3>
+                <h3 class="text-sm font-semibold text-frost-900">{{ __('sharing.invite_heading') }}</h3>
                 <p class="mt-1 text-xs text-frost-500">
-                    Erstelle einen Link und schicke ihn weiter. Der Link gilt
-                    {{ \App\Models\Invitation::VALID_DAYS }} Tage und kann genau einmal verwendet werden.
+                    {{ __('sharing.invite_hint', ['days' => \App\Models\Invitation::VALID_DAYS]) }}
                 </p>
             </div>
 
             <button type="button" wire:click="createInvitation" class="btn btn-primary w-full"
                     wire:loading.attr="disabled" wire:target="createInvitation">
                 <x-icon name="link" class="h-5 w-5" />
-                Einladungslink erstellen
+                {{ __('sharing.create_link') }}
             </button>
 
             @if ($inviteLink)
                 <div x-data="{ state: 'idle', link: @js($inviteLink) }" class="space-y-2">
-                    <label class="label" for="inviteLink">Einladungslink</label>
+                    <label class="label" for="inviteLink">{{ __('sharing.link_label') }}</label>
 
                     <div class="flex gap-2">
                         <input id="inviteLink" type="text" readonly value="{{ $inviteLink }}"
@@ -111,15 +89,15 @@
                             <x-icon name="copy" class="h-4 w-4" x-show="state !== 'copied'" />
                             <x-icon name="check" class="h-4 w-4" x-cloak x-show="state === 'copied'" />
 
-                            <span x-show="state === 'idle'">Kopieren</span>
-                            <span x-cloak x-show="state === 'busy'">Einen Moment …</span>
-                            <span x-cloak x-show="state === 'copied'">Kopiert</span>
-                            <span x-cloak x-show="state === 'failed'">Bitte markieren</span>
+                            <span x-show="state === 'idle'">{{ __('common.copy') }}</span>
+                            <span x-cloak x-show="state === 'busy'">{{ __('common.busy') }}</span>
+                            <span x-cloak x-show="state === 'copied'">{{ __('common.copied') }}</span>
+                            <span x-cloak x-show="state === 'failed'">{{ __('common.copy_failed') }}</span>
                         </button>
                     </div>
 
-                    <p class="text-xs text-amber-700 dark:text-amber-300">
-                        Der Link wird nur jetzt angezeigt – er ist nirgendwo gespeichert.
+                    <p class="text-xs text-warning-700 dark:text-warning-300">
+                        {{ __('sharing.link_hint') }}
                     </p>
                 </div>
             @endif
@@ -129,7 +107,7 @@
     {{-- Members --}}
     <section class="card p-4">
         <h3 class="text-sm font-semibold text-frost-900">
-            Wer hat Zugriff
+            {{ __('sharing.members_heading') }}
             <span class="badge badge-neutral ml-1">{{ $memberships->count() }}</span>
         </h3>
 
@@ -140,7 +118,7 @@
 
                     <div class="min-w-0 flex-1">
                         <p class="truncate text-sm font-semibold text-frost-900">
-                            {{ $membership->user?->displayName() ?? 'Unbekannt' }}
+                            {{ $membership->user?->displayName() ?? __('common.unknown') }}
                         </p>
                         <p class="truncate text-xs text-frost-500">
                             {{ $membership->user?->email }}
@@ -148,23 +126,23 @@
                     </div>
 
                     @if ($membership->isOwner())
-                        <span class="badge badge-ok">Besitzer</span>
+                        <span class="badge badge-ok">{{ __('sharing.owner') }}</span>
                     @elseif ($isOwner)
                         <button type="button"
                                 wire:click="$dispatch('confirm-dialog', { name: 'member-remove-{{ $membership->id }}' })"
-                                class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Mitglied entfernen">
+                                class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400" aria-label="{{ __('sharing.remove_member_aria') }}">
                             <x-icon name="close" class="h-5 w-5" />
                         </button>
 
                         <x-confirm-dialog
                             :name="'member-remove-'.$membership->id"
-                            title="Zugriff entziehen?"
-                            :message="'„'.($membership->user?->displayName() ?? 'Diese Person').'“ kann den Gefrierschrank danach nicht mehr sehen.'"
+                            :title="__('sharing.revoke_title')"
+                            :message="__('sharing.revoke_message', ['name' => $membership->user?->displayName() ?? __('common.this_person')])"
                             :action="'removeMember('.$membership->user_id.')'"
-                            confirm-label="Entziehen"
+                            :confirm-label="__('sharing.revoke_confirm')"
                             icon="close" />
                     @else
-                        <span class="badge badge-neutral">Mitglied</span>
+                        <span class="badge badge-neutral">{{ __('sharing.member') }}</span>
                     @endif
                 </div>
             @endforeach
@@ -174,7 +152,7 @@
     {{-- Open invitations --}}
     @if ($isOwner && $openInvitations->isNotEmpty())
         <section class="card p-4">
-            <h3 class="text-sm font-semibold text-frost-900">Offene Einladungen</h3>
+            <h3 class="text-sm font-semibold text-frost-900">{{ __('sharing.open_invitations') }}</h3>
 
             <div class="mt-2 divide-y divide-frost-100">
                 @foreach ($openInvitations as $invitation)
@@ -185,23 +163,23 @@
 
                         <div class="min-w-0 flex-1">
                             <p class="truncate text-sm font-medium text-frost-900">
-                                Gültig bis {{ $invitation->expires_at?->translatedFormat('d.m.Y, H:i') }}
+                                {{ __('sharing.valid_until', ['date' => $invitation->expires_at?->translatedFormat('d.m.Y, H:i')]) }}
                             </p>
-                            <p class="truncate text-xs text-frost-500">Noch nicht verwendet</p>
+                            <p class="truncate text-xs text-frost-500">{{ __('sharing.not_used') }}</p>
                         </div>
 
                         <button type="button"
                                 wire:click="$dispatch('confirm-dialog', { name: 'invitation-revoke-{{ $invitation->id }}' })"
-                                class="btn btn-ghost btn-icon text-red-600 dark:text-red-400" aria-label="Einladung zurückziehen">
+                                class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400" aria-label="{{ __('sharing.revoke_invitation_aria') }}">
                             <x-icon name="trash" class="h-5 w-5" />
                         </button>
 
                         <x-confirm-dialog
                             :name="'invitation-revoke-'.$invitation->id"
-                            title="Einladung zurückziehen?"
-                            message="Der Link funktioniert danach nicht mehr."
+                            :title="__('sharing.revoke_invitation_title')"
+                            :message="__('sharing.revoke_invitation_message')"
                             :action="'revokeInvitation('.$invitation->id.')'"
-                            confirm-label="Zurückziehen" />
+                            :confirm-label="__('sharing.revoke_invitation_confirm')" />
                     </div>
                 @endforeach
             </div>
@@ -210,44 +188,44 @@
 
     {{-- Leaving or deleting --}}
     <section class="card space-y-3 p-4">
-        <h3 class="text-sm font-semibold text-frost-900">Aufräumen</h3>
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('sharing.cleanup') }}</h3>
 
         @if ($isOwner)
             <p class="text-xs text-frost-500">
-                Beim Löschen verschwinden der Gefrierschrank, alle Schubladen und alle Artikel für immer.
+                {{ __('sharing.delete_hint') }}
             </p>
 
             <button type="button"
                     wire:click="$dispatch('confirm-dialog', { name: 'freezer-delete' })"
                     class="btn btn-danger w-full">
                 <x-icon name="trash" class="h-5 w-5" />
-                Gefrierschrank löschen
+                {{ __('sharing.delete_freezer') }}
             </button>
 
             <x-confirm-dialog
                 name="freezer-delete"
-                title="Gefrierschrank löschen?"
-                :message="'„'.$freezer->name.'“ verschwindet mit allen Schubladen und Artikeln für immer.'"
+                :title="__('freezer.delete_confirm_title')"
+                :message="__('freezer.delete_confirm_message', ['name' => $freezer->name])"
                 action="deleteFreezer"
-                confirm-label="Endgültig löschen" />
+                :confirm-label="__('common.delete_forever')" />
         @else
             <p class="text-xs text-frost-500">
-                Du kannst den Gefrierschrank jederzeit verlassen – dein Zugriff wird dann entfernt.
+                {{ __('sharing.leave_hint') }}
             </p>
 
             <button type="button"
                     wire:click="$dispatch('confirm-dialog', { name: 'freezer-leave' })"
                     class="btn btn-danger w-full">
                 <x-icon name="logout" class="h-5 w-5" />
-                Gefrierschrank verlassen
+                {{ __('sharing.leave_freezer') }}
             </button>
 
             <x-confirm-dialog
                 name="freezer-leave"
-                title="Gefrierschrank verlassen?"
-                :message="'Dein Zugriff auf „'.$freezer->name.'“ wird entfernt. Die Artikel bleiben für die anderen erhalten.'"
+                :title="__('sharing.leave_title')"
+                :message="__('sharing.leave_message', ['name' => $freezer->name])"
                 action="leaveFreezer"
-                confirm-label="Verlassen"
+                :confirm-label="__('sharing.leave_confirm')"
                 icon="logout" />
         @endif
     </section>

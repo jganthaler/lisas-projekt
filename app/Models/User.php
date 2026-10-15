@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Support\Locales;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Translation\HasLocalePreference;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,10 +21,13 @@ use Illuminate\Support\Str;
  * The account of the app. The e-mail address has to be confirmed before the
  * freezer can be used - the signed link of the verification mail is handled by
  * App\Http\Controllers\VerifyEmailController.
+ *
+ * The language the user picked in the profile lives on the account as well, so
+ * that pages and mails can be written in it (see App\Support\Locales).
  */
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'locale'])]
 #[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable implements MustVerifyEmail
+class User extends Authenticatable implements HasLocalePreference, MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -38,6 +43,29 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * The language this user picked in the profile. An account without a valid
+     * choice - a guest, a fresh registration, an old row - gets the default of
+     * the app.
+     */
+    public function localeOrDefault(): string
+    {
+        $locale = (string) $this->locale;
+
+        return Locales::supports($locale) ? $locale : Locales::default();
+    }
+
+    /**
+     * The language Laravel uses for the notifications of this user: the
+     * NotificationSender renders a notification inside the locale of its
+     * recipient and asks for it through this interface, so the verification
+     * and reset mails are written in the language of the account.
+     */
+    public function preferredLocale(): string
+    {
+        return $this->localeOrDefault();
     }
 
     /**
@@ -153,9 +181,20 @@ class User extends Authenticatable implements MustVerifyEmail
 
     /**
      * URL of the uploaded profile picture, null when none was uploaded yet.
+     *
+     * The version in the query is derived from the stored path, which changes
+     * with every upload: without it the browser would keep showing the old
+     * picture, because /avatars/{user} is cached for an hour.
      */
     public function avatarUrl(): ?string
     {
-        return $this->hasAvatar() ? route('avatars.show', $this) : null;
+        if (! $this->hasAvatar()) {
+            return null;
+        }
+
+        return route('avatars.show', [
+            'user' => $this,
+            'v' => Str::substr(md5((string) $this->avatar_path), 0, 8),
+        ]);
     }
 }

@@ -1,20 +1,21 @@
 <div class="space-y-4">
     <div>
-        <h2 class="text-base font-bold text-frost-900">Profil</h2>
-        <p class="text-xs text-frost-500">Deine Angaben und dein Profilbild</p>
+        <h2 class="text-base font-bold text-frost-900">{{ __('profile.title') }}</h2>
+        <p class="text-xs text-frost-500">{{ __('profile.subtitle') }}</p>
     </div>
 
     <x-notice :message="$feedback" />
 
-    {{-- Avatar --}}
-    <form wire:submit="saveAvatar" class="card space-y-3 p-4">
-        <h3 class="text-sm font-semibold text-frost-900">Profilbild</h3>
+    {{-- Avatar: the chosen image is uploaded and stored right away, so there is
+         no save button - picking another image simply replaces the current one. --}}
+    <section class="card space-y-3 p-4">
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.avatar') }}</h3>
 
         <div class="flex items-center gap-4">
             {{-- Only previewable uploads may call temporaryUrl(), a rejected file
                  (for example a PDF) would break the whole page otherwise. --}}
             @if ($avatar && $avatar->isPreviewable())
-                <img src="{{ $avatar->temporaryUrl() }}" alt="Vorschau"
+                <img src="{{ $avatar->temporaryUrl() }}" alt="{{ __('profile.avatar_preview') }}"
                      class="h-16 w-16 shrink-0 rounded-full object-cover ring-2 ring-brand-200">
             @else
                 <x-avatar :user="$user" size="h-16 w-16" />
@@ -23,7 +24,7 @@
             <div class="min-w-0 flex-1">
                 <label class="btn btn-secondary w-full cursor-pointer" for="avatar">
                     <x-icon name="camera" class="h-4 w-4" />
-                    Bild auswählen
+                    {{ __('profile.choose_image') }}
                 </label>
                 <input id="avatar" type="file" wire:model="avatar" accept="image/*" class="sr-only">
 
@@ -31,41 +32,56 @@
                     <p class="field-error">{{ $message }}</p>
                 @enderror
 
-                <p class="mt-1.5 text-xs text-frost-500">JPG, PNG oder WebP · maximal 2 MB</p>
+                <p class="mt-1.5 text-xs text-frost-500">
+                    <span wire:loading.remove wire:target="avatar">{{ __('profile.image_hint') }}</span>
+                    <span wire:loading wire:target="avatar">{{ __('profile.uploading') }}</span>
+                </p>
             </div>
         </div>
 
-        <div class="flex gap-2">
-            <button type="submit" class="btn btn-primary flex-1"
-                    wire:loading.attr="disabled" wire:target="avatar,saveAvatar">
-                <span wire:loading.remove wire:target="avatar,saveAvatar">Bild speichern</span>
-                <span wire:loading wire:target="avatar,saveAvatar">Wird hochgeladen …</span>
+        @if ($user?->hasAvatar())
+            <button type="button"
+                    wire:click="$dispatch('confirm-dialog', { name: 'avatar-remove' })"
+                    class="btn btn-ghost w-full">
+                <x-icon name="trash" class="h-5 w-5" />
+                {{ __('common.remove') }}
             </button>
 
-            @if ($user->hasAvatar())
-                <button type="button"
-                        wire:click="$dispatch('confirm-dialog', { name: 'avatar-remove' })"
-                        class="btn btn-ghost">
-                    <x-icon name="trash" class="h-5 w-5" />
-                    Entfernen
-                </button>
+            <x-confirm-dialog
+                name="avatar-remove"
+                :title="__('profile.remove_avatar_title')"
+                :message="__('profile.remove_avatar_message')"
+                action="removeAvatar"
+                :confirm-label="__('common.remove')" />
+        @endif
+    </section>
 
-                <x-confirm-dialog
-                    name="avatar-remove"
-                    title="Profilbild entfernen?"
-                    message="Dein Bild wird gelöscht – danach sind wieder deine Initialen zu sehen."
-                    action="removeAvatar"
-                    confirm-label="Entfernen" />
-            @endif
+    {{-- Language of the app: every choice is stored right away, so the answer
+         comes back in the new language without another tap. --}}
+    <section class="card space-y-3 p-4">
+        <div>
+            <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.language_heading') }}</h3>
+            <p class="mt-1 text-xs text-frost-500">{{ __('profile.language_hint') }}</p>
         </div>
-    </form>
+
+        <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('profile.language_heading') }}">
+            @foreach ($languages as $code => $label)
+                <button type="button" wire:click="setLocale('{{ $code }}')" role="radio"
+                        wire:key="locale-{{ $code }}"
+                        aria-checked="{{ $locale === $code ? 'true' : 'false' }}"
+                        class="badge rounded-control px-3 py-1.5 {{ $locale === $code ? 'badge-ok' : 'badge-neutral' }}">
+                    {{ $label }}
+                </button>
+            @endforeach
+        </div>
+    </section>
 
     {{-- Name and e-mail --}}
     <form wire:submit="updateProfile" class="card space-y-3 p-4">
-        <h3 class="text-sm font-semibold text-frost-900">Angaben</h3>
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.details') }}</h3>
 
         <div>
-            <label class="label" for="name">Name</label>
+            <label class="label" for="name">{{ __('common.name') }}</label>
             <input id="name" type="text" wire:model="name" autocomplete="name"
                    class="input @error('name') input-error @enderror">
             @error('name')
@@ -74,7 +90,7 @@
         </div>
 
         <div>
-            <label class="label" for="email">E-Mail</label>
+            <label class="label" for="email">{{ __('common.email') }}</label>
             <input id="email" type="email" wire:model="email" autocomplete="email" inputmode="email"
                    class="input @error('email') input-error @enderror">
             @error('email')
@@ -84,16 +100,16 @@
 
         <button type="submit" class="btn btn-secondary w-full" wire:loading.attr="disabled" wire:target="updateProfile">
             <x-icon name="check" class="h-5 w-5" />
-            Speichern
+            {{ __('common.save') }}
         </button>
     </form>
 
     {{-- Password --}}
     <form wire:submit="updatePassword" class="card space-y-3 p-4">
-        <h3 class="text-sm font-semibold text-frost-900">Passwort ändern</h3>
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.password_heading') }}</h3>
 
         <div>
-            <label class="label" for="currentPassword">Aktuelles Passwort</label>
+            <label class="label" for="currentPassword">{{ __('profile.current_password') }}</label>
             <input id="currentPassword" type="password" wire:model="currentPassword" autocomplete="current-password"
                    class="input @error('currentPassword') input-error @enderror">
             @error('currentPassword')
@@ -102,7 +118,7 @@
         </div>
 
         <div>
-            <label class="label" for="newPassword">Neues Passwort</label>
+            <label class="label" for="newPassword">{{ __('profile.new_password') }}</label>
             <input id="newPassword" type="password" wire:model="newPassword" autocomplete="new-password"
                    class="input @error('newPassword') input-error @enderror">
             @error('newPassword')
@@ -111,16 +127,69 @@
         </div>
 
         <div>
-            <label class="label" for="newPassword_confirmation">Neues Passwort wiederholen</label>
+            <label class="label" for="newPassword_confirmation">{{ __('profile.password_confirmation') }}</label>
             <input id="newPassword_confirmation" type="password" wire:model="newPassword_confirmation"
                    autocomplete="new-password" class="input">
         </div>
 
         <button type="submit" class="btn btn-secondary w-full" wire:loading.attr="disabled" wire:target="updatePassword">
             <x-icon name="check" class="h-5 w-5" />
-            Passwort ändern
+            {{ __('profile.password_heading') }}
         </button>
     </form>
+
+    {{-- Rechtliches: Impressum, Datenschutzerklärung und Nutzungsbedingungen.
+         Sie liegen außerhalb der App, weil sie auch ohne Konto lesbar sein
+         müssen (siehe App\Http\Controllers\LegalController). --}}
+    <section class="card space-y-2 p-4">
+        <div>
+            <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.legal_heading') }}</h3>
+            <p class="mt-1 text-xs text-frost-500">{{ __('profile.legal_hint') }}</p>
+        </div>
+
+        <div class="flex flex-col">
+            @foreach (['legal.imprint' => 'imprint', 'legal.privacy' => 'privacy', 'legal.terms' => 'terms'] as $route => $document)
+                <a href="{{ route($route) }}"
+                   class="flex items-center gap-2 rounded-control px-1 py-2 text-sm font-medium text-frost-700 hover:text-brand-700 dark:hover:text-brand-400">
+                    <x-icon name="chevron-right" class="h-4 w-4 text-frost-400" />
+                    {{ __('legal.'.$document.'.title') }}
+                </a>
+            @endforeach
+        </div>
+    </section>
+
+    {{-- Das Konto löschen: Art. 17 DSGVO verlangt, dass das ohne Umweg über den
+         Anbieter möglich ist. Das Passwort wird erneut verlangt, weil eine
+         übernommene Sitzung sonst ausreichen würde. --}}
+    <section class="card space-y-3 p-4">
+        <div>
+            <h3 class="text-sm font-semibold text-danger-700 dark:text-danger-300">{{ __('profile.delete_heading') }}</h3>
+            <p class="mt-1 text-xs text-frost-500">{{ __('profile.delete_hint') }}</p>
+        </div>
+
+        <div>
+            <label class="label" for="deletePassword">{{ __('profile.delete_password') }}</label>
+            <input id="deletePassword" type="password" wire:model="deletePassword" autocomplete="current-password"
+                   class="input @error('deletePassword') input-error @enderror">
+            @error('deletePassword')
+                <p class="field-error">{{ $message }}</p>
+            @enderror
+        </div>
+
+        <button type="button"
+                wire:click="$dispatch('confirm-dialog', { name: 'account-delete' })"
+                class="btn btn-danger w-full">
+            <x-icon name="trash" class="h-5 w-5" />
+            {{ __('profile.delete_button') }}
+        </button>
+
+        <x-confirm-dialog
+            name="account-delete"
+            :title="__('profile.delete_confirm_title')"
+            :message="__('profile.delete_confirm_message')"
+            action="deleteAccount"
+            :confirm-label="__('profile.delete_button')" />
+    </section>
 
     {{-- Sign out --}}
     <form method="POST" action="{{ route('logout') }}">
@@ -128,7 +197,7 @@
 
         <button type="submit" class="btn btn-ghost w-full">
             <x-icon name="logout" class="h-5 w-5" />
-            Abmelden
+            {{ __('common.logout') }}
         </button>
     </form>
 </div>

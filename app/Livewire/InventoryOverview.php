@@ -20,7 +20,7 @@ use Livewire\Component;
  * stays uncluttered.
  */
 #[Layout('layouts.app')]
-#[Title('Inventar')]
+#[Title('inventory.title')]
 class InventoryOverview extends Component
 {
     use InteractsWithItems;

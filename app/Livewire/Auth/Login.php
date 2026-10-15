@@ -10,7 +10,7 @@ use Livewire\Attributes\Title;
 use Livewire\Component;
 
 #[Layout('layouts.auth')]
-#[Title('Anmelden')]
+#[Title('auth.login.title')]
 class Login extends Component
 {
     public string $email = '';
@@ -27,7 +27,7 @@ class Login extends Component
         ]);
 
         if (RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
-            $this->addError('email', 'Zu viele Anmeldeversuche. Bitte versuche es in einer Minute erneut.');
+            $this->addError('email', __('auth.login.throttled'));
 
             return;
         }
@@ -35,7 +35,7 @@ class Login extends Component
         if (! Auth::attempt($credentials, $this->remember)) {
             RateLimiter::hit($this->throttleKey(), 60);
 
-            $this->addError('email', 'E-Mail oder Passwort stimmen nicht.');
+            $this->addError('email', __('auth.login.failed'));
 
             return;
         }
