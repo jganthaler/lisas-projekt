@@ -94,7 +94,6 @@ class DrawerPage extends Component
         $this->editQuantity = (string) $item->quantity;
         $this->editBestBefore = $item->best_before?->format('Y-m-d') ?? '';
         $this->editCategory = $item->category ?? '';
-        $this->cancelDelete();
         $this->resetErrorBag();
     }
 

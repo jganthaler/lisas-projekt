@@ -31,7 +31,7 @@
             </h3>
 
             @foreach ($expired as $item)
-                <x-item-row :item="$item" :confirming="$confirmingItemId === $item->id"
+                <x-item-row :item="$item"
                             :freezer-name="$item->drawer?->freezer?->name"
                             :drawer-name="$item->drawer?->name" />
             @endforeach
@@ -47,7 +47,7 @@
             </h3>
 
             @foreach ($expiringSoon as $item)
-                <x-item-row :item="$item" :confirming="$confirmingItemId === $item->id"
+                <x-item-row :item="$item"
                             :freezer-name="$item->drawer?->freezer?->name"
                             :drawer-name="$item->drawer?->name" />
             @endforeach

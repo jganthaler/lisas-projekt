@@ -35,7 +35,21 @@
                 <x-notice :message="$error" variant="error" class="mt-4" />
             @endif
 
-            @if ($alreadyMember || $invitation->isUsable())
+            @if ($alreadyMember)
+                {{-- Wer schon Mitglied ist, wird nur in den Gefrierschrank
+                     gebracht: der Link bleibt dabei offen für die eingeladene
+                     Person (siehe AcceptInvitation::accept()). --}}
+                <div class="mt-6 space-y-2">
+                    <button type="button" wire:click="accept" class="btn btn-primary w-full">
+                        <x-icon name="freezer" class="h-5 w-5" />
+                        {{ __('invitations.open_freezer') }}
+                    </button>
+
+                    <button type="button" wire:click="decline" class="btn btn-ghost w-full">
+                        {{ __('invitations.later') }}
+                    </button>
+                </div>
+            @elseif ($invitation->isUsable())
                 <div class="mt-6 space-y-2">
                     <button type="button" wire:click="accept" class="btn btn-primary w-full">
                         <x-icon name="check" class="h-5 w-5" />

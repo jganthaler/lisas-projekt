@@ -13,7 +13,8 @@ return [
     'edit_aria' => 'Edit item',
     'increase_aria' => 'Increase quantity',
     'decrease_aria' => 'Decrease quantity',
-    'confirm_delete' => 'Do you really want to delete “:name”?',
+    'delete_confirm_title' => 'Delete item?',
+    'delete_confirm_message' => 'Do you really want to delete “:name”?',
     'deleted' => 'Item deleted.',
 
     'state' => [
@@ -37,6 +38,7 @@ return [
         'fisch' => 'Fish',
         'gemuese' => 'Vegetables',
         'suppe' => 'Soup',
+        'sosse' => 'Sauces',
         'obst' => 'Fruit',
         'sonstiges' => 'Other',
     ],

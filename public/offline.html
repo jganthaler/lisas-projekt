@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#0d8280">
+    <meta name="robots" content="noindex">
+    <title>Keine Verbindung · Coolventory</title>
+
+    <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
+    <link rel="apple-touch-icon" sizes="512x512" href="/favicon.png">
+
+    <style>
+        /*
+         | The offline page of the app, answered by the service worker
+         | (public/sw.js) for a navigation without network. It carries its own
+         | styles and script, because it has to stand on its own: neither the
+         | CSS of the app nor the server is available here.
+         |
+         | The colours are the ones of resources/css/app.css (frost and brand),
+         | and the dark scheme follows the very same rule as the app: only the
+         | saved choice switches, never the setting of the operating system.
+         */
+        :root {
+            --page: #eff1f2;       /* frost-100 */
+            --surface: #ffffff;    /* surface */
+            --text: #1c2226;       /* frost-900 */
+            --muted: #636d74;      /* frost-500 */
+            --brand: #0d8280;      /* brand-600, the colour of the manifest */
+            --brand-dark: #0a6664; /* brand-700 */
+        }
+
+        .dark {
+            --page: #151a1e;
+            --surface: #1b2226;
+            --text: #f0f3f4;
+            --muted: #99a2a8;
+            --brand-dark: #0d8280;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem calc(1rem + env(safe-area-inset-right, 0px))
+                calc(1.5rem + env(safe-area-inset-bottom, 0px))
+                calc(1rem + env(safe-area-inset-left, 0px));
+            background-color: var(--page);
+            color: var(--text);
+            font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+            line-height: 1.5;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        main {
+            width: 100%;
+            max-width: 24rem;
+            padding: 1.5rem;
+            border-radius: 1.25rem;
+            background-color: var(--surface);
+            box-shadow: 0 1px 2px rgb(28 34 38 / 0.05), 0 10px 24px -14px rgb(28 34 38 / 0.18);
+            text-align: center;
+        }
+
+        img {
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+        }
+
+        h1 {
+            margin: 1rem 0 0;
+            font-size: 1.125rem;
+            font-weight: 700;
+        }
+
+        p {
+            margin: 0.5rem 0 0;
+            font-size: 0.875rem;
+            color: var(--muted);
+        }
+
+        .hint {
+            font-size: 0.75rem;
+        }
+
+        a {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 1.25rem;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            background-color: var(--brand);
+            color: #fff;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        a:hover {
+            background-color: var(--brand-dark);
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <img src="/favicon.png" alt="Coolventory" width="96" height="96">
+
+        <h1 data-text="title">Keine Verbindung</h1>
+
+        <p data-text="text">
+            Coolventory lädt deine Gefrierschränke vom Server. Sobald du wieder online bist, geht es hier weiter.
+        </p>
+
+        <a href="/" data-retry data-text="retry">Erneut versuchen</a>
+
+        <p class="hint" data-text="hint">
+            Die App zeigt bewusst keine zwischengespeicherten Artikel – das MHD wäre sonst nicht mehr verlässlich.
+        </p>
+    </main>
+
+    <script>
+        /*
+         | The offline page speaks the language of the app: resources/js/app.js
+         | writes the language of the last page into "app-locale", and the
+         | browser tells us its own when nothing was chosen yet. The three
+         | languages are the three languages of the app (App\Support\Locales);
+         | German is the default, exactly like in the app itself.
+         */
+        (function () {
+            var TEXT = {
+                de: {
+                    title: 'Keine Verbindung',
+                    text: 'Coolventory lädt deine Gefrierschränke vom Server. Sobald du wieder online bist, geht es hier weiter.',
+                    retry: 'Erneut versuchen',
+                    hint: 'Die App zeigt bewusst keine zwischengespeicherten Artikel – das MHD wäre sonst nicht mehr verlässlich.',
+                },
+                it: {
+                    title: 'Nessuna connessione',
+                    text: 'Coolventory carica i tuoi congelatori dal server. Appena torni online, si prosegue qui.',
+                    retry: 'Riprova',
+                    hint: "L'app non mostra di proposito articoli salvati: la scadenza non sarebbe più affidabile.",
+                },
+                en: {
+                    title: 'No connection',
+                    text: 'Coolventory loads your freezers from the server. As soon as you are back online, it continues here.',
+                    retry: 'Try again',
+                    hint: 'The app deliberately shows no cached items – the best before date would not be reliable any more.',
+                },
+            };
+
+            function read(key) {
+                try {
+                    return localStorage.getItem(key);
+                } catch (error) {
+                    // Storage is blocked (private mode) - the browser decides.
+                    return null;
+                }
+            }
+
+            function language() {
+                var stored = read('app-locale');
+
+                if (stored !== null && TEXT[stored] !== undefined) {
+                    return stored;
+                }
+
+                var browser = (navigator.language || '').slice(0, 2).toLowerCase();
+
+                return TEXT[browser] !== undefined ? browser : 'de';
+            }
+
+            var locale = language();
+            var texts = TEXT[locale];
+
+            document.documentElement.lang = locale;
+            document.title = texts.title + ' · Coolventory';
+
+            var slots = document.querySelectorAll('[data-text]');
+
+            for (var i = 0; i < slots.length; i++) {
+                var key = slots[i].getAttribute('data-text');
+
+                if (texts[key] !== undefined) {
+                    slots[i].textContent = texts[key];
+                }
+            }
+
+            // The link leads to the app on its own, so a page without script
+            // keeps working; with script it simply loads the page that was
+            // asked for once more.
+            var retry = document.querySelector('[data-retry]');
+
+            if (retry !== null) {
+                retry.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    location.reload();
+                });
+            }
+
+            // The very same rule as in components/theme-script.blade.php: only
+            // the saved choice switches to the dark scheme.
+            if (read('color-scheme') === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</body>
+</html>

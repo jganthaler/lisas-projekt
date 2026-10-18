@@ -13,7 +13,8 @@ return [
     'edit_aria' => 'Artikel bearbeiten',
     'increase_aria' => 'Menge erhöhen',
     'decrease_aria' => 'Menge verringern',
-    'confirm_delete' => 'Möchtest du „:name“ wirklich löschen?',
+    'delete_confirm_title' => 'Artikel löschen?',
+    'delete_confirm_message' => 'Möchtest du „:name“ wirklich löschen?',
     'deleted' => 'Artikel gelöscht.',
 
     'state' => [
@@ -37,6 +38,7 @@ return [
         'fisch' => 'Fisch',
         'gemuese' => 'Gemüse',
         'suppe' => 'Suppe',
+        'sosse' => 'Soßen',
         'obst' => 'Obst',
         'sonstiges' => 'Sonstiges',
     ],

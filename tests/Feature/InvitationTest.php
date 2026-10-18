@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Invitations\AcceptInvitation;
+use App\Livewire\Sharing\SharingPage;
 use App\Models\Freezer;
 use App\Models\FreezerMembership;
 use App\Models\Invitation;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Support\FreezerContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -28,6 +30,23 @@ class InvitationTest extends TestCase
         ['token' => $token] = Invitation::issue($freezer, $owner);
 
         return [$freezer, $owner, $token];
+    }
+
+    /**
+     * Create a link the way the sharing page does and return the plain token
+     * out of it. Every call hands out a fresh link - that is the only way to
+     * invite more than one person.
+     */
+    private function linkOf(User $owner): string
+    {
+        $link = Livewire::actingAs($owner)
+            ->test(SharingPage::class)
+            ->call('createInvitation')
+            ->get('inviteLink');
+
+        $this->assertIsString($link);
+
+        return Str::afterLast($link, '/');
     }
 
     public function test_an_invited_user_becomes_a_member(): void
@@ -91,6 +110,49 @@ class InvitationTest extends TestCase
 
         $this->assertFalse($second->isMemberOf($freezer));
         $this->assertSame(2, $freezer->memberships()->count());
+    }
+
+    /**
+     * The rule behind the sharing page: one link brings in exactly one person.
+     * Whoever wants to invite a second person needs a second link.
+     */
+    public function test_two_people_need_two_links(): void
+    {
+        $owner = User::factory()->create();
+        $freezer = Freezer::factory()->withDrawers(1)->create(['owner_id' => $owner->getKey()]);
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+
+        // The owner creates one link per person.
+        $firstToken = $this->linkOf($owner);
+        $secondToken = $this->linkOf($owner);
+
+        $this->assertNotSame($firstToken, $secondToken);
+
+        Livewire::actingAs($first)
+            ->test(AcceptInvitation::class, ['token' => $firstToken])
+            ->call('accept')
+            ->assertRedirect(route('freezer.closed'));
+
+        $this->assertTrue($first->isMemberOf($freezer));
+
+        // The second person gets nothing out of the used link ...
+        Livewire::actingAs($second)
+            ->test(AcceptInvitation::class, ['token' => $firstToken])
+            ->call('accept')
+            ->assertSet('error', 'Diese Einladung ist nicht mehr gültig. Bitte lasse dir einen neuen Link schicken.')
+            ->assertNoRedirect();
+
+        $this->assertFalse($second->isMemberOf($freezer));
+
+        // ... only the second link brings them in.
+        Livewire::actingAs($second)
+            ->test(AcceptInvitation::class, ['token' => $secondToken])
+            ->call('accept')
+            ->assertRedirect(route('freezer.closed'));
+
+        $this->assertTrue($second->isMemberOf($freezer));
+        $this->assertSame(3, $freezer->memberships()->count());
     }
 
     public function test_an_invitation_link_is_only_valid_for_seven_days(): void
@@ -172,6 +234,78 @@ class InvitationTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_a_used_link_points_the_next_person_to_a_new_one(): void
+    {
+        [, , $token] = $this->invite();
+        $first = User::factory()->create();
+        $second = User::factory()->create();
+
+        Livewire::actingAs($first)
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('accept');
+
+        // The next person sees a used invitation and no way to join with it.
+        $this->actingAs($second)
+            ->get(route('invitations.accept', ['token' => $token]))
+            ->assertOk()
+            ->assertSee('bereits verwendet')
+            ->assertDontSee('Einladung annehmen');
+    }
+
+    public function test_a_member_looking_at_the_link_does_not_use_it_up(): void
+    {
+        [$freezer, $owner, $token] = $this->invite();
+        $guest = User::factory()->create();
+
+        // The owner has a look at the link before passing it on: that must not
+        // burn it, otherwise the invited person would find it already used.
+        Livewire::actingAs($owner)
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('accept')
+            ->assertRedirect(route('freezer.closed'));
+
+        $this->assertNull(Invitation::query()->firstOrFail()->accepted_at);
+
+        // The invited person still joins with that very link.
+        Livewire::actingAs($guest)
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('accept')
+            ->assertRedirect(route('freezer.closed'));
+
+        $invitation = Invitation::query()->firstOrFail();
+
+        $this->assertTrue($guest->isMemberOf($freezer));
+        $this->assertNotNull($invitation->accepted_at);
+        $this->assertSame($guest->getKey(), $invitation->accepted_by_user_id);
+    }
+
+    public function test_a_member_clicking_a_used_link_is_just_taken_to_the_freezer(): void
+    {
+        [$freezer, $owner, $token] = $this->invite();
+        $member = User::factory()->create();
+
+        $freezer->memberships()->create([
+            'user_id' => $member->getKey(),
+            'role' => FreezerMembership::ROLE_MEMBER,
+        ]);
+
+        // Somebody else has used the link up already.
+        Livewire::actingAs(User::factory()->create())
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('accept');
+
+        // The member is not greeted with an error but simply lands in the
+        // freezer - the membership is already there.
+        Livewire::actingAs($member)
+            ->test(AcceptInvitation::class, ['token' => $token])
+            ->call('accept')
+            ->assertSet('error', null)
+            ->assertRedirect(route('freezer.closed'));
+
+        $this->assertSame($freezer->getKey(), FreezerContext::id());
+        $this->assertSame(FreezerMembership::ROLE_MEMBER, $member->roleIn($freezer));
+    }
+
     public function test_a_member_sees_that_they_already_have_access(): void
     {
         [$freezer, $owner, $token] = $this->invite();
@@ -185,6 +319,9 @@ class InvitationTest extends TestCase
         $this->actingAs($member)
             ->get(route('invitations.accept', ['token' => $token]))
             ->assertOk()
-            ->assertSee('Du bist hier schon Mitglied');
+            ->assertSee('Du bist hier schon Mitglied')
+            // No invitation to accept: the link only leads into the freezer.
+            ->assertSee('Zum Gefrierschrank')
+            ->assertDontSee('Einladung annehmen');
     }
 }

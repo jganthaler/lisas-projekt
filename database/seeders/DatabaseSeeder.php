@@ -45,6 +45,7 @@ class DatabaseSeeder extends Seeder
                 ['Hackfleisch', 2, 30, InventoryItem::CATEGORY_FLEISCH],
                 ['Lachs', 2, 60, InventoryItem::CATEGORY_FISCH],
                 ['Suppe', 4, 0, InventoryItem::CATEGORY_SUPPE],
+                ['Tomatensoße', 2, 90, InventoryItem::CATEGORY_SOSSE],
                 ['Beeren', 1, null, InventoryItem::CATEGORY_OBST],
             ],
             'Schublade 3' => [

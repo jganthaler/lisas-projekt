@@ -7,6 +7,12 @@
     <meta name="theme-color" content="#0d8280">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    {{-- Der Name unter dem Icon auf dem Startbildschirm. Neuere Versionen von
+         iOS lesen ihn aus dem Manifest (public/manifest.json), ältere kennen
+         nur diese Angabe. --}}
+    <meta name="apple-mobile-web-app-title" content="Coolventory">
+
+    <x-app-icons />
 
     <title>{{ isset($title) ? __($title).' · '.config('app.name') : config('app.name') }}</title>
 

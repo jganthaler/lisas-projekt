@@ -14,6 +14,7 @@ return [
     'heading' => 'Invitation to “:name”',
     'body' => ':name wants to share the freezer with you.',
     'already_member' => 'You are already a member here',
+    'open_freezer' => 'To the freezer',
     'accept' => 'Accept the invitation',
     'later' => 'Later',
     'unusable' => 'This invitation is :state. Please ask for a new link.',
@@ -21,4 +22,5 @@ return [
     'state_used' => 'already used',
     'invalid' => 'This invitation is not valid any more. Please ask for a new link.',
     'accepted' => 'You are now a member of “:name”.',
+    'already_member_status' => 'You are already a member of “:name”.',
 ];

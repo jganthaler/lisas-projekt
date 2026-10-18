@@ -45,6 +45,8 @@ class InventoryItem extends Model
 
     public const CATEGORY_SUPPE = 'suppe';
 
+    public const CATEGORY_SOSSE = 'sosse';
+
     public const CATEGORY_OBST = 'obst';
 
     public const CATEGORY_SONSTIGES = 'sonstiges';
@@ -104,6 +106,7 @@ class InventoryItem extends Model
             self::CATEGORY_FISCH => __('items.categories.fisch'),
             self::CATEGORY_GEMUESE => __('items.categories.gemuese'),
             self::CATEGORY_SUPPE => __('items.categories.suppe'),
+            self::CATEGORY_SOSSE => __('items.categories.sosse'),
             self::CATEGORY_OBST => __('items.categories.obst'),
             self::CATEGORY_SONSTIGES => __('items.categories.sonstiges'),
         ];

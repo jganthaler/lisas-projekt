@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Tests\TestCase;
 
 class ProfileTest extends TestCase
@@ -28,15 +29,63 @@ class ProfileTest extends TestCase
         return Livewire::actingAs($user)->test(ProfilePage::class);
     }
 
+    /** The bytes of a real (1x1) PNG - see png(). */
+    private function pngBytes(): string
+    {
+        return base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==');
+    }
+
     /**
      * A real (1x1) PNG: the "image" rule checks the content of the file, and
      * unlike UploadedFile::fake()->image() this needs no GD extension.
      */
     private function png(string $name): UploadedFile
     {
-        $png = base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFAAH/q842iQAAAABJRU5ErkJggg==');
+        return UploadedFile::fake()->createWithContent($name, $this->pngBytes());
+    }
 
-        return UploadedFile::fake()->createWithContent($name, $png);
+    /**
+     * A photo the way a camera produces it - stripes, so that the file really
+     * holds a few hundred kilobytes. Needs the GD extension; the tests that
+     * use it say so (see App\Support\AvatarImage).
+     */
+    private function jpeg(string $name, int $width, int $height): UploadedFile
+    {
+        $image = imagecreatetruecolor($width, $height);
+
+        for ($x = 0; $x < $width; $x += 8) {
+            $colour = imagecolorallocate($image, $x % 256, ($x * 5) % 256, ($x * 11) % 256);
+            imagefilledrectangle($image, $x, 0, $x + 7, $height, $colour);
+        }
+
+        ob_start();
+        imagejpeg($image, null, 95);
+        $contents = (string) ob_get_clean();
+
+        return UploadedFile::fake()->createWithContent($name, $contents);
+    }
+
+    /**
+     * A picture with transparent corners, the way a cut-out photo arrives: The
+     * corners have to stay transparent, otherwise they would sit in the round
+     * avatar as dark edges.
+     */
+    private function transparentPng(string $name, int $size): UploadedFile
+    {
+        $image = imagecreatetruecolor($size, $size);
+
+        imagealphablending($image, false);
+        imagesavealpha($image, true);
+        imagefill($image, 0, 0, imagecolorallocatealpha($image, 0, 0, 0, 127));
+
+        imagealphablending($image, true);
+        imagefilledellipse($image, (int) ($size / 2), (int) ($size / 2), (int) ($size / 1.5), (int) ($size / 1.5), imagecolorallocate($image, 200, 60, 60));
+
+        ob_start();
+        imagepng($image);
+        $contents = (string) ob_get_clean();
+
+        return UploadedFile::fake()->createWithContent($name, $contents);
     }
 
     public function test_the_profile_is_prefilled_with_the_current_user(): void
@@ -218,6 +267,136 @@ class ProfileTest extends TestCase
         $this->page($user)
             ->set('avatar', UploadedFile::fake()->create('notizen.pdf', 20, 'application/pdf'))
             ->assertHasErrors('avatar');
+
+        $this->assertFalse($user->refresh()->hasAvatar());
+    }
+
+    /**
+     * Ein Bild, das schon klein genug ist, wird nicht angefasst: Neu-Kodieren
+     * würde nur Qualität kosten.
+     */
+    public function test_a_picture_that_already_fits_is_stored_unchanged(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->page($user)->set('avatar', $this->png('klein.png'))->assertHasNoErrors();
+
+        $path = $user->refresh()->avatar_path;
+
+        $this->assertStringEndsWith('.png', $path);
+        $this->assertSame($this->pngBytes(), Storage::disk('local')->get($path));
+    }
+
+    /**
+     * Ein Foto vom Handy: 1600 x 1200 Pixel und ein paar hundert Kilobyte. Der
+     * Avatar im Kopf ist 36 Pixel breit, das Profil zeigt ihn mit 64 - das Bild
+     * wird deshalb vor dem Speichern auf die Kantenlänge des Avatars gebracht.
+     */
+    #[RequiresPhpExtension('gd')]
+    public function test_a_large_picture_is_shrunk_before_it_is_stored(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+        $upload = $this->jpeg('handy.jpg', 1600, 1200);
+
+        $original = (string) file_get_contents((string) $upload->getRealPath());
+
+        $this->page($user)
+            ->set('avatar', $upload)
+            ->assertHasNoErrors()
+            ->assertSet('feedback', 'Profilbild gespeichert.');
+
+        $path = $user->refresh()->avatar_path;
+
+        Storage::disk('local')->assertExists($path);
+
+        // Ein JPEG bleibt ein JPEG - nur eben kleiner.
+        $this->assertStringEndsWith('.jpg', $path);
+
+        $stored = (string) Storage::disk('local')->get($path);
+        $size = getimagesizefromstring($stored);
+
+        $this->assertSame([512, 384], [$size[0], $size[1]]);
+        $this->assertLessThan(strlen($original), strlen($stored));
+    }
+
+    /**
+     * Ein freigestelltes Bild bleibt durchsichtig: Sonst säßen die Ecken im
+     * runden Avatar als schwarze Flecken.
+     */
+    #[RequiresPhpExtension('gd')]
+    public function test_a_transparent_picture_keeps_its_transparency(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->page($user)
+            ->set('avatar', $this->transparentPng('frei.png', 900))
+            ->assertHasNoErrors();
+
+        $path = $user->refresh()->avatar_path;
+
+        $this->assertStringEndsWith('.png', $path);
+
+        $stored = (string) Storage::disk('local')->get($path);
+
+        $this->assertSame(512, getimagesizefromstring($stored)[0]);
+
+        $image = imagecreatefromstring($stored);
+
+        // 127 ist die volle Durchsichtigkeit (0 wäre deckend).
+        $this->assertSame(127, (imagecolorat($image, 0, 0) >> 24) & 0x7F);
+    }
+
+    /**
+     * Die Grenze für den Upload liegt bei 10 MB. Darüber hilft auch das
+     * Verkleinern nicht mehr - dann kommt eine verständliche Meldung statt der
+     * Regel von Livewire.
+     */
+    public function test_a_picture_beyond_the_upload_limit_is_rejected(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        // Ein echtes PNG, das mit Nullen aufgefüllt ist: Die Prüfung der Größe
+        // greift, das Bild selbst bleibt lesbar.
+        $upload = UploadedFile::fake()->createWithContent(
+            'riesig.png',
+            $this->pngBytes().str_repeat("\0", 11 * 1024 * 1024)
+        );
+
+        $this->page($user)
+            ->set('avatar', $upload)
+            ->assertHasErrors(['avatar' => 'max'])
+            ->assertSee('Das Bild ist größer als 10 MB');
+
+        $this->assertFalse($user->refresh()->hasAvatar());
+    }
+
+    /**
+     * Ein GIF (oder ein HEIC vom iPhone) nimmt die App nicht an: Das Bild
+     * ließe sich nicht verkleinern und im Browser nicht anzeigen. Das
+     * accept-Attribut des Feldes sorgt dafür, dass die Auswahl erst gar nicht
+     * angeboten wird.
+     */
+    public function test_a_picture_in_a_foreign_format_is_rejected(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        // Ein echtes (1x1) GIF - die "image"-Regel von Laravel ließe es durch.
+        $gif = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+
+        $this->page($user)
+            ->set('avatar', UploadedFile::fake()->createWithContent('tanz.gif', $gif))
+            ->assertHasErrors(['avatar' => 'mimes'])
+            ->assertSee('Bitte wähle ein Bild im Format JPG, PNG oder WebP');
 
         $this->assertFalse($user->refresh()->hasAvatar());
     }

@@ -47,13 +47,19 @@ class SharingPage extends Component
         $this->redirectRoute('sharing.index', navigate: true);
     }
 
+    /**
+     * Make another freezer the active one. The page stays where it is - the
+     * sharing of the chosen freezer is what the user wants to see next - and is
+     * built again for it: members and invitations belong to the new freezer
+     * right away, and a link of the freezer before is gone.
+     */
     public function selectFreezer(int $freezerId): void
     {
         $freezer = auth()->user()->freezers()->whereKey($freezerId)->firstOrFail();
 
         FreezerContext::select($freezer);
 
-        $this->redirectRoute('freezer.closed', navigate: true);
+        $this->redirectRoute('sharing.index', navigate: true);
     }
 
     public function createInvitation(): void

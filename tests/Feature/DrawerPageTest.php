@@ -229,16 +229,20 @@ class DrawerPageTest extends TestCase
         $this->assertDatabaseMissing('inventory_items', ['id' => $item->getKey()]);
     }
 
-    public function test_deleting_an_item_asks_inside_the_row_first(): void
+    /**
+     * The question belongs to the dialog of the app: the trash button only opens
+     * it, the delete itself hangs on the confirm button inside it.
+     */
+    public function test_deleting_an_item_asks_in_the_dialog_first(): void
     {
         $item = InventoryItem::factory()->create([
             'drawer_id' => $this->drawer->getKey(),
             'name' => 'Erbsen',
         ]);
 
-        $page = $this->page()
-            ->call('confirmDelete', $item->getKey())
-            ->assertSet('confirmingItemId', $item->getKey())
+        $this->page()
+            ->assertSeeHtml("name: 'item-delete-".$item->getKey()."'")
+            ->assertSee('Artikel löschen?')
             ->assertSee('Möchtest du „Erbsen“ wirklich löschen?')
             ->assertSeeHtml('wire:click="deleteItem('.$item->getKey().')"')
             // The browser dialog must not come back.
@@ -246,25 +250,6 @@ class DrawerPageTest extends TestCase
 
         // Asking is not deleting.
         $this->assertDatabaseHas('inventory_items', ['id' => $item->getKey()]);
-
-        $page->call('cancelDelete')
-            ->assertSet('confirmingItemId', null)
-            ->assertDontSee('Möchtest du „Erbsen“ wirklich löschen?');
-
-        $this->assertDatabaseHas('inventory_items', ['id' => $item->getKey()]);
-    }
-
-    public function test_the_delete_question_can_be_answered_with_yes(): void
-    {
-        $item = InventoryItem::factory()->create(['drawer_id' => $this->drawer->getKey()]);
-
-        $this->page()
-            ->call('confirmDelete', $item->getKey())
-            ->call('deleteItem', $item->getKey())
-            ->assertSet('confirmingItemId', null)
-            ->assertSet('itemFeedback', 'Artikel gelöscht.');
-
-        $this->assertDatabaseMissing('inventory_items', ['id' => $item->getKey()]);
     }
 
     public function test_an_item_of_another_drawer_cannot_be_edited_through_this_page(): void
@@ -291,7 +276,6 @@ class DrawerPageTest extends TestCase
         // The quantity and delete actions work on the item id, therefore the
         // policy - not the drawer - is what keeps foreign items safe.
         $this->page()->call('deleteItem', $foreign->getKey())->assertForbidden();
-        $this->page()->call('confirmDelete', $foreign->getKey())->assertForbidden();
         $this->page()->call('incrementQuantity', $foreign->getKey())->assertForbidden();
 
         $this->assertDatabaseHas('inventory_items', ['id' => $foreign->getKey()]);

@@ -11,7 +11,7 @@ return [
     'avatar' => 'Immagine del profilo',
     'avatar_preview' => 'Anteprima',
     'choose_image' => 'Scegli un\'immagine',
-    'image_hint' => 'JPG, PNG o WebP · massimo 2 MB',
+    'image_hint' => 'JPG, PNG o WebP · fino a 10 MB, le immagini più grandi vengono ridotte',
     'uploading' => 'Caricamento …',
     'remove_avatar_title' => 'Rimuovere l\'immagine del profilo?',
     'remove_avatar_message' => 'La tua immagine viene eliminata – dopo torneranno visibili le tue iniziali.',
@@ -23,11 +23,21 @@ return [
     'language_heading' => 'Lingua',
     'language_hint' => 'Dopo la scelta l\'intera app viene mostrata in questa lingua.',
     'language_saved' => 'Lingua modificata.',
+
+    // L'app installata (PWA): la sezione sta subito sotto la lingua e compare
+    // solo quando il browser offre l'installazione o un iPhone ha bisogno del
+    // menu di condivisione (resources/js/app.js).
+    'install_heading' => 'Installa l\'app',
+    'install_hint' => 'Coolventory funziona anche dalla schermata Home – senza barra degli indirizzi e con l\'icona del fiocco di neve.',
+    'install_ios' => 'Tocca «Condividi» in basso, poi «Aggiungi alla schermata Home».',
+    'install_button' => 'Aggiungi alla schermata Home',
     'saved' => 'Profilo salvato.',
     'password_changed' => 'Password modificata.',
     'image_saved' => 'Immagine del profilo salvata.',
     'image_removed' => 'Immagine del profilo rimossa.',
     'image_failed' => 'Non è stato possibile salvare l\'immagine.',
+    'image_invalid' => 'Scegli un\'immagine in formato JPG, PNG o WebP.',
+    'image_too_large' => 'L\'immagine supera i 10 MB. Scegline una più piccola.',
 
     // Note legali: le pagine delle note legali, dell’informativa sulla privacy e
     // delle condizioni d’uso (resources/views/legal/*) e la cancellazione

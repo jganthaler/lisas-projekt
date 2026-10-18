@@ -26,7 +26,11 @@
                     <x-icon name="camera" class="h-4 w-4" />
                     {{ __('profile.choose_image') }}
                 </label>
-                <input id="avatar" type="file" wire:model="avatar" accept="image/*" class="sr-only">
+                {{-- accept: nur die Formate, die die App verkleinern und im
+                     Browser anzeigen kann - ein iPhone wandelt HEIC dabei
+                     selbst in JPEG um. --}}
+                <input id="avatar" type="file" wire:model="avatar"
+                       accept="image/jpeg,image/png,image/webp" class="sr-only">
 
                 @error('avatar')
                     <p class="field-error">{{ $message }}</p>
@@ -56,8 +60,10 @@
         @endif
     </section>
 
-    {{-- Language of the app: every choice is stored right away, so the answer
-         comes back in the new language without another tap. --}}
+    {{-- Sprache der App: jede Wahl wird sofort gespeichert und lädt die Seite
+         neu - Kopfzeile und untere Leiste liegen außerhalb dieser Komponente
+         und bleiben sonst in der alten Sprache stehen (siehe
+         ProfilePage::setLocale()). --}}
     <section class="card space-y-3 p-4">
         <div>
             <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.language_heading') }}</h3>
@@ -74,6 +80,26 @@
                 </button>
             @endforeach
         </div>
+    </section>
+
+    {{-- Die installierte App: Der Abschnitt bleibt verborgen, bis der Browser
+         die Installation anbietet (Chrome, Edge, Android) oder ein iPhone den
+         Umweg über das Teilen-Menü braucht - auf einem Rechner und in einer
+         schon installierten App erscheint er nie. wire:ignore, weil das
+         Ein- und Ausblenden Sache des Skripts ist (resources/js/app.js); die
+         Texte liegen in der Sprache, die die Seite geladen hat. --}}
+    <section class="card space-y-3 p-4" data-install-section hidden wire:ignore>
+        <div>
+            <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.install_heading') }}</h3>
+            <p class="mt-1 text-xs text-frost-500">{{ __('profile.install_hint') }}</p>
+        </div>
+
+        <p class="text-xs text-frost-500" data-install-ios hidden>{{ __('profile.install_ios') }}</p>
+
+        <button type="button" class="btn btn-secondary w-full" data-install-button hidden>
+            <x-icon name="install" class="h-5 w-5" />
+            {{ __('profile.install_button') }}
+        </button>
     </section>
 
     {{-- Name and e-mail --}}

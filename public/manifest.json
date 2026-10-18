@@ -1,0 +1,23 @@
+{
+    "name": "Coolventory",
+    "short_name": "Coolventory",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "theme_color": "#0d8280",
+    "background_color": "#0d8280",
+    "icons": [
+        {
+            "src": "/favicon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/favicon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ]
+}

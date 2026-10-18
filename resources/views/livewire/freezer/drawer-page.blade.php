@@ -127,7 +127,7 @@
                     </div>
                 </form>
             @else
-                <x-item-row :item="$item" :editable="true" :confirming="$confirmingItemId === $item->id" />
+                <x-item-row :item="$item" :editable="true" />
             @endif
         @empty
             <div class="card px-4 py-10 text-center">

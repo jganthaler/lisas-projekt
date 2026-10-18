@@ -1,12 +1,13 @@
-@props(['item', 'editable' => false, 'drawerName' => null, 'freezerName' => null, 'confirming' => false])
+@props(['item', 'editable' => false, 'drawerName' => null, 'freezerName' => null])
 
 {{--
  | One item of the inventory. The buttons call the actions of the surrounding
  | Livewire component (see App\Livewire\Concerns\InteractsWithItems), so the row
  | can be reused by the drawer, the inventory overview and the MHD list.
  |
- | Deleting never opens the dialog of the browser: the trash button only arms
- | the question, which then appears inside the row (see confirmDelete()).
+ | Deleting always asks through the dialog of the app (see
+ | components/confirm-dialog), never through the dialog of the browser: the trash
+ | button only opens it, and the answer travels with the button inside it.
 --}}
 <div class="card p-3" wire:key="item-{{ $item->id }}">
     <div class="flex items-start gap-2">
@@ -41,12 +42,11 @@
         </div>
 
         <div class="flex shrink-0 items-center gap-1">
-            @unless ($confirming)
-                <button type="button" wire:click="confirmDelete({{ $item->id }})"
-                        class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400" aria-label="{{ __('items.delete_aria') }}">
-                    <x-icon name="trash" class="h-4 w-4" />
-                </button>
-            @endunless
+            <button type="button"
+                    wire:click="$dispatch('confirm-dialog', { name: 'item-delete-{{ $item->id }}' })"
+                    class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400" aria-label="{{ __('items.delete_aria') }}">
+                <x-icon name="trash" class="h-4 w-4" />
+            </button>
 
             <div class="flex items-center rounded-control bg-frost-100">
                 <button type="button" wire:click="decrementQuantity({{ $item->id }})"
@@ -64,20 +64,7 @@
         </div>
     </div>
 
-    @if ($confirming)
-        <div class="mt-2 flex flex-wrap items-center gap-2 border-t border-frost-100 pt-2">
-            <p class="min-w-0 flex-1 text-sm font-medium text-frost-700">{{ __('items.confirm_delete', ['name' => $item->name]) }}</p>
-
-            <div class="flex gap-2">
-                <button type="button" wire:click="deleteItem({{ $item->id }})" class="btn btn-danger">
-                    <x-icon name="trash" class="h-4 w-4" />
-                    {{ __('common.delete') }}
-                </button>
-
-                <button type="button" wire:click="cancelDelete" class="btn btn-ghost">{{ __('common.cancel') }}</button>
-            </div>
-        </div>
-    @elseif ($editable)
+    @if ($editable)
         <div class="mt-2 flex items-center justify-end gap-1 border-t border-frost-100 pt-2">
             <button type="button" wire:click="startEditingItem({{ $item->id }})"
                     class="btn btn-ghost btn-icon" aria-label="{{ __('items.edit_aria') }}">
@@ -85,4 +72,12 @@
             </button>
         </div>
     @endif
+
+    {{-- The question of this row. Every row carries its own dialog; the name
+         keeps them apart (see components/confirm-dialog.blade.php). --}}
+    <x-confirm-dialog
+        :name="'item-delete-'.$item->id"
+        :title="__('items.delete_confirm_title')"
+        :message="__('items.delete_confirm_message', ['name' => $item->name])"
+        :action="'deleteItem('.$item->id.')'" />
 </div>

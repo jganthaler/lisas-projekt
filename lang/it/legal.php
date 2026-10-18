@@ -6,14 +6,19 @@
  |
  | I testi descrivono che cosa fa realmente questa applicazione: quali dati
  | vengono memorizzati, dove si trovano, quali servizi sono coinvolti e quale
- | cookie viene impostato. I dati del fornitore (e di hosting e posta) non
- | stanno qui ma in config/legal.php, che li legge dall’ambiente (LEGAL_*); i
- | segnaposto ":operator", ":hosting", ":mail_provider" e ":date" vengono
+ | cookie viene impostato. Il recapito (e i dati di hosting e posta) non
+ | sta qui ma in config/legal.php, che lo legge dall’ambiente (LEGAL_*); i
+ | segnaposto ":operator_email", ":hosting", ":mail_provider" e ":date" vengono
  | sostituiti da App\Support\Legal al momento del rendering.
  |
  | Ogni documento è fatto di "sections": un titolo, alcuni paragrafi e
  | facoltativamente un elenco. Così la struttura resta uguale nelle tre lingue
  | (resources/views/legal/*). I file tedeschi sono la fonte di verità.
+ |
+ | Il quadro giuridico è il diritto italiano: il fornitore ha sede in Italia.
+ | Accanto al GDPR i testi citano quindi le norme italiane (D.Lgs. 70/2003 per
+ | il servizio, D.Lgs. 196/2003 per i dati, Codice del Consumo e D.Lgs. 130/2015
+ | per il contratto e la composizione delle controversie).
  |
  | Questi testi sono modelli: coprono il caso abituale di un’applicazione
  | privata e gratuita per la famiglia e devono comunque essere verificati dal
@@ -25,38 +30,38 @@ return [
         'title' => 'Note legali',
         'heading' => 'Note legali',
         'intro' => 'Chi fornisce questa applicazione e come contattarlo.',
-        'provider_heading' => 'Informazioni ai sensi del § 5 DDG',
-        'provider_note' => ':app è un servizio privato e gratuito per gestire insieme i congelatori in famiglia. Non vengono venduti beni né servizi.',
+        'provider_heading' => 'Fornitore',
+        'provider_note' => ':app è un servizio privato e gratuito per gestire insieme i congelatori in famiglia. Non vengono venduti beni né servizi. Il fornitore ha sede in Italia; per le offerte private e non commerciali la legge italiana non richiede i dati del fornitore. Nome e indirizzo non vengono quindi pubblicati. È indicato soltanto l’indirizzo e-mail come recapito – come prevederebbero l’art. 7 del D.Lgs. 70/2003 e l’art. 49 del Codice del Consumo per un servizio commerciale.',
         'contact_heading' => 'Contatti',
         'email_label' => 'E-mail',
-        'phone_label' => 'Telefono',
-        'incomplete_heading' => 'Mancano i dati del fornitore',
-        'incomplete_body' => 'Questa pagina non è ancora completa: nella configurazione non sono indicati i dati del fornitore. Fino ad allora all’applicazione mancano le note legali richieste dalla legge. Vanno compilati i valori LEGAL_* di .env.example (vedi config/legal.php).',
+        'incomplete_heading' => 'Manca il recapito',
+        'incomplete_body' => 'Questa pagina non è ancora completa: nella configurazione manca l’indirizzo e-mail per i contatti. Fino ad allora nelle note legali manca un recapito. Va compilato LEGAL_OPERATOR_EMAIL nel file .env (vedi .env.example e config/legal.php).',
         'missing_heading' => 'Mancano:',
         'sections' => [
             [
                 'heading' => 'Responsabilità per i contenuti',
                 'body' => [
                     'I contenuti di questa applicazione nascono da ciò che inseriscono le persone che la usano: nomi, quantità e date di scadenza degli alimenti sono gestiti da loro. Non si fornisce alcuna garanzia sulla correttezza, completezza e attualità di queste indicazioni.',
-                    'In quanto fornitore di servizi non siamo obbligati a sorvegliare informazioni trasmesse o memorizzate di terzi né a ricercare circostanze che indichino un’attività illecita. Restano impregiudicati gli obblighi di rimuovere o bloccare informazioni previsti dalle leggi generali.',
+                    'In quanto prestatore di un servizio della società dell’informazione non abbiamo, ai sensi dell’art. 17 del D.Lgs. 70/2003, alcun obbligo generale di sorvegliare i contenuti memorizzati da chi usa l’applicazione né di ricercare circostanze che indichino un’attività illecita. Per i contenuti di terzi memorizzati non rispondiamo ai sensi dell’art. 16 del D.Lgs. 70/2003 finché non ne conosciamo l’illiceità; appena ne veniamo a conoscenza li rimuoviamo senza indugio.',
                 ],
             ],
             [
                 'heading' => 'Responsabilità per i link',
                 'body' => [
-                    'Questa applicazione non contiene link a contenuti di terzi. Se le persone che la usano rimandano a offerte altrui, ne rispondono esclusivamente i loro gestori.',
+                    'Questa applicazione non contiene link a contenuti di terzi.',
                 ],
             ],
             [
-                'heading' => 'Composizione delle controversie con i consumatori',
+                'heading' => 'Composizione delle controversie con i consumatori (ADR)',
                 'body' => [
-                    'Non siamo obbligati né disposti a partecipare a procedure di composizione delle controversie davanti a un organismo di conciliazione per i consumatori.',
+                    'L’applicazione è gratuita; non si conclude alcun contratto di vendita o di servizio. Non siamo obbligati né disposti a partecipare a una procedura stragiudiziale di composizione delle controversie ai sensi del D.Lgs. 130/2015 (ADR).',
+                    'Chi si ritiene leso può scrivere in qualsiasi momento al fornitore. Resta salva la via dei tribunali ordinari; competenti sono i giudici italiani secondo le regole generali (per i consumatori: art. 66-bis del Codice del Consumo).',
                 ],
             ],
             [
                 'heading' => 'Ambito di applicazione',
                 'body' => [
-                    'Queste note legali valgono per :app su :url.',
+                    'Queste note legali valgono per :app su :site.',
                 ],
             ],
         ],
@@ -67,7 +72,7 @@ return [
         'heading' => 'Informativa sulla privacy',
         'intro' => 'Quali dati memorizza :app, perché, per quanto tempo – e quali diritti hai.',
         'controller_heading' => 'Titolare',
-        'controller_intro' => 'Il titolare del trattamento dei dati personali in questa applicazione è:',
+        'controller_intro' => 'Il titolare del trattamento dei dati personali in questa applicazione (art. 4 n. 7 GDPR) è il fornitore dell’applicazione. Non viene pubblicato alcun indirizzo postale; per qualsiasi domanda basta un messaggio al seguente indirizzo.',
         'sections' => [
             [
                 'heading' => 'In breve',
@@ -80,6 +85,7 @@ return [
                     'Oltre al cookie tecnicamente necessario per l’accesso, nel browser viene salvata solo la tua scelta del colore (chiaro o scuro): per questo qui non c’è alcun banner per i cookie.',
                     'Puoi cancellare il tuo account in qualsiasi momento dal profilo.',
                 ],
+                'note' => 'Si applica il Regolamento generale sulla protezione dei dati (GDPR). In Italia lo integra il D.Lgs. 196/2003 (Codice in materia di protezione dei dati personali), da ultimo modificato dal D.Lgs. 101/2018. L’autorità di controllo è il Garante per la protezione dei dati personali.',
             ],
             [
                 'heading' => 'Account e accesso',
@@ -129,7 +135,7 @@ return [
                     'Questa applicazione non imposta cookie per scopi pubblicitari o di analisi. Un banner per il consenso non è quindi necessario.',
                 ],
                 'list' => [
-                    'laravel_session – cookie tecnicamente necessario per l’accesso. Viene cancellato quando esci e scade dopo 120 minuti di inattività (§ 25 par. 2 n. 2 TDDDG).',
+                    'laravel_session – cookie tecnicamente necessario per l’accesso. Viene cancellato quando esci e scade dopo 120 minuti di inattività (art. 122 del D.Lgs. 196/2003 e le linee guida del Garante Privacy sui cookie: i cookie tecnici non richiedono consenso).',
                     'Un cookie di accesso («rimani connesso») – solo se scegli questa opzione nel modulo di accesso. Ti mantiene connesso dopo la chiusura del browser.',
                     'color-scheme nella memoria locale del browser – ricorda se usi l’applicazione in modalità chiara o scura. La voce non contiene identificativi e non viene valutata.',
                 ],
@@ -176,13 +182,13 @@ return [
                     'Portabilità dei dati (art. 20 GDPR)',
                     'Opposizione ai trattamenti basati su interessi legittimi (art. 21 GDPR)',
                 ],
-                'note' => 'Per l’accesso, la rettifica o la portabilità basta un messaggio a :operator_email. Puoi inoltre presentare reclamo a un’autorità di controllo (art. 77 GDPR) – per esempio a quella del tuo luogo di residenza.',
+                'note' => 'Per l’accesso, la rettifica o la portabilità basta un messaggio a :operator_email. Puoi inoltre presentare reclamo all’autorità di controllo (art. 77 GDPR) – in Italia al Garante per la protezione dei dati personali, Piazza Venezia 11, 00187 Roma (www.garanteprivacy.it) – oppure rivolgerti ai tribunali (art. 152 del D.Lgs. 196/2003).',
             ],
             [
                 'heading' => 'Cancellare l’account',
                 'body' => [
                     'Nel profilo trovi il pulsante «cancella account». Per sicurezza devi inserire la tua password. Vengono cancellati l’account, l’immagine del profilo, le sessioni di accesso e tutti i congelatori che hai creato, con cassetti e articoli.',
-                    'I congelatori che altri hanno condiviso con te restano – lì perdi solo l’accesso. Una cancellazione non è reversibile. In alternativa basta un messaggio a :operator_email.',
+                    'I congelatori che altri hanno condiviso con te restano – lì perdi solo l’accesso. Una cancellazione non è reversibile.',
                 ],
             ],
             [
@@ -214,7 +220,7 @@ return [
             [
                 'heading' => 'Ambito di applicazione',
                 'body' => [
-                    'Queste condizioni d’uso valgono per l’uso di :app. Fornitore è la persona indicata nelle note legali. Con la registrazione le accetti.',
+                    'Queste condizioni d’uso valgono per l’uso di :app. Fornitore è la persona che gestisce :app; è contattabile tramite l’indirizzo e-mail indicato nelle note legali. Con la registrazione le accetti.',
                 ],
             ],
             [
@@ -235,6 +241,7 @@ return [
                     'Devi avere almeno 16 anni. Le persone più giovani possono usare l’applicazione solo con il consenso di chi esercita la responsabilità genitoriale.',
                     'I tuoi dati devono essere corretti e aggiornati.',
                 ],
+                'note' => 'In Italia i minorenni a partire dai 14 anni possono acconsentire ai servizi della società dell’informazione (art. 2-quinquies del D.Lgs. 196/2003). Questa applicazione richiede volontariamente un’età minima di 16 anni.',
             ],
             [
                 'heading' => 'Regole d’uso',
@@ -254,13 +261,6 @@ return [
                     'L’applicazione è offerta gratuitamente. Non esiste un diritto a una disponibilità costante; manutenzione, modifiche e anche la cessazione del servizio sono possibili. Annota altrove le informazioni importanti se ti servono più a lungo.',
                 ],
             ],
-
-            [
-                'heading' => 'Responsabilità',
-                'body' => [
-                    'Il fornitore risponde senza limiti in caso di dolo e colpa grave, di lesione della vita, del corpo o della salute e ai sensi della legge sulla responsabilità da prodotto. In caso di colpa lieve risponde solo per la violazione di obblighi contrattuali essenziali e, nell’importo, limitatamente al danno prevedibile e tipico di questo tipo di contratto. Per il resto la responsabilità è esclusa – in particolare per i danni derivanti da decisioni che prendi sulla base delle indicazioni memorizzate nell’applicazione e per la perdita di dati, se il danno poteva essere evitato con un backup ragionevole.',
-                ],
-            ],
             [
                 'heading' => 'Durata e cessazione',
                 'body' => [
@@ -276,7 +276,7 @@ return [
             [
                 'heading' => 'Disposizioni finali',
                 'body' => [
-                    'Si applica il diritto tedesco. Restano impregiudicate le norme imperative a tutela dei consumatori. Se una disposizione è inefficace, le restanti restano valide.',
+                    'Si applica il diritto italiano (D.Lgs. 206/2005, Codice del Consumo). Restano impregiudicate le norme imperative a tutela dei consumatori e la disciplina delle clausole vessatorie (artt. 33 e ss. del Codice del Consumo). Per le controversie con i consumatori è competente il giudice del luogo di residenza o di domicilio del consumatore (art. 66-bis del Codice del Consumo). Se una disposizione è inefficace, le restanti restano valide (art. 1419 del Codice civile).',
                 ],
             ],
         ],
@@ -294,17 +294,14 @@ return [
         'updated' => 'Ultima modifica: :date',
         'contact' => 'Domande su queste pagine? Scrivi a :operator_email.',
         'placeholders' => [
-            'operator' => 'il fornitore di questa applicazione',
             'operator_email' => 'l’indirizzo indicato nelle note legali',
+            'site' => 'all’indirizzo pubblicato',
             'hosting' => 'il provider di hosting di questa applicazione',
             'mail_provider' => 'il servizio di invio e-mail di questa applicazione',
             'location' => 'da chiedere al fornitore',
             'date' => 'vedi configurazione',
         ],
         'missing' => [
-            'name' => 'Nome del fornitore',
-            'street' => 'Via e numero civico',
-            'city' => 'Codice postale e località',
             'email' => 'Indirizzo e-mail per i contatti',
         ],
     ],

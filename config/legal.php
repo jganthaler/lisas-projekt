@@ -4,31 +4,50 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Angaben zum Anbieter (Impressum)
+    | Kontaktangabe (Impressum)
     |--------------------------------------------------------------------------
     |
-    | Diese Werte erscheinen im Impressum und in der Datenschutzerklärung. Sie
-    | gehören nicht in die Sprachdateien, weil sie nichts mit der Sprache zu
-    | tun haben: Der Anbieter bleibt derselbe, egal ob die Seite deutsch,
+    | Diese Angabe erscheint im Impressum und in der Datenschutzerklärung. Sie
+    | gehört nicht in die Sprachdateien, weil sie nichts mit der Sprache zu
+    | tun hat: Der Kontakt bleibt derselbe, egal ob die Seite deutsch,
     | italienisch oder englisch angezeigt wird.
     |
-    | Solange die Pflichtangaben (Name, Straße, Ort, E-Mail) fehlen, zeigt das
-    | Impressum einen Warnhinweis an (siehe App\Support\Legal). So kann die
-    | Anwendung nicht versehentlich ohne Impressum veröffentlicht werden.
+    | Der Anbieter sitzt in Italien (Südtirol). Die Rechtstexte in
+    | lang/<sprache>/legal.php richten sich deshalb nach italienischem Recht:
+    | D.Lgs. 70/2003 für den Dienst, D.Lgs. 196/2003 (Codice Privacy) und die
+    | DSGVO für die Daten, Codice del Consumo für die Nutzungsbedingungen.
+    |
+    | Name und Anschrift stehen hier bewusst nicht: Für ein privates, nicht
+    | kommerzielles Angebot verlangt italienisches Recht keine Anbieterangaben
+    | (Art. 7 D.Lgs. 70/2003 und Art. 49 Codice del Consumo treffen gewerbliche
+    | Dienste). Die E-Mail-Adresse genügt als schnelle elektronische
+    | Kontaktaufnahme und ist damit die einzige Angabe, die im Impressum steht.
+    | Solange sie fehlt, zeigt das Impressum einen Warnhinweis an (siehe
+    | App\Support\Legal). So kann die Anwendung nicht versehentlich ohne
+    | Kontaktmöglichkeit veröffentlicht werden.
     |
     */
 
     'operator' => [
-        'name' => env('LEGAL_OPERATOR_NAME'),
-        'street' => env('LEGAL_OPERATOR_STREET'),
-        'city' => env('LEGAL_OPERATOR_CITY'),
-        'country' => env('LEGAL_OPERATOR_COUNTRY', 'Deutschland'),
         'email' => env('LEGAL_OPERATOR_EMAIL'),
-
-        // Freiwillig: nach § 5 DDG genügt eine schnelle elektronische Kontakt-
-        // aufnahme (also die E-Mail-Adresse), die Telefonnummer ist optional.
-        'phone' => env('LEGAL_OPERATOR_PHONE'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Öffentliche Adresse des Angebots
+    |--------------------------------------------------------------------------
+    |
+    | Die Adresse, unter der das Angebot im Internet erreichbar ist. Sie steht im
+    | Geltungsbereich des Impressums ("Dieses Impressum gilt für Coolventory
+    | unter ..."). Sie ist bewusst getrennt von APP_URL: APP_URL ist die Adresse
+    | der laufenden Installation - lokal http://localhost:8000 -, die
+    | Rechtstexte müssen aber die Adresse des veröffentlichten Angebots nennen,
+    | sonst stünde im Impressum "localhost". Fehlt die Angabe, setzt der Text
+    | einen neutralen Satz ein (siehe App\Support\Legal).
+    |
+    */
+
+    'site' => env('LEGAL_SITE_URL', 'www.coolventory.com'),
 
     /*
     |--------------------------------------------------------------------------

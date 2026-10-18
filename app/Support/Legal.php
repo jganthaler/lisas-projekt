@@ -9,11 +9,11 @@ use Illuminate\Support\Str;
  * Die Rechtsseiten der Anwendung: Impressum, Datenschutzerklärung und
  * Nutzungsbedingungen.
  *
- * Die Texte selbst liegen in lang/<sprache>/legal.php; die Angaben zum Anbieter
- * (und zu Hosting und Mail) stehen in config/legal.php, weil sie unabhängig von
- * der Sprache sind. Diese Klasse bringt beides zusammen: Sie füllt die
- * Platzhalter der Texte (":operator", ":hosting", ":date", …) und sagt, ob die
- * Pflichtangaben des Impressums hinterlegt sind.
+ * Die Texte selbst liegen in lang/<sprache>/legal.php; die Kontaktangabe (und
+ * die Angaben zu Hosting und Mail) stehen in config/legal.php, weil sie
+ * unabhängig von der Sprache sind. Diese Klasse bringt beides zusammen: Sie
+ * füllt die Platzhalter der Texte (":app", ":site", ":operator_email", ":hosting",
+ * ":date", …) und sagt, ob die Kontaktangabe des Impressums hinterlegt ist.
  */
 final class Legal
 {
@@ -46,8 +46,8 @@ final class Legal
 
     /**
      * Die Platzhalter, die in den Texten vorkommen dürfen. Sie werden vor dem
-     * Rendern ersetzt - ein stehen gebliebenes ":operator" wäre ein Fehler
-     * (tests/Feature/LegalPagesTest.php prüft das).
+     * Rendern ersetzt - ein stehen gebliebenes ":operator_email" wäre ein
+     * Fehler (tests/Feature/LegalPagesTest.php prüft das).
      *
      * @return array<string, string>
      */
@@ -55,8 +55,7 @@ final class Legal
     {
         return [
             ':app' => (string) config('app.name'),
-            ':url' => (string) config('app.url'),
-            ':operator' => self::operatorName() ?? __('legal.shared.placeholders.operator'),
+            ':site' => self::siteUrl() ?? __('legal.shared.placeholders.site'),
             ':operator_email' => self::operatorEmail() ?? __('legal.shared.placeholders.operator_email'),
             ':hosting' => self::hostingProvider() ?? __('legal.shared.placeholders.hosting'),
             ':hosting_location' => self::hostingLocation() ?? __('legal.shared.placeholders.location'),
@@ -66,35 +65,19 @@ final class Legal
         ];
     }
 
-    public static function operatorName(): ?string
-    {
-        return self::value('legal.operator.name');
-    }
-
     public static function operatorEmail(): ?string
     {
         return self::value('legal.operator.email');
     }
 
-    public static function operatorPhone(): ?string
-    {
-        return self::value('legal.operator.phone');
-    }
-
     /**
-     * Die Anschrift des Anbieters, Zeile für Zeile - so, wie sie im Impressum
-     * untereinander steht. Leere Angaben entfallen.
-     *
-     * @return list<string>
+     * Die öffentliche Adresse des Angebots (LEGAL_SITE_URL), wie sie im
+     * Geltungsbereich des Impressums steht. Bewusst nicht APP_URL: das ist die
+     * Adresse der laufenden Installation und lokal "http://localhost:8000".
      */
-    public static function addressLines(): array
+    public static function siteUrl(): ?string
     {
-        return array_values(array_filter([
-            self::operatorName(),
-            self::value('legal.operator.street'),
-            self::value('legal.operator.city'),
-            self::value('legal.operator.country'),
-        ], fn (?string $line): bool => $line !== null));
+        return self::value('legal.site');
     }
 
     public static function hostingProvider(): ?string
@@ -146,8 +129,9 @@ final class Legal
     }
 
     /**
-     * Ob die Pflichtangaben des Impressums hinterlegt sind: Name, Anschrift und
-     * eine Kontaktmöglichkeit.
+     * Ob die Kontaktangabe des Impressums hinterlegt ist: die E-Mail-Adresse.
+     * Name und Anschrift gibt es bewusst nicht - für ein privates, nicht
+     * kommerzielles Angebot verlangt italienisches Recht keine Anbieterangaben.
      */
     public static function isComplete(): bool
     {
@@ -155,17 +139,14 @@ final class Legal
     }
 
     /**
-     * Die Pflichtangaben, die noch fehlen - als Überschriften für den
-     * Warnhinweis des Impressums (leer, sobald alles hinterlegt ist).
+     * Die Kontaktangabe, die noch fehlt - als Überschrift für den Warnhinweis
+     * des Impressums (leer, sobald sie hinterlegt ist).
      *
      * @return list<string>
      */
     public static function missingFields(): array
     {
         $required = [
-            'legal.shared.missing.name' => self::operatorName(),
-            'legal.shared.missing.street' => self::value('legal.operator.street'),
-            'legal.shared.missing.city' => self::value('legal.operator.city'),
             'legal.shared.missing.email' => self::operatorEmail(),
         ];
 
@@ -199,8 +180,9 @@ final class Legal
     {
         $placeholders = self::placeholders();
 
-        // Die längeren Platzhalter zuerst: ":operator" ist ein Präfix von
-        // ":operator_email" und würde sonst mitten in den längeren Namen greifen.
+        // Die längeren Platzhalter zuerst: ":hosting" ist ein Präfix von
+        // ":hosting_location" und würde sonst mitten in den längeren Namen
+        // greifen.
         uksort($placeholders, fn (string $a, string $b): int => strlen($b) <=> strlen($a));
 
         return Str::replace(array_keys($placeholders), array_values($placeholders), $text);
@@ -208,7 +190,7 @@ final class Legal
 
     /**
      * Ein Wert aus der Konfiguration, wenn er tatsächlich gefüllt ist: Ein
-     * leerer Eintrag in der .env ("LEGAL_OPERATOR_NAME=") zählt wie "nicht
+     * leerer Eintrag in der .env ("LEGAL_OPERATOR_EMAIL=") zählt wie "nicht
      * hinterlegt".
      */
     private static function value(string $key): ?string

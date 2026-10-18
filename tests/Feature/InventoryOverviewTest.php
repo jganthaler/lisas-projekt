@@ -110,7 +110,7 @@ class InventoryOverviewTest extends TestCase
         $items = Livewire::actingAs($lisa)->test(InventoryOverview::class)->viewData('items');
 
         $this->assertSame(
-            ['Äpfel', 'Beeren', 'Brot', 'Eiscreme', 'Erbsen', 'Gemüsemix', 'Hackfleisch', 'Lachs', 'Pizza', 'Pommes', 'Spinat', 'Suppe'],
+            ['Äpfel', 'Beeren', 'Brot', 'Eiscreme', 'Erbsen', 'Gemüsemix', 'Hackfleisch', 'Lachs', 'Pizza', 'Pommes', 'Spinat', 'Suppe', 'Tomatensoße'],
             $items->pluck('name')->all()
         );
 
@@ -184,7 +184,7 @@ class InventoryOverviewTest extends TestCase
     {
         $page = $this->page()->call('toggleFilters');
 
-        foreach (['Fleisch', 'Fisch', 'Gemüse', 'Suppe', 'Obst', 'Sonstiges'] as $label) {
+        foreach (['Fleisch', 'Fisch', 'Gemüse', 'Suppe', 'Soßen', 'Obst', 'Sonstiges'] as $label) {
             $page->assertSee($label);
         }
 
@@ -337,12 +337,11 @@ class InventoryOverviewTest extends TestCase
     {
         $item = InventoryItem::query()->firstWhere('name', 'Brot');
 
-        $page = $this->page()->call('confirmDelete', $item->getKey());
-
-        $page->assertSet('confirmingItemId', $item->getKey())
+        $this->page()
+            ->assertSeeHtml("name: 'item-delete-".$item->getKey()."'")
+            ->assertSee('Artikel löschen?')
             ->assertSee('Möchtest du „Brot“ wirklich löschen?')
-            // While the question is open the trash button steps aside.
-            ->assertDontSeeHtml('confirmDelete('.$item->getKey().')');
+            ->assertSeeHtml('wire:click="deleteItem('.$item->getKey().')"');
 
         $this->assertDatabaseHas('inventory_items', ['id' => $item->getKey()]);
     }

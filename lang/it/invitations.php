@@ -14,6 +14,7 @@ return [
     'heading' => 'Invito a “:name”',
     'body' => ':name vuole condividere il congelatore con te.',
     'already_member' => 'Sei già membro',
+    'open_freezer' => 'Vai al congelatore',
     'accept' => 'Accetta l\'invito',
     'later' => 'Più tardi',
     'unusable' => 'Questo invito è :state. Fatti inviare un nuovo link.',
@@ -21,4 +22,5 @@ return [
     'state_used' => 'già utilizzato',
     'invalid' => 'Questo invito non è più valido. Fatti inviare un nuovo link.',
     'accepted' => 'Ora sei membro di “:name”.',
+    'already_member_status' => 'Sei già membro di “:name”.',
 ];

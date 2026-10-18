@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#0d8280">
 
+    <x-app-icons />
+
     <title>{{ isset($title) ? __($title).' · '.config('app.name') : config('app.name') }}</title>
 
     <x-theme-script />

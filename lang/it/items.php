@@ -13,7 +13,8 @@ return [
     'edit_aria' => 'Modifica l\'articolo',
     'increase_aria' => 'Aumenta la quantità',
     'decrease_aria' => 'Riduci la quantità',
-    'confirm_delete' => 'Vuoi davvero eliminare “:name”?',
+    'delete_confirm_title' => 'Eliminare l’articolo?',
+    'delete_confirm_message' => 'Vuoi davvero eliminare “:name”?',
     'deleted' => 'Articolo eliminato.',
 
     'state' => [
@@ -37,6 +38,7 @@ return [
         'fisch' => 'Pesce',
         'gemuese' => 'Verdure',
         'suppe' => 'Zuppa',
+        'sosse' => 'Salse',
         'obst' => 'Frutta',
         'sonstiges' => 'Altro',
     ],

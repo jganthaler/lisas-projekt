@@ -100,6 +100,34 @@ class SharingPageTest extends TestCase
             ->assertSee($link);
     }
 
+    public function test_every_click_creates_a_new_link(): void
+    {
+        $first = $this->page($this->owner)->call('createInvitation')->get('inviteLink');
+        $second = $this->page($this->owner)->call('createInvitation')->get('inviteLink');
+
+        // A link works exactly once, so a second person needs a second link.
+        $this->assertIsString($first);
+        $this->assertIsString($second);
+        $this->assertNotSame($first, $second);
+        $this->assertDatabaseCount('invitations', 2);
+    }
+
+    public function test_a_used_invitation_leaves_the_open_list(): void
+    {
+        ['invitation' => $invitation] = Invitation::issue($this->freezer, $this->owner);
+
+        $this->assertCount(1, $this->page($this->owner)->viewData('openInvitations'));
+
+        // As soon as somebody accepted the link it disappears from the list -
+        // the owner sees right away that a new link is needed.
+        $invitation->accept(User::factory()->create());
+
+        $page = $this->page($this->owner);
+
+        $this->assertCount(0, $page->viewData('openInvitations'));
+        $page->assertDontSee('Noch nicht verwendet');
+    }
+
     public function test_only_the_owner_may_invite(): void
     {
         $member = $this->member();
@@ -213,11 +241,39 @@ class SharingPageTest extends TestCase
 
         $this->assertSame($this->freezer->getKey(), FreezerContext::id());
 
+        // Switching keeps the user on the sharing page: the page is built again
+        // for the chosen freezer instead of sending the user somewhere else.
         $this->page($this->owner)
             ->call('selectFreezer', $shared->getKey())
-            ->assertRedirect(route('freezer.closed'));
+            ->assertRedirect(route('sharing.index'));
 
         $this->assertSame($shared->getKey(), FreezerContext::id());
+        $this->assertTrue(FreezerContext::current($this->owner)->is($shared));
+    }
+
+    public function test_switching_the_freezer_shows_the_sharing_of_that_freezer(): void
+    {
+        $second = Freezer::factory()->withDrawers(1)->create([
+            'owner_id' => $this->owner->getKey(),
+            'name' => 'Truhe im Keller',
+        ]);
+
+        $page = $this->page($this->owner)->call('createInvitation');
+
+        // The link belongs to the freezer that is active right now.
+        $this->assertNotNull($page->get('inviteLink'));
+        $this->assertSame('Kühltruhe', $page->viewData('freezer')->name);
+
+        $page->call('selectFreezer', $second->getKey());
+
+        // The same page, built for the other freezer: its name, its invitation
+        // section and no link of the freezer before.
+        $page = $this->page($this->owner);
+
+        $this->assertSame('Truhe im Keller', $page->viewData('freezer')->name);
+        $this->assertNull($page->get('inviteLink'));
+        $page->assertSee('Truhe im Keller')
+            ->assertSee(__('sharing.invite_heading'));
     }
 
     public function test_a_foreign_freezer_cannot_be_selected(): void

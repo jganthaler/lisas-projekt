@@ -33,18 +33,36 @@ class AcceptInvitation extends Component
 
     public function accept(): void
     {
-        $invitation = Invitation::query()->find($this->invitationId);
+        $invitation = Invitation::query()->with('freezer')->find($this->invitationId);
+        $user = auth()->user();
 
-        // accept() locks the row, so the same link can never be used twice.
-        if ($invitation === null || ! $invitation->accept(auth()->user())) {
+        if ($invitation === null || $invitation->freezer === null) {
             $this->error = __('invitations.invalid');
 
             return;
         }
 
-        FreezerContext::select($invitation->freezer);
+        /*
+         | Wer schon Mitglied ist, braucht die Einladung nicht: der Klick führt
+         | nur in den Gefrierschrank und verbraucht den Link dabei nicht. Sonst
+         | würde ein Blick auf den eigenen Link - den sich der Besitzer vor dem
+         | Verschicken gerne ansieht - ihn für die eingeladene Person
+         | unbrauchbar machen.
+        */
+        if (! $user->isMemberOf($invitation->freezer)) {
+            // accept() locks the row, so the same link can never be used twice.
+            if (! $invitation->accept($user)) {
+                $this->error = __('invitations.invalid');
 
-        session()->flash('status', __('invitations.accepted', ['name' => $invitation->freezer->name]));
+                return;
+            }
+
+            session()->flash('status', __('invitations.accepted', ['name' => $invitation->freezer->name]));
+        } else {
+            session()->flash('status', __('invitations.already_member_status', ['name' => $invitation->freezer->name]));
+        }
+
+        FreezerContext::select($invitation->freezer);
 
         $this->redirectRoute('freezer.closed', navigate: true);
     }

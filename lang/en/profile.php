@@ -11,7 +11,7 @@ return [
     'avatar' => 'Profile picture',
     'avatar_preview' => 'Preview',
     'choose_image' => 'Choose an image',
-    'image_hint' => 'JPG, PNG or WebP · maximum 2 MB',
+    'image_hint' => 'JPG, PNG or WebP · up to 10 MB, larger pictures are shrunk',
     'uploading' => 'Uploading …',
     'remove_avatar_title' => 'Remove the profile picture?',
     'remove_avatar_message' => 'Your image is deleted – your initials will be shown again afterwards.',
@@ -23,11 +23,21 @@ return [
     'language_heading' => 'Language',
     'language_hint' => 'The whole app is shown in this language afterwards.',
     'language_saved' => 'Language changed.',
+
+    // The installed app (PWA): the section sits right below the language and
+    // only shows up when the browser offers an installation or an iPhone needs
+    // the way over the share menu (resources/js/app.js).
+    'install_heading' => 'Install the app',
+    'install_hint' => 'Coolventory also runs from the home screen – without the address bar and with the snowflake icon.',
+    'install_ios' => 'Tap “Share” at the bottom, then “Add to Home Screen”.',
+    'install_button' => 'Add to Home Screen',
     'saved' => 'Profile saved.',
     'password_changed' => 'Password changed.',
     'image_saved' => 'Profile picture saved.',
     'image_removed' => 'Profile picture removed.',
     'image_failed' => 'The image could not be saved.',
+    'image_invalid' => 'Please choose a picture in JPG, PNG or WebP format.',
+    'image_too_large' => 'The picture is larger than 10 MB. Please choose a smaller one.',
 
     // Legal: the imprint, the privacy policy and the terms of use
     // (resources/views/legal/*) and the deletion of the account, which fulfils

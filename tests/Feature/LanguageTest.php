@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Livewire\Profile\ProfilePage;
+use App\Models\InventoryItem;
 use App\Models\User;
 use App\Support\Locales;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,13 +78,37 @@ class LanguageTest extends TestCase
 
         Livewire::actingAs($user)->test(ProfilePage::class)
             ->call('setLocale', 'it')
-            ->assertSet('locale', 'it')
-            ->assertSet('feedback', 'Lingua modificata.')
-            // The answer of the same request already speaks Italian.
-            ->assertSee('Lingua')
-            ->assertDontSee('Deine Angaben und dein Profilbild');
+            ->assertRedirect(route('profile.edit'));
 
         $this->assertSame('it', $user->refresh()->locale);
+
+        // The flash of the switch is already written in the new language.
+        $this->assertSame('Lingua modificata.', session('status'));
+    }
+
+    /**
+     * Kopfzeile und untere Leiste liegen im Layout außerhalb der Komponente -
+     * ein Livewire-Update würde "Gefrierschrank", "Inventar" und "MHD" in der
+     * alten Sprache stehen lassen. Darum beantwortet die Wahl den Klick mit
+     * einer geladenen Seite, und die kommt ganz in der neuen Sprache zurück.
+     */
+    public function test_switching_the_language_reloads_the_app_frame(): void
+    {
+        $user = User::factory()->create();
+
+        Livewire::actingAs($user)->test(ProfilePage::class)
+            ->call('setLocale', 'it')
+            ->assertRedirect(route('profile.edit'));
+
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('Lingua')
+            ->assertSee('Lingua modificata.')
+            ->assertSee('Congelatore')
+            ->assertSee('Inventario')
+            ->assertSee('Scadenza')
+            ->assertDontSee('Gefrierschrank')
+            ->assertDontSee('Deine Angaben und dein Profilbild');
     }
 
     public function test_every_page_follows_the_chosen_language(): void
@@ -104,6 +129,7 @@ class LanguageTest extends TestCase
 
         Livewire::actingAs($user)->test(ProfilePage::class)
             ->call('setLocale', 'kl')
+            ->assertNoRedirect()
             ->assertSet('locale', 'de')
             ->assertSet('feedback', null);
 
@@ -127,6 +153,34 @@ class LanguageTest extends TestCase
             ['Cassetto 1', 'Cassetto 2', 'Cassetto 3'],
             $freezer->drawers()->pluck('name')->all()
         );
+    }
+
+    /**
+     * Jede Kategorie wird in jeder Sprache benannt: gespeichert wird der
+     * Schlüssel (siehe InventoryItem::CATEGORY_*), angezeigt das Etikett aus
+     * lang/<Sprache>/items.php. Fehlt eine Übersetzung, stünde im Filter und in
+     * der Artikel-Auswahl "items.categories.…" statt eines Wortes.
+     */
+    public function test_every_category_is_named_in_every_language(): void
+    {
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $labels = InventoryItem::categoryLabels();
+
+            foreach ($labels as $key => $label) {
+                $this->assertNotSame(
+                    'items.categories.'.$key,
+                    $label,
+                    'Die Kategorie "'.$key.'" fehlt in der Sprache "'.$locale.'".'
+                );
+                $this->assertNotSame('', trim($label));
+            }
+
+            // Zwei Kategorien mit demselben Wort ließen sich im Filter nicht
+            // auseinanderhalten.
+            $this->assertSame(count($labels), count(array_unique($labels)));
+        }
     }
 
     /**

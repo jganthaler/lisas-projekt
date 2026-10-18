@@ -16,13 +16,6 @@ trait InteractsWithItems
 {
     public ?string $itemFeedback = null;
 
-    /**
-     * The item whose delete question is currently open. The question is asked
-     * inside the row (see resources/views/components/item-row.blade.php) instead
-     * of using the browser dialog, so the id has to survive the round trip.
-     */
-    public ?int $confirmingItemId = null;
-
     public function incrementQuantity(int $itemId): void
     {
         $item = InventoryItem::query()->findOrFail($itemId);
@@ -47,24 +40,11 @@ trait InteractsWithItems
     }
 
     /**
-     * Show the delete question for one item. It only asks - nothing is removed
-     * before deleteItem() is called with the same id.
+     * Remove one item. The question comes first and belongs to the row: its
+     * trash button opens the dialog of the app (see
+     * resources/views/components/confirm-dialog.blade.php), and only the answer
+     * inside that dialog calls this method.
      */
-    public function confirmDelete(int $itemId): void
-    {
-        $item = InventoryItem::query()->findOrFail($itemId);
-
-        Gate::authorize('delete', $item);
-
-        $this->confirmingItemId = $item->getKey();
-        $this->itemFeedback = null;
-    }
-
-    public function cancelDelete(): void
-    {
-        $this->confirmingItemId = null;
-    }
-
     public function deleteItem(int $itemId): void
     {
         $item = InventoryItem::query()->findOrFail($itemId);
@@ -73,7 +53,6 @@ trait InteractsWithItems
 
         $item->delete();
 
-        $this->confirmingItemId = null;
         $this->itemFeedback = __('items.deleted');
     }
 }

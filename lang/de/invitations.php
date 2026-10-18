@@ -14,6 +14,7 @@ return [
     'heading' => 'Einladung zu „:name“',
     'body' => ':name möchte den Gefrierschrank mit dir teilen.',
     'already_member' => 'Du bist hier schon Mitglied',
+    'open_freezer' => 'Zum Gefrierschrank',
     'accept' => 'Einladung annehmen',
     'later' => 'Später',
     'unusable' => 'Diese Einladung ist :state. Bitte lasse dir einen neuen Link schicken.',
@@ -21,4 +22,5 @@ return [
     'state_used' => 'bereits verwendet worden',
     'invalid' => 'Diese Einladung ist nicht mehr gültig. Bitte lasse dir einen neuen Link schicken.',
     'accepted' => 'Du bist jetzt Mitglied von „:name“.',
+    'already_member_status' => 'Du bist schon Mitglied von „:name“.',
 ];

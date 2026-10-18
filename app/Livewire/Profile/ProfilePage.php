@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Profile;
 
+use App\Support\AvatarImage;
 use App\Support\Locales;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\App;
@@ -25,6 +26,21 @@ use Livewire\WithFileUploads;
 class ProfilePage extends Component
 {
     use WithFileUploads;
+
+    /**
+     * Largest picture we take from an upload, in kilobytes - 10 MB. A photo
+     * from a phone is bigger than that only in rare cases, and what is stored
+     * is smaller than the upload by orders of magnitude (see the hint texts in
+     * lang/<sprache>/profile.php).
+     */
+    private const MAX_AVATAR_KB = 10240;
+
+    /**
+     * The picture types of a profile: everything else could not be shrunk (a
+     * HEIC from a phone, an animated GIF) or not be shown in the browser at
+     * all. See App\Support\AvatarImage.
+     */
+    private const AVATAR_TYPES = 'jpg,jpeg,png,webp';
 
     public string $name = '';
 
@@ -71,10 +87,16 @@ class ProfilePage extends Component
     }
 
     /**
-     * Switch the app to another language: the choice is stored on the account
-     * and the locale of this request is set right away, so the answer already
-     * arrives in the new language. Every following request picks the choice up
-     * from the account (see App\Http\Middleware\SetLocale).
+     * Wechselt die Sprache der App: die Wahl wird am Konto gespeichert und die
+     * Sprache dieser Anfrage sofort umgestellt, damit die Rückmeldung schon in
+     * der neuen Sprache formuliert ist.
+     *
+     * Danach wird die Seite geladen. Kopfzeile und untere Leiste liegen im
+     * Layout außerhalb dieser Komponente und werden von einem Livewire-Update
+     * nicht neu geschrieben - ohne das Neuladen blieben "Gefrierschrank",
+     * "Inventar" und "MHD" in der alten Sprache stehen. Jede weitere Anfrage
+     * übernimmt die Wahl ohnehin vom Konto (siehe
+     * App\Http\Middleware\SetLocale).
      */
     public function setLocale(string $locale): void
     {
@@ -86,10 +108,13 @@ class ProfilePage extends Component
 
         Auth::user()->update(['locale' => $locale]);
 
+        // Notwendig, bevor die Rückmeldung formuliert wird: sie soll schon in
+        // der neuen Sprache in der Sitzung liegen.
         App::setLocale($locale);
 
-        $this->locale = $locale;
-        $this->feedback = __('profile.language_saved');
+        session()->flash('status', __('profile.language_saved'));
+
+        $this->redirectRoute('profile.edit', navigate: true);
     }
 
     public function updatePassword(): void
@@ -109,6 +134,11 @@ class ProfilePage extends Component
      * The profile picture is stored as soon as it has been chosen: Livewire calls
      * this hook right after the upload of the field, so there is no save button
      * and picking another image simply replaces the current one.
+     *
+     * Ein Foto vom Handy ist ein paar tausend Pixel breit und mehrere Megabyte
+     * groß - für einen runden Avatar von 36 Pixeln viel zu viel und für den
+     * Upload im Mobilfunknetz zu schwer. Was zu groß ist, wird deshalb vor dem
+     * Speichern auf eine passende Größe gebracht (App\Support\AvatarImage).
      */
     public function updatedAvatar(): void
     {
@@ -119,15 +149,21 @@ class ProfilePage extends Component
         }
 
         $this->validate([
-            'avatar' => ['image', 'max:2048'],
+            'avatar' => ['image', 'mimes:'.self::AVATAR_TYPES, 'max:'.self::MAX_AVATAR_KB],
+        ], [
+            'avatar.image' => __('profile.image_invalid'),
+            'avatar.mimes' => __('profile.image_invalid'),
+            'avatar.max' => __('profile.image_too_large'),
         ]);
 
         $user = Auth::user();
-        $filename = 'avatar-'.$user->getKey().'-'.Str::lower(Str::random(12)).'.'.($this->avatar->extension() ?: 'jpg');
+        $image = AvatarImage::fromUpload($this->avatar);
+        $filename = 'avatar-'.$user->getKey().'-'.Str::lower(Str::random(12)).'.'.$image->extension();
+        $path = 'avatars/'.$filename;
 
-        $path = Storage::disk('local')->putFileAs('avatars', $this->avatar, $filename);
-
-        if ($path === false) {
+        // Gespeichert werden die verkleinerten Bytes, nicht der Upload selbst:
+        // Aus mehreren Megabyte werden so wenige Kilobyte.
+        if (Storage::disk('local')->put($path, $image->contents()) === false) {
             $this->addError('avatar', __('profile.image_failed'));
 
             return;

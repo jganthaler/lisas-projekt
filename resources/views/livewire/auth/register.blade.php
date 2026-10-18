@@ -46,11 +46,12 @@
 
     {{-- Der Hinweis auf Nutzungsbedingungen und Datenschutzerklärung gehört vor
          die Registrierung: Nur so werden die Bedingungen Vertragsbestandteil
-         (§ 305 Abs. 2 BGB), und Art. 13 DSGVO verlangt die Information vor der
-         Erhebung. Die beiden Links baut der Satz aus auth.register.consent
-         selbst ein, damit jede Sprache ihre eigene Wortstellung behält; als
-         Linktext dient die Überschrift der Seite, weil sie im Satz steht
-         ("der Datenschutzerklärung zu"). --}}
+         (Art. 1341 Codice Civile, für Verbraucher Art. 33 Codice del Consumo),
+         und Art. 13 DSGVO verlangt die Information vor der Erhebung. Die
+         beiden Links baut der Satz aus auth.register.consent selbst ein, damit
+         jede Sprache ihre eigene Wortstellung behält; als Linktext dient die
+         Überschrift der Seite, weil sie im Satz steht ("der
+         Datenschutzerklärung zu"). --}}
     <p class="mt-4 text-center text-xs leading-relaxed text-frost-500">
         {!! __('auth.register.consent', [
             'terms' => '<a href="'.route('legal.terms').'" class="font-medium text-brand-700 dark:text-brand-400">'.e(__('legal.terms.heading')).'</a>',

@@ -108,7 +108,6 @@
         <div class="space-y-2">
             @foreach ($items as $item)
                 <x-item-row :item="$item"
-                            :confirming="$confirmingItemId === $item->id"
                             :drawer-name="$item->drawer?->name"
                             :freezer-name="$showFreezerNames ? $item->drawer?->freezer?->name : null" />
             @endforeach

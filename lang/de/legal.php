@@ -6,14 +6,19 @@
  |
  | Die Texte beschreiben, was diese Anwendung wirklich tut - welche Daten
  | gespeichert werden, wo sie liegen, welche Dienste beteiligt sind und welches
- | Cookie gesetzt wird. Die Angaben zum Anbieter (und zu Hosting und Mail)
- | stehen nicht hier, sondern in config/legal.php, das sie aus der Umgebung
- | liest (LEGAL_*); die Platzhalter ":operator", ":hosting", ":mail_provider"
+ | Cookie gesetzt wird. Die Kontaktangabe (und die Angaben zu Hosting und Mail)
+ | steht nicht hier, sondern in config/legal.php, das sie aus der Umgebung
+ | liest (LEGAL_*); die Platzhalter ":operator_email", ":hosting", ":mail_provider"
  | und ":date" füllt App\Support\Legal beim Rendern.
  |
  | Jedes Dokument besteht aus "sections": Überschrift, Absätze und optional eine
  | Liste. So bleibt der Aufbau in allen drei Sprachen gleich
  | (resources/views/legal/*). Die deutschen Zeilen sind die Quelle der Wahrheit.
+ |
+ | Rechtlicher Rahmen ist italienisches Recht: Der Anbieter sitzt in Italien.
+ | Genannt werden deshalb neben der DSGVO die italienischen Vorschriften
+ | (D.Lgs. 70/2003 für den Dienst, D.Lgs. 196/2003 für die Daten,
+ | Codice del Consumo und D.Lgs. 130/2015 für Vertrag und Streitbeilegung).
  |
  | Diese Texte sind Vorlagen: Sie decken den üblichen Fall einer privaten,
  | unentgeltlichen Haushalts-Anwendung ab und müssen vom Anbieter - im Zweifel
@@ -26,38 +31,38 @@ return [
         'title' => 'Impressum',
         'heading' => 'Impressum',
         'intro' => 'Wer diese Anwendung bereitstellt und wie man den Anbieter erreicht.',
-        'provider_heading' => 'Angaben gemäß § 5 DDG',
-        'provider_note' => ':app ist ein privates, unentgeltliches Angebot zur gemeinsamen Verwaltung von Gefrierschränken im Haushalt. Es werden darüber keine Waren und keine Dienstleistungen verkauft.',
+        'provider_heading' => 'Anbieter',
+        'provider_note' => ':app ist ein privates, unentgeltliches Angebot zur gemeinsamen Verwaltung von Gefrierschränken im Haushalt. Es werden darüber keine Waren und keine Dienstleistungen verkauft. Der Anbieter hat seinen Sitz in Italien; für private, nicht kommerzielle Angebote verlangt italienisches Recht keine Anbieterangaben. Name und Anschrift werden deshalb nicht veröffentlicht. Angegeben ist allein die E-Mail-Adresse als Kontaktmöglichkeit – so, wie es Art. 7 D.Lgs. 70/2003 und Art. 49 Codice del Consumo von einem gewerblichen Dienst verlangen würden.',
         'contact_heading' => 'Kontakt',
         'email_label' => 'E-Mail',
-        'phone_label' => 'Telefon',
-        'incomplete_heading' => 'Anbieterangaben fehlen',
-        'incomplete_body' => 'Diese Seite ist noch unvollständig: In der Konfiguration sind keine Angaben zum Anbieter hinterlegt. Solange fehlt der Anwendung das notwendige Impressum. Auszufüllen sind die Werte LEGAL_* aus .env.example (siehe config/legal.php).',
+        'incomplete_heading' => 'Kontaktangabe fehlt',
+        'incomplete_body' => 'Diese Seite ist noch unvollständig: In der Konfiguration fehlt die E-Mail-Adresse für Kontakt. Solange fehlt dem Impressum eine Kontaktmöglichkeit. Auszufüllen ist LEGAL_OPERATOR_EMAIL in der .env (siehe .env.example und config/legal.php).',
         'missing_heading' => 'Es fehlen:',
         'sections' => [
             [
                 'heading' => 'Haftung für Inhalte',
                 'body' => [
                     'Die Inhalte dieser Anwendung entstehen aus den Eingaben ihrer Nutzerinnen und Nutzer: Namen, Mengen und Mindesthaltbarkeitsdaten von Lebensmitteln werden dort selbst gepflegt. Für die Richtigkeit, Vollständigkeit und Aktualität dieser Angaben wird keine Gewähr übernommen.',
-                    'Als Diensteanbieter sind wir nicht verpflichtet, übermittelte oder gespeicherte fremde Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Verpflichtungen zur Entfernung oder Sperrung von Informationen nach den allgemeinen Gesetzen bleiben davon unberührt.',
+                    'Als Anbieter eines Dienstes der Informationsgesellschaft trifft uns nach Art. 17 D.Lgs. 70/2003 keine allgemeine Pflicht, die von Nutzerinnen und Nutzern gespeicherten Inhalte zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige Tätigkeit hinweisen. Für gespeicherte fremde Inhalte haften wir nach Art. 16 D.Lgs. 70/2003 nicht, solange wir von einer Rechtswidrigkeit keine Kenntnis haben; sobald wir davon erfahren, entfernen wir sie unverzüglich.',
                 ],
             ],
             [
                 'heading' => 'Haftung für Links',
                 'body' => [
-                    'Diese Anwendung enthält keine Links zu Inhalten Dritter. Sollten Nutzerinnen oder Nutzer auf fremde Angebote verweisen, sind ausschließlich deren Betreiber dafür verantwortlich.',
+                    'Diese Anwendung enthält keine Links zu Inhalten Dritter.',
                 ],
             ],
             [
-                'heading' => 'Verbraucherstreitbeilegung',
+                'heading' => 'Streitbeilegung mit Verbrauchern (ADR)',
                 'body' => [
-                    'Wir sind nicht verpflichtet und nicht bereit, an einem Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.',
+                    'Die Anwendung ist unentgeltlich; es kommt kein Kauf- oder Dienstleistungsvertrag zustande. Zu einer außergerichtlichen Streitbeilegung nach D.Lgs. 130/2015 (ADR) sind wir weder verpflichtet noch bereit.',
+                    'Wer sich beschwert fühlen sollte, kann sich jederzeit per E-Mail an den Anbieter wenden. Der Weg zu den ordentlichen Gerichten bleibt offen; zuständig sind die italienischen Gerichte nach den allgemeinen Regeln (für Verbraucher: Art. 66-bis Codice del Consumo).',
                 ],
             ],
             [
                 'heading' => 'Anwendungsbereich',
                 'body' => [
-                    'Dieses Impressum gilt für :app unter :url.',
+                    'Dieses Impressum gilt für :app unter :site.',
                 ],
             ],
         ],
@@ -68,7 +73,7 @@ return [
         'heading' => 'Datenschutzerklärung',
         'intro' => 'Welche Daten :app speichert, warum, wie lange – und welche Rechte du dabei hast.',
         'controller_heading' => 'Verantwortlich',
-        'controller_intro' => 'Verantwortlich für die Verarbeitung personenbezogener Daten in dieser Anwendung ist:',
+        'controller_intro' => 'Verantwortlich für die Verarbeitung personenbezogener Daten in dieser Anwendung (Art. 4 Nr. 7 DSGVO, italienisch: titolare del trattamento) ist der Anbieter der Anwendung. Eine Anschrift wird nicht veröffentlicht; für alle Fragen genügt eine Nachricht an die folgende Adresse.',
         'sections' => [
             [
                 'heading' => 'Das Wichtigste in Kürze',
@@ -81,6 +86,7 @@ return [
                     'Neben dem technisch notwendigen Anmelde-Cookie wird im Browser nur deine Farbwahl (hell oder dunkel) gespeichert – deshalb gibt es hier auch kein Cookie-Banner.',
                     'Dein Konto kannst du jederzeit selbst im Profil löschen.',
                 ],
+                'note' => 'Für die Verarbeitung gilt die Datenschutz-Grundverordnung (DSGVO). In Italien ergänzt sie das D.Lgs. 196/2003 (Codice in materia di protezione dei dati personali), zuletzt geändert durch D.Lgs. 101/2018. Aufsichtsbehörde ist der Garante per la protezione dei dati personali.',
             ],
             [
                 'heading' => 'Konto und Anmeldung',
@@ -129,7 +135,7 @@ return [
                     'Diese Anwendung setzt keine Cookies zu Werbe- oder Analysezwecken. Ein Einwilligungsbanner ist deshalb nicht erforderlich.',
                 ],
                 'list' => [
-                    'laravel_session – technisch notwendiges Cookie für die Anmeldung. Es wird beim Abmelden gelöscht und läuft nach 120 Minuten ohne Aktivität ab (§ 25 Abs. 2 Nr. 2 TDDDG).',
+                    'laravel_session – technisch notwendiges Cookie für die Anmeldung. Es wird beim Abmelden gelöscht und läuft nach 120 Minuten ohne Aktivität ab (Art. 122 D.Lgs. 196/2003 und die Cookie-Richtlinien des Garante Privacy: technisch notwendige Cookies brauchen keine Einwilligung).',
                     'Ein Anmelde-Cookie („Angemeldet bleiben“) – nur, wenn du diese Auswahl im Anmeldeformular triffst. Es hält dich nach dem Schließen des Browsers angemeldet.',
                     'color-scheme im lokalen Speicher des Browsers – merkt sich, ob du die Anwendung hell oder dunkel benutzt. Der Eintrag enthält keine Kennung und wird nicht ausgewertet.',
                 ],
@@ -176,13 +182,13 @@ return [
                     'Datenübertragbarkeit (Art. 20 DSGVO)',
                     'Widerspruch gegen Verarbeitungen auf Grundlage berechtigter Interessen (Art. 21 DSGVO)',
                 ],
-                'note' => 'Für Auskunft, Berichtigung oder Übertragbarkeit genügt eine Nachricht an :operator_email. Außerdem kannst du dich bei einer Aufsichtsbehörde beschweren (Art. 77 DSGVO) – zum Beispiel bei der Behörde an deinem Wohnort.',
+                'note' => 'Für Auskunft, Berichtigung oder Übertragbarkeit genügt eine Nachricht an :operator_email. Außerdem kannst du dich bei der Aufsichtsbehörde beschweren (Art. 77 DSGVO) – in Italien beim Garante per la protezione dei dati personali, Piazza Venezia 11, 00187 Rom (www.garanteprivacy.it) – oder den Weg zu den Gerichten wählen (Art. 152 D.Lgs. 196/2003).',
             ],
             [
                 'heading' => 'Konto löschen',
                 'body' => [
                     'Im Profil findest du den Knopf „Konto löschen“. Zur Sicherheit musst du dafür dein Passwort eingeben. Gelöscht werden das Konto, das Profilbild, die Anmelde-Sitzungen und alle von dir angelegten Gefrierschränke samt Schubladen und Artikeln.',
-                    'Gefrierschränke, die andere mit dir geteilt haben, bleiben bestehen – dort verlierst du nur den Zugriff. Eine Löschung lässt sich nicht rückgängig machen. Alternativ genügt eine Nachricht an :operator_email.',
+                    'Gefrierschränke, die andere mit dir geteilt haben, bleiben bestehen – dort verlierst du nur den Zugriff. Eine Löschung lässt sich nicht rückgängig machen.',
                 ],
             ],
             [
@@ -214,7 +220,7 @@ return [
             [
                 'heading' => 'Geltung',
                 'body' => [
-                    'Diese Nutzungsbedingungen gelten für die Nutzung von :app. Anbieter ist die im Impressum genannte Person. Mit der Registrierung erkennst du diese Bedingungen an.',
+                    'Diese Nutzungsbedingungen gelten für die Nutzung von :app. Anbieter ist die Person, die :app bereitstellt; erreichbar ist sie über die im Impressum genannte E-Mail-Adresse. Mit der Registrierung erkennst du diese Bedingungen an.',
                 ],
             ],
             [
@@ -235,6 +241,7 @@ return [
                     'Du musst mindestens 16 Jahre alt sein. Jüngere Personen dürfen die Anwendung nur mit Zustimmung der erziehungsberechtigten Person nutzen.',
                     'Deine Angaben sind richtig und aktuell zu halten.',
                 ],
+                'note' => 'In Italien können Minderjährige ab 14 Jahren in Dienste der Informationsgesellschaft einwilligen (Art. 2-quinquies D.Lgs. 196/2003). Diese Anwendung verlangt freiwillig ein Mindestalter von 16 Jahren.',
             ],
             [
                 'heading' => 'Regeln für die Nutzung',
@@ -255,12 +262,6 @@ return [
                 ],
             ],
             [
-                'heading' => 'Haftung',
-                'body' => [
-                    'Der Anbieter haftet unbeschränkt bei Vorsatz und grober Fahrlässigkeit, bei Verletzung von Leben, Körper oder Gesundheit sowie nach dem Produkthaftungsgesetz. Bei einfacher Fahrlässigkeit haftet er nur für die Verletzung wesentlicher Vertragspflichten und der Höhe nach begrenzt auf den vorhersehbaren, vertragstypischen Schaden. Im Übrigen ist die Haftung ausgeschlossen – insbesondere für Schäden aus Entscheidungen, die du auf Grundlage der in der Anwendung gespeicherten Angaben triffst, und für Datenverlust, soweit der Schaden durch eine zumutbare Datensicherung vermeidbar gewesen wäre.',
-                ],
-            ],
-            [
                 'heading' => 'Laufzeit und Beendigung',
                 'body' => [
                     'Du kannst die Nutzung jederzeit beenden, indem du dein Konto im Profil löschst. Der Anbieter kann ein Konto sperren oder löschen, wenn gegen diese Bedingungen verstoßen wird oder die Sicherheit der Anwendung es erfordert. Gelöschte Daten können nicht wiederhergestellt werden.',
@@ -275,7 +276,7 @@ return [
             [
                 'heading' => 'Schlussbestimmungen',
                 'body' => [
-                    'Es gilt deutsches Recht. Zwingende Verbraucherschutzvorschriften bleiben unberührt. Sollte eine Bestimmung unwirksam sein, bleibt die übrige Regelung wirksam.',
+                    'Es gilt italienisches Recht (D.Lgs. 206/2005, Codice del Consumo). Zwingende Verbraucherschutzvorschriften und die Regeln über missbräuchliche Klauseln (Art. 33 ff. Codice del Consumo) bleiben unberührt. Für Streitigkeiten mit Verbrauchern ist das Gericht am Wohnsitz oder gewöhnlichen Aufenthalt des Verbrauchers zuständig (Art. 66-bis Codice del Consumo). Sollte eine Bestimmung unwirksam sein, bleiben die übrigen wirksam (Art. 1419 Codice Civile).',
                 ],
             ],
         ],
@@ -293,17 +294,14 @@ return [
         'updated' => 'Stand: :date',
         'contact' => 'Fragen zu diesen Seiten? Schreib an :operator_email.',
         'placeholders' => [
-            'operator' => 'der Anbieter dieser Anwendung',
             'operator_email' => 'die im Impressum genannte Adresse',
+            'site' => 'der veröffentlichten Adresse',
             'hosting' => 'der Hosting-Anbieter dieser Anwendung',
             'mail_provider' => 'der Mail-Anbieter dieser Anwendung',
             'location' => 'beim Anbieter zu erfragen',
             'date' => 'siehe Konfiguration',
         ],
         'missing' => [
-            'name' => 'Name des Anbieters',
-            'street' => 'Straße und Hausnummer',
-            'city' => 'Postleitzahl und Ort',
             'email' => 'E-Mail-Adresse für Kontakt',
         ],
     ],

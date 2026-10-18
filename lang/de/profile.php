@@ -13,7 +13,7 @@ return [
     'avatar' => 'Profilbild',
     'avatar_preview' => 'Vorschau',
     'choose_image' => 'Bild auswählen',
-    'image_hint' => 'JPG, PNG oder WebP · maximal 2 MB',
+    'image_hint' => 'JPG, PNG oder WebP · bis 10 MB, größere Bilder werden verkleinert',
     'uploading' => 'Wird hochgeladen …',
     'remove_avatar_title' => 'Profilbild entfernen?',
     'remove_avatar_message' => 'Dein Bild wird gelöscht – danach sind wieder deine Initialen zu sehen.',
@@ -25,11 +25,21 @@ return [
     'language_heading' => 'Sprache',
     'language_hint' => 'Die ganze App wird danach in dieser Sprache angezeigt.',
     'language_saved' => 'Sprache geändert.',
+
+    // Die installierte App (PWA): Der Abschnitt steht direkt unter der Sprache
+    // und erscheint erst, wenn der Browser die Installation anbietet oder ein
+    // iPhone den Umweg über das Teilen-Menü braucht (resources/js/app.js).
+    'install_heading' => 'App installieren',
+    'install_hint' => 'Coolventory läuft auch vom Startbildschirm aus – ohne Adressleiste und mit dem Schneeflocken-Icon.',
+    'install_ios' => 'Tippe unten auf „Teilen“ und dann auf „Zum Home-Bildschirm“.',
+    'install_button' => 'Zum Startbildschirm hinzufügen',
     'saved' => 'Profil gespeichert.',
     'password_changed' => 'Passwort geändert.',
     'image_saved' => 'Profilbild gespeichert.',
     'image_removed' => 'Profilbild entfernt.',
     'image_failed' => 'Das Bild konnte nicht gespeichert werden.',
+    'image_invalid' => 'Bitte wähle ein Bild im Format JPG, PNG oder WebP.',
+    'image_too_large' => 'Das Bild ist größer als 10 MB. Bitte wähle ein kleineres Bild.',
 
     // Rechtliches: die Seiten des Impressums, der Datenschutzerklärung und der
     // Nutzungsbedingungen (resources/views/legal/*) und die Löschung des

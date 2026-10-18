@@ -1,8 +1,9 @@
 @extends('layouts.legal', ['title' => 'legal.imprint.title'])
 
 @php
-    // Pflichtangaben, die in der Konfiguration noch fehlen - solange der Hinweis
-    // erscheint, ist das Impressum unvollständig (siehe App\Support\Legal).
+    // Die Kontaktangabe, die in der Konfiguration noch fehlt - solange der
+    // Hinweis erscheint, fehlt dem Impressum die Kontaktmöglichkeit (siehe
+    // App\Support\Legal).
     $missing = \App\Support\Legal::missingFields();
 @endphp
 
@@ -27,10 +28,12 @@
         <section class="space-y-1.5">
             <h2 class="text-sm font-semibold text-frost-900">{{ __('legal.imprint.provider_heading') }}</h2>
             <p class="text-sm leading-relaxed text-frost-600">{{ \App\Support\Legal::text('imprint.provider_note') }}</p>
+        </section>
 
-            <x-legal-address class="mt-2"
-                             :email-label="__('legal.imprint.email_label')"
-                             :phone-label="__('legal.imprint.phone_label')" />
+        <section class="space-y-1.5">
+            <h2 class="text-sm font-semibold text-frost-900">{{ __('legal.imprint.contact_heading') }}</h2>
+
+            <x-legal-contact class="mt-2" :email-label="__('legal.imprint.email_label')" />
         </section>
 
         <x-legal-sections :sections="\App\Support\Legal::sections('imprint')" />
