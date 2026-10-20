@@ -11,11 +11,13 @@
 return [
     'delete_aria' => 'Artikel löschen',
     'edit_aria' => 'Artikel bearbeiten',
+    'move_aria' => 'Artikel verschieben',
     'increase_aria' => 'Menge erhöhen',
     'decrease_aria' => 'Menge verringern',
     'delete_confirm_title' => 'Artikel löschen?',
     'delete_confirm_message' => 'Möchtest du „:name“ wirklich löschen?',
     'deleted' => 'Artikel gelöscht.',
+    'open_in_drawer_aria' => 'Artikel in „:drawer“ bearbeiten',
 
     'state' => [
         'expired' => 'abgelaufen',

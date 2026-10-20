@@ -16,5 +16,7 @@ return [
     'all_categories' => 'All categories',
     'single_freezer' => 'Only one freezer – you can still filter by category.',
     'nothing_found' => 'Nothing was found for that.',
+    'show_all' => 'Show all items',
+    'to_freezer' => 'Go to the freezer',
     'empty' => 'The inventory is still empty.',
 ];

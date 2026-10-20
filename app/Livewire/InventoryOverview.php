@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\FollowsOfflineChanges;
 use App\Livewire\Concerns\InteractsWithItems;
 use App\Models\Freezer;
 use App\Models\InventoryItem;
@@ -23,6 +24,7 @@ use Livewire\Component;
 #[Title('inventory.title')]
 class InventoryOverview extends Component
 {
+    use FollowsOfflineChanges;
     use InteractsWithItems;
 
     public string $search = '';
@@ -35,6 +37,14 @@ class InventoryOverview extends Component
     /** Whether the filter panel behind the filter button is open. */
     public bool $showFilters = false;
 
+    /**
+     * Back to the whole inventory: the search and both filters.
+     *
+     * The empty state of the list offers this, so a search that found nothing
+     * (a typo, a filter that is still set) is one tap away from the full list
+     * again. "clearFilterSelection" is the quieter brother next to it: it keeps
+     * what was searched for and only drops the filters.
+     */
     public function clearFilters(): void
     {
         $this->reset('search', 'freezerFilter', 'categoryFilter');

@@ -11,11 +11,13 @@
 return [
     'delete_aria' => 'Elimina l\'articolo',
     'edit_aria' => 'Modifica l\'articolo',
+    'move_aria' => 'Sposta l\'articolo',
     'increase_aria' => 'Aumenta la quantità',
     'decrease_aria' => 'Riduci la quantità',
     'delete_confirm_title' => 'Eliminare l’articolo?',
     'delete_confirm_message' => 'Vuoi davvero eliminare “:name”?',
     'deleted' => 'Articolo eliminato.',
+    'open_in_drawer_aria' => 'Modifica l’articolo in “:drawer”',
 
     'state' => [
         'expired' => 'scaduto',

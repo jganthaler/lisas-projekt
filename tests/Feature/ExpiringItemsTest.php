@@ -82,6 +82,51 @@ class ExpiringItemsTest extends TestCase
     }
 
     /**
+     * Die Warnliste lebt vom relativen Zähler ("MHD in 2 Tagen") und nennt
+     * weiterhin Zustand, Zähler und Datum - nur das Inventar kürzt die Zeile
+     * (siehe resources/views/components/item-row.blade.php).
+     */
+    public function test_the_watch_list_keeps_the_relative_mhd(): void
+    {
+        $item = $this->item('Erbsen', '2026-06-17');
+
+        $this->page()
+            ->assertSee($item->stateLabel())
+            ->assertSee($item->bestBeforeLabel())
+            ->assertSee($item->formattedBestBefore());
+    }
+
+    /**
+     * Auch die Warnliste bleibt weiß: die Farbe der Kategorie gehört dem
+     * Inventar (siehe resources/views/components/item-row.blade.php).
+     */
+    public function test_the_watch_list_keeps_the_white_card(): void
+    {
+        InventoryItem::factory()->expiringSoon(2)->category(InventoryItem::CATEGORY_GEMUESE)->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Erbsen',
+        ]);
+
+        $this->page()
+            ->assertSee('Erbsen')
+            ->assertDontSeeHtml('bg-cat-');
+    }
+
+    /**
+     * Die Zeile der Warnliste führt in die Schublade des Artikels und öffnet dort
+     * gleich sein Formular: aufbrauchen heißt oft auch, das MHD zu ändern (siehe
+     * DrawerPage::mount()).
+     */
+    public function test_the_row_leads_into_the_drawer_of_the_item(): void
+    {
+        $item = $this->item('Erbsen', '2026-06-17');
+
+        $this->page()->assertSeeHtml(
+            'href="'.route('drawers.show', $this->drawer).'?item='.$item->getKey().'"'
+        );
+    }
+
+    /**
      * The watch list is not tied to the freezer that happens to be selected on
      * the start page: it covers every freezer the user may access.
      */

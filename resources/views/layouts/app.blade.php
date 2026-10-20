@@ -65,6 +65,10 @@
     <main class="shell pb-28 pt-4">
         <x-flash-message />
 
+        {{-- Der Weg in den Offline-Modus, sobald das Gerät kein Netz hat (siehe
+             components/offline-notice.blade.php). --}}
+        <x-offline-notice />
+
         {{ $slot }}
     </main>
 

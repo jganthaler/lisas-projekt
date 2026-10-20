@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Freezer;
 
+use App\Livewire\Concerns\FollowsOfflineChanges;
 use App\Models\Drawer;
 use App\Models\Freezer;
 use App\Support\FreezerContext;
@@ -18,6 +19,8 @@ use Livewire\Component;
 #[Title('freezer.open_title')]
 class OpenFreezer extends Component
 {
+    use FollowsOfflineChanges;
+
     public string $newDrawerName = '';
 
     public ?int $editingDrawerId = null;
@@ -94,8 +97,10 @@ class OpenFreezer extends Component
         Gate::authorize('delete', $drawer);
 
         // Deleting would cascade into the items, so an empty drawer is required.
+        // The message names the drawer: it stands at the top of the page, and
+        // "which one was it?" is exactly what a user asks there.
         if ($drawer->items()->exists()) {
-            $this->addError('drawerDeletion', __('freezer.drawer_not_empty'));
+            $this->addError('drawerDeletion', __('freezer.drawer_not_empty', ['name' => $drawer->name]));
 
             return;
         }

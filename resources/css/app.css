@@ -35,6 +35,15 @@
     --color-scrim: #12171a;
 
     /*
+     | The arrow of a select field. The app draws it itself (see "select.input"
+     | in the component layer), because the arrow of the browser sits right
+     | against the border of the field and never changes its colour. It is the
+     | chevron of the icon set (components/icon.blade.php) in the muted grey of
+     | the meta text; the ".dark" block below hands over the light one.
+     */
+    --select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636d74' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9.5 12 16l6.5-6.5'/%3E%3C/svg%3E");
+
+    /*
      | Coolventory palette.
      |
      | "frost" is the neutral ramp of the app: a light grey for the page, white
@@ -102,6 +111,25 @@
     --color-warning-800: #6d4414;
     --color-warning-900: #5a3914;
     --color-warning-950: #341e08;
+
+    /*
+     | Category tints of an item row in the inventory (see
+     | InventoryItem::categoryTintClass()). Each one names its food: a light red
+     | for meat, a blue for fish, a green for vegetables that is clearly deeper
+     | than the light one of fruit, a yellow for soup and a warm brown for
+     | sauces. All of them are pale enough to carry the near black name of a row
+     | (frost-900 stays above 10:1 on every one); the muted grey of the meta line
+     | would not - it steps one shade darker on a tinted card (see item-row).
+     | "Sonstiges" and an item without a category need no tint - the card of the
+     | list is already white. The dark scheme swaps the values in the ".dark"
+     | block below, so one utility class serves both schemes.
+     */
+    --color-cat-fleisch: #fadcd8;
+    --color-cat-fisch: #d8e6f5;
+    --color-cat-gemuese: #bed8b7;
+    --color-cat-suppe: #f7ecc2;
+    --color-cat-obst: #e3f1d6;
+    --color-cat-sosse: #e6d8c6;
 }
 
 @layer base {
@@ -164,6 +192,9 @@
         --color-field: #14191d;
         --color-scrim: #05080a;
 
+        /* The arrow of a select field is the light grey here. */
+        --select-arrow: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2399a2a8' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9.5 12 16l6.5-6.5'/%3E%3C/svg%3E");
+
         --color-frost-50: #222a2e;
         --color-frost-100: #151a1e;
         --color-frost-200: #2a3237;
@@ -175,6 +206,18 @@
         --color-frost-800: #e2e7e9;
         --color-frost-900: #f0f3f4;
         --color-frost-950: #fafcfc;
+
+        /*
+         | The category tints of the inventory rows keep their hue, but sink to
+         | the darkness of the scheme - the pale red of meat would glare on a
+         | dark surface, and the light text of a row has to stay readable on it.
+         */
+        --color-cat-fleisch: #3a2320;
+        --color-cat-fisch: #1d2c40;
+        --color-cat-gemuese: #1e2d18;
+        --color-cat-suppe: #332a13;
+        --color-cat-obst: #273420;
+        --color-cat-sosse: #32281c;
     }
 }
 
@@ -297,6 +340,24 @@
     }
 
     /*
+     | A select field draws its own arrow: the one of the browser sits right
+     | against the border and is painted by the browser instead of the app. The
+     | chevron of the icon set comes as a background image (--select-arrow) and
+     | keeps the same distance to the border as the text on the left side - the
+     | extra room on the right (2.75rem) makes sure a long choice never slides
+     | under the arrow.
+     */
+    select.input {
+        appearance: none;
+        -webkit-appearance: none;
+        padding-right: 2.75rem;
+        background-image: var(--select-arrow);
+        background-position: right 0.875rem center;
+        background-repeat: no-repeat;
+        background-size: 1.25rem 1.25rem;
+    }
+
+    /*
      | Checkboxes („Angemeldet bleiben“) follow the design instead of the
      | browser: same 8 px corners, brand colour when ticked, white check mark.
      */
@@ -367,6 +428,36 @@
     .badge-neutral {
         background-color: var(--color-frost-200);
         color: var(--color-frost-700);
+    }
+
+    /*
+     | The quick choices of the best before field ("3 Monate", "6 Monate",
+     | "1 Jahr", "2 Jahre"). They are buttons, not labels: the pill carries a
+     | real tap target (2rem) and takes the brand colour on hover, which keeps
+     | them visibly below the field they fill.
+     */
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2rem;
+        border-radius: 9999px;
+        background-color: var(--color-frost-200);
+        padding: 0.25rem 0.75rem;
+        font-size: 0.8125rem;
+        font-weight: 600;
+        color: var(--color-frost-700);
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .chip:hover {
+        background-color: var(--color-brand-50);
+        color: var(--color-brand-700);
+    }
+
+    .chip:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--color-brand-100);
     }
 
     .drawer-row {
@@ -518,6 +609,15 @@
     .dark .badge-danger {
         background-color: var(--color-danger-950);
         color: var(--color-danger-300);
+    }
+
+    .dark .chip:hover {
+        background-color: var(--color-brand-950);
+        color: var(--color-brand-300);
+    }
+
+    .dark .chip:focus-visible {
+        box-shadow: 0 0 0 3px rgb(23 165 160 / 0.28);
     }
 
     .dark .bottom-nav-link[aria-current='page'] {

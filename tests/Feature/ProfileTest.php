@@ -97,17 +97,20 @@ class ProfileTest extends TestCase
 
         $this->page($user)
             ->assertSet('name', 'Lisa Muster')
-            ->assertSet('email', 'lisa@example.com')
+            ->assertSee('lisa@example.com')
             ->assertSee('Angaben');
     }
 
-    public function test_the_profile_can_be_updated(): void
+    /**
+     * Der Name lässt sich ändern, die bestätigte E-Mail-Adresse nicht: Sie ist
+     * der Name des Kontos und der Empfänger der Links zum Zurücksetzen.
+     */
+    public function test_the_profile_updates_the_name_and_keeps_the_email_address(): void
     {
         $user = User::factory()->create(['name' => 'Alter Name', 'email' => 'alt@example.com']);
 
         $this->page($user)
             ->set('name', 'Neuer Name')
-            ->set('email', 'neu@example.com')
             ->call('updateProfile')
             ->assertHasNoErrors()
             ->assertSet('feedback', 'Profil gespeichert.');
@@ -115,20 +118,45 @@ class ProfileTest extends TestCase
         $user->refresh();
 
         $this->assertSame('Neuer Name', $user->name);
-        $this->assertSame('neu@example.com', $user->email);
+        $this->assertSame('alt@example.com', $user->email);
     }
 
-    public function test_an_email_address_of_another_user_is_rejected(): void
+    /**
+     * Die bestätigte Adresse ist nicht mehr änderbar: Das Profil zeigt sie nur
+     * an, ein Feld dafür gibt es nicht. Auch eine Anfrage, die eine andere
+     * Adresse mitschickt, ändert nichts - die Komponente kennt die Adresse gar
+     * nicht mehr, geschrieben wird allein der Name.
+     */
+    public function test_the_verified_email_address_cannot_be_changed(): void
     {
         User::factory()->create(['email' => 'belegt@example.com']);
         $user = User::factory()->create(['email' => 'frei@example.com']);
 
         $this->page($user)
-            ->set('email', 'belegt@example.com')
+            ->assertSee('frei@example.com')
+            ->assertSee('Deine Adresse ist bestätigt und kann deshalb nicht geändert werden.')
+            ->assertDontSee('wire:model="email"', false)
+            ->set('name', 'Neuer Name')
             ->call('updateProfile')
-            ->assertHasErrors('email');
+            ->assertHasNoErrors();
 
         $this->assertSame('frei@example.com', $user->refresh()->email);
+    }
+
+    /**
+     * Das Häkchen der bestätigten Adresse steht rechts davon: Die Adresse soll
+     * links beginnen wie in einem Feld, das man ausfüllen kann.
+     */
+    public function test_the_verified_email_address_carries_the_check_on_the_right(): void
+    {
+        $user = User::factory()->create(['email' => 'lisa@example.com']);
+
+        $this->page($user)
+            ->assertSeeHtml('input flex items-center justify-between gap-2')
+            ->assertSeeHtmlInOrder([
+                'lisa@example.com',
+                'h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400',
+            ]);
     }
 
     public function test_the_profile_cannot_be_emptied(): void
@@ -137,9 +165,8 @@ class ProfileTest extends TestCase
 
         $this->page($user)
             ->set('name', '')
-            ->set('email', 'keine-mailadresse')
             ->call('updateProfile')
-            ->assertHasErrors(['name', 'email']);
+            ->assertHasErrors('name');
     }
 
     public function test_the_password_can_be_changed(): void

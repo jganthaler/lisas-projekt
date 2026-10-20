@@ -5,37 +5,65 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#0d8280">
     <meta name="robots" content="noindex">
-    <title>Keine Verbindung · Coolventory</title>
+    <title>Offline · Coolventory</title>
 
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon.png">
     <link rel="apple-touch-icon" sizes="512x512" href="/favicon.png">
 
     <style>
         /*
-         | The offline page of the app, answered by the service worker
-         | (public/sw.js) for a navigation without network. It carries its own
-         | styles and script, because it has to stand on its own: neither the
-         | CSS of the app nor the server is available here.
+         | The offline page of the app: the service worker (public/sw.js) answers
+         | a navigation without network with it, and there it is the inventory
+         | itself - the cellar has no reception, the food has to be entered
+         | anyway.
          |
-         | The colours are the ones of resources/css/app.css (frost and brand),
-         | and the dark scheme follows the very same rule as the app: only the
-         | saved choice switches, never the setting of the operating system.
+         | It carries its own styles and script, because it has to stand on its
+         | own: neither the CSS of the app nor the server is available here. The
+         | colours are the ones of resources/css/app.css (frost, brand and the
+         | two status ramps), and the dark scheme follows the very same rule as
+         | the app: only the saved choice switches, never the setting of the
+         | operating system.
+         |
+         | The data comes from the local storage of the browser, filled by
+         | resources/js/app.js on every visit of a page of the app:
+         | "offline-snapshot" holds the inventory, "offline-queue" the changes
+         | that still wait for a network (they go to /offline/sync), and
+         | "csrf-token" the token that call needs.
          */
         :root {
-            --page: #eff1f2;       /* frost-100 */
-            --surface: #ffffff;    /* surface */
-            --text: #1c2226;       /* frost-900 */
-            --muted: #636d74;      /* frost-500 */
-            --brand: #0d8280;      /* brand-600, the colour of the manifest */
-            --brand-dark: #0a6664; /* brand-700 */
+            --page: #eff1f2;        /* frost-100 */
+            --surface: #ffffff;     /* surface */
+            --field: #ffffff;
+            --soft: #f7f8f9;        /* frost-50 */
+            --line: #e3e6e8;        /* frost-200 */
+            --text: #1c2226;        /* frost-900 */
+            --meta: #3a4247;        /* frost-700 */
+            --muted: #636d74;       /* frost-500 */
+            --brand: #0d8280;       /* brand-600, the colour of the manifest */
+            --brand-tint: #edfaf8;  /* brand-50 */
+            --brand-text: #0a6664;  /* brand-700 */
+            --warn-tint: #f9ebcb;   /* warning-100 */
+            --warn-text: #855312;   /* warning-700 */
+            --danger-tint: #fbe0de; /* danger-100 */
+            --danger-text: #932a26; /* danger-700 */
+            --radius: 0.5rem;
         }
 
         .dark {
             --page: #151a1e;
             --surface: #1b2226;
+            --field: #14191d;
+            --soft: #222a2e;
+            --line: #2a3237;
             --text: #f0f3f4;
+            --meta: #cfd5d9;
             --muted: #99a2a8;
-            --brand-dark: #0d8280;
+            --brand-tint: #04282a;
+            --brand-text: #77d4cd;
+            --warn-tint: #341e08;
+            --warn-text: #e8bd63;
+            --danger-tint: #38110f;
+            --danger-text: #ee9d98;
         }
 
         * {
@@ -46,12 +74,6 @@
             margin: 0;
             min-height: 100vh;
             min-height: 100dvh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem calc(1rem + env(safe-area-inset-right, 0px))
-                calc(1.5rem + env(safe-area-inset-bottom, 0px))
-                calc(1rem + env(safe-area-inset-left, 0px));
             background-color: var(--page);
             color: var(--text);
             font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -61,71 +83,526 @@
 
         main {
             width: 100%;
-            max-width: 24rem;
-            padding: 1.5rem;
-            border-radius: 1.25rem;
-            background-color: var(--surface);
-            box-shadow: 0 1px 2px rgb(28 34 38 / 0.05), 0 10px 24px -14px rgb(28 34 38 / 0.18);
-            text-align: center;
-        }
-
-        img {
-            width: 96px;
-            height: 96px;
-            border-radius: 22px;
+            max-width: 32rem;
+            margin-inline: auto;
+            padding: 1rem calc(1rem + env(safe-area-inset-right, 0px))
+                calc(2rem + env(safe-area-inset-bottom, 0px))
+                calc(1rem + env(safe-area-inset-left, 0px));
         }
 
         h1 {
-            margin: 1rem 0 0;
+            margin: 0;
             font-size: 1.125rem;
             font-weight: 700;
         }
 
+        h2 {
+            margin: 0 0 0.5rem;
+            font-size: 0.9375rem;
+            font-weight: 700;
+        }
+
         p {
-            margin: 0.5rem 0 0;
+            margin: 0.25rem 0 0;
             font-size: 0.875rem;
             color: var(--muted);
+        }
+
+        .bar {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--line);
+            background-color: var(--surface);
+            padding: 0.5rem calc(1rem + env(safe-area-inset-right, 0px)) 0.5rem
+                calc(1rem + env(safe-area-inset-left, 0px));
+        }
+
+        .bar img {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+        }
+
+        .bar-title {
+            font-size: 0.875rem;
+            font-weight: 700;
+        }
+
+        .bar-pending {
+            margin-left: auto;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--muted);
+        }
+
+        .card {
+            border-radius: 1.25rem;
+            background-color: var(--surface);
+            padding: 1rem;
+            box-shadow: 0 1px 2px rgb(28 34 38 / 0.05), 0 10px 24px -18px rgb(28 34 38 / 0.25);
+        }
+
+        .dark .card,
+        .dark .item {
+            box-shadow: inset 0 0 0 1px var(--line);
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 9999px;
+            padding: 0.125rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-ok { background-color: var(--brand-tint); color: var(--brand-text); }
+        .badge-warn { background-color: var(--warn-tint); color: var(--warn-text); }
+        .badge-danger { background-color: var(--danger-tint); color: var(--danger-text); }
+        .badge-neutral { background-color: var(--soft); color: var(--meta); }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.375rem;
+            min-height: 2.25rem;
+            border: 0;
+            border-radius: var(--radius);
+            padding: 0.5rem 0.875rem;
+            font-family: inherit;
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-primary { background-color: var(--brand); color: #fff; }
+        .btn-secondary { background-color: var(--brand-tint); color: var(--brand-text); }
+        .btn-danger { background-color: var(--danger-tint); color: var(--danger-text); }
+        .btn-ghost { background-color: transparent; color: var(--meta); }
+        .btn-icon { padding: 0.5rem; }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2.25rem;
+            min-height: 2.25rem;
+            border: 0;
+            border-radius: var(--radius);
+            background-color: transparent;
+            color: var(--meta);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--meta);
+        }
+
+        .input {
+            display: block;
+            width: 100%;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background-color: var(--field);
+            padding: 0.625rem 0.875rem;
+            font-family: inherit;
+            font-size: 1rem;
+            color: var(--text);
+            outline: none;
+        }
+
+        .input:focus {
+            border-color: var(--brand);
+            box-shadow: 0 0 0 3px var(--brand-tint);
+        }
+
+        /*
+         | The select draws its own arrow, exactly like the app does it
+         | (select.input in resources/css/app.css): the chevron of the icon set
+         | as a background image, in the grey of the meta text.
+         */
+        select.input {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 2.75rem;
+            background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23636d74' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 9.5 12 16l6.5-6.5'/%3E%3C/svg%3E");
+            background-position: right 0.875rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25rem 1.25rem;
+        }
+
+        .chip {
+            min-height: 2rem;
+            border: 0;
+            border-radius: 9999px;
+            background-color: var(--soft);
+            padding: 0.25rem 0.75rem;
+            font-family: inherit;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--meta);
+            cursor: pointer;
+        }
+
+        .chip:hover {
+            background-color: var(--brand-tint);
+            color: var(--brand-text);
+        }
+
+        .section {
+            margin: 1.25rem 0 0.5rem;
+        }
+
+        .row {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .grow { flex: 1 1 0%; }
+        .w-28 { width: 7rem; flex: none; }
+
+        .stack { display: flex; flex-direction: column; gap: 0.75rem; }
+        .spread { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+        .tools { display: flex; align-items: center; gap: 0.25rem; }
+        .chips { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.375rem; }
+
+        .item {
+            border-radius: 1.25rem;
+            background-color: var(--surface);
+            padding: 0.75rem;
+            box-shadow: 0 1px 2px rgb(28 34 38 / 0.05);
+        }
+
+        .item + .item,
+        .item + .card,
+        .card + .item {
+            margin-top: 0.5rem;
+        }
+
+        .item-name {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+            overflow-wrap: anywhere;
+        }
+
+        .item-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.375rem;
+            margin: 0.25rem 0 0;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .quantity {
+            min-width: 1.5rem;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+            border-radius: var(--radius);
+            background-color: var(--soft);
+        }
+
+        .drawer-head {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: inherit;
+            text-decoration: none;
+        }
+
+        .drawer-name {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .drawer-meta {
+            margin: 0.125rem 0 0;
+            font-size: 0.75rem;
+            color: var(--muted);
+        }
+
+        .drawer-items {
+            margin-top: 0.75rem;
+            border-top: 1px solid var(--line);
+            padding-top: 0.5rem;
+        }
+
+        .line {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+            font-size: 0.8125rem;
+        }
+
+        .line-name {
+            min-width: 0;
+            flex: 1 1 0%;
+            font-weight: 600;
+            color: var(--text);
+            overflow-wrap: anywhere;
+        }
+
+        .line-date {
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .notice {
+            border-radius: 1rem;
+            background-color: var(--warn-tint);
+            padding: 0.625rem 0.875rem;
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--warn-text);
+        }
+
+        .notice-ok {
+            background-color: var(--brand-tint);
+            color: var(--brand-text);
         }
 
         .hint {
             font-size: 0.75rem;
         }
 
-        a {
+        .sheet {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             justify-content: center;
+            padding: 1rem calc(1rem + env(safe-area-inset-right, 0px))
+                calc(1.5rem + env(safe-area-inset-bottom, 0px))
+                calc(1rem + env(safe-area-inset-left, 0px));
+        }
+
+        .sheet-backdrop {
+            position: absolute;
+            inset: 0;
+            background-color: rgb(18 23 26 / 0.6);
+        }
+
+        .sheet-body {
+            position: relative;
+            width: 100%;
+            max-width: 26rem;
+            border-radius: 1.25rem;
+            background-color: var(--surface);
+            padding: 1.25rem;
+            box-shadow: 0 20px 40px -20px rgb(0 0 0 / 0.5);
+        }
+
+        .sheet-note {
+            margin: 0.25rem 0 0;
+            font-size: 0.8125rem;
+            color: var(--muted);
+            overflow-wrap: anywhere;
+        }
+
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .empty {
+            text-align: center;
+        }
+
+        .empty img {
+            width: 96px;
+            height: 96px;
+            border-radius: 22px;
+        }
+
+        .empty a.btn {
             margin-top: 1.25rem;
-            padding: 0.75rem 1rem;
-            border-radius: 0.5rem;
-            background-color: var(--brand);
-            color: #fff;
-            font-size: 0.9375rem;
-            font-weight: 600;
             text-decoration: none;
         }
 
-        a:hover {
-            background-color: var(--brand-dark);
+        .stand {
+            margin-top: 1rem;
+            font-size: 0.75rem;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (min-width: 40rem) {
+            .actions {
+                flex-direction: row-reverse;
+            }
+
+            .actions .btn {
+                flex: 1 1 0%;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- The bar names the mode and carries the counter of the changes that still
+         wait for a network, plus the button that sends them by hand. -->
+    <header class="bar">
+        <img src="/favicon.png" alt="Coolventory" width="28" height="28">
+        <span class="bar-title" data-text="offlineBadge">Offline</span>
+        <span class="bar-pending" data-pending hidden></span>
+        <button type="button" class="btn btn-secondary" data-sync hidden data-text="sync">Jetzt synchronisieren</button>
+    </header>
+
     <main>
-        <img src="/favicon.png" alt="Coolventory" width="96" height="96">
+        <p class="notice" data-status hidden></p>
 
-        <h1 data-text="title">Keine Verbindung</h1>
+        <!-- Nobody ever opened the app with a connection: there is no copy of
+             the inventory to work with, and the page says so. -->
+        <section class="card empty" data-empty hidden>
+            <img src="/favicon.png" alt="Coolventory" width="96" height="96">
 
-        <p data-text="text">
-            Coolventory lädt deine Gefrierschränke vom Server. Sobald du wieder online bist, geht es hier weiter.
-        </p>
+            <h1 data-text="title">Keine Verbindung</h1>
 
-        <a href="/" data-retry data-text="retry">Erneut versuchen</a>
+            <p data-text="text">
+                Coolventory lädt deine Gefrierschränke vom Server. Öffne die App
+                einmal mit Verbindung, danach kannst du dein Inventar auch hier
+                ohne Netz bearbeiten.
+            </p>
 
-        <p class="hint" data-text="hint">
-            Die App zeigt bewusst keine zwischengespeicherten Artikel – das MHD wäre sonst nicht mehr verlässlich.
-        </p>
+            <a href="/" class="btn btn-primary" data-retry data-text="retry">Erneut versuchen</a>
+
+            <p class="hint" data-text="hint">
+                Sobald du wieder online bist, werden deine Änderungen übertragen.
+            </p>
+        </section>
+
+        <!-- A single drawer: everything that can be changed happens here, just
+             like in the app. -->
+        <section data-drawer hidden>
+            <div class="tools" style="margin-bottom: 1rem">
+                <a class="icon-btn" href="/freezer/open" data-icon="arrow-left" data-aria="back"></a>
+
+                <div>
+                    <h1 data-drawer-title></h1>
+                    <p data-drawer-subtitle></p>
+                </div>
+            </div>
+
+            <form class="card stack" data-add>
+                <h2 data-text="addHeading">Artikel hinzufügen</h2>
+
+                <div>
+                    <label class="label" for="new-name" data-text="nameLabel">Was kommt rein?</label>
+                    <input class="input" id="new-name" name="name" type="text" maxlength="80" required
+                           data-placeholder="namePlaceholder" placeholder="z. B. Erbsen">
+                </div>
+
+                <div class="row">
+                    <div class="w-28">
+                        <label class="label" for="new-quantity" data-text="quantityLabel">Menge</label>
+                        <input class="input" id="new-quantity" name="quantity" type="number" min="1" max="999"
+                               inputmode="numeric" value="1" required>
+                    </div>
+
+                    <div class="grow">
+                        <label class="label" for="new-best-before" data-text="mhdLabel">MHD (optional)</label>
+                        <input class="input" id="new-best-before" name="best_before" type="date">
+                    </div>
+                </div>
+
+                <!-- The four quick choices of the app: a tap fills the field above
+                     with today plus that span (see InventoryItem::BEST_BEFORE_PRESETS). -->
+                <div>
+                    <p class="label" data-text="quickLabel">Schnellauswahl</p>
+                    <div class="chips" data-presets></div>
+                </div>
+
+                <div>
+                    <label class="label" for="new-category" data-text="categoryLabel">Kategorie (optional)</label>
+                    <select class="input" id="new-category" name="category" data-categories></select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" data-text="add">Hinzufügen</button>
+            </form>
+
+            <h2 class="section" data-text="contents">Inhalt</h2>
+
+            <div data-items></div>
+        </section>
+
+        <!-- Everything else: the whole inventory, drawer by drawer. Read at a
+             glance, changed in the drawer itself. -->
+        <section data-inventory hidden>
+            <div class="spread">
+                <h1 data-text="inventoryTitle">Inventar</h1>
+
+                <a href="/" class="btn btn-secondary" data-retry data-text="retry">Erneut versuchen</a>
+            </div>
+
+            <div class="stack" style="margin-top: 1rem" data-freezers></div>
+        </section>
+
+        <p class="stand" data-stand hidden></p>
     </main>
+
+    <!-- The sheet of the app for changing or moving an item: the fields are
+         built by the script, so one sheet serves both. -->
+    <div class="sheet" data-sheet hidden role="dialog" aria-modal="true">
+        <div class="sheet-backdrop" data-sheet-cancel></div>
+
+        <form class="sheet-body" data-sheet-form>
+            <h2 data-sheet-title></h2>
+            <p class="sheet-note" data-sheet-item></p>
+
+            <div class="stack" style="margin-top: 1rem" data-sheet-fields></div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-primary" data-sheet-submit></button>
+                <button type="button" class="btn btn-ghost" data-sheet-cancel data-text="cancel">Abbrechen</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Deleting asks here and not through the dialog of the browser - the very
+         same rule as in the app (components/confirm-dialog.blade.php). -->
+    <div class="sheet" data-confirm hidden role="dialog" aria-modal="true">
+        <div class="sheet-backdrop" data-confirm-cancel></div>
+
+        <div class="sheet-body">
+            <h2 data-text="deleteTitle">Artikel löschen?</h2>
+            <p class="sheet-note" data-confirm-message></p>
+
+            <div class="actions">
+                <button type="button" class="btn btn-danger" data-confirm-yes data-text="delete">Löschen</button>
+                <button type="button" class="btn btn-ghost" data-confirm-cancel data-text="cancel">Abbrechen</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         /*
@@ -134,40 +611,208 @@
          | browser tells us its own when nothing was chosen yet. The three
          | languages are the three languages of the app (App\Support\Locales);
          | German is the default, exactly like in the app itself.
+         |
+         | The words next to the data - the categories, the state of a best
+         | before date and its relative wording - do not stand here: they arrive
+         | with the snapshot (App\Support\OfflineInventory), so the offline page
+         | shows what the app shows without carrying a second copy of it.
          */
         (function () {
             var TEXT = {
                 de: {
+                    offlineBadge: 'Offline',
+                    sync: 'Jetzt synchronisieren',
+                    syncing: 'Wird übertragen …',
                     title: 'Keine Verbindung',
-                    text: 'Coolventory lädt deine Gefrierschränke vom Server. Sobald du wieder online bist, geht es hier weiter.',
+                    text: 'Coolventory lädt deine Gefrierschränke vom Server. Öffne die App einmal mit Verbindung, danach kannst du dein Inventar auch hier ohne Netz bearbeiten.',
                     retry: 'Erneut versuchen',
-                    hint: 'Die App zeigt bewusst keine zwischengespeicherten Artikel – das MHD wäre sonst nicht mehr verlässlich.',
+                    hint: 'Sobald du wieder online bist, werden deine Änderungen übertragen.',
+                    pending: ':count Änderungen warten auf die Verbindung',
+                    pendingOne: 'Eine Änderung wartet auf die Verbindung',
+                    synced: ':count Änderungen übertragen.',
+                    syncedOne: 'Änderung übertragen.',
+                    skipped: ':count Änderungen konnten nicht übernommen werden.',
+                    failed: 'Übertragen nicht möglich – die Änderungen bleiben gespeichert.',
+                    expiredSession: 'Die Anmeldung ist abgelaufen. Bitte melde dich online neu an – die Änderungen bleiben gespeichert.',
+                    stand: 'Stand: :date',
+                    inventoryTitle: 'Inventar',
+                    back: 'Zurück zum Gefrierschrank',
+                    addHeading: 'Artikel hinzufügen',
+                    nameLabel: 'Was kommt rein?',
+                    namePlaceholder: 'z. B. Erbsen',
+                    quantityLabel: 'Menge',
+                    mhdLabel: 'MHD (optional)',
+                    quickLabel: 'Schnellauswahl',
+                    categoryLabel: 'Kategorie (optional)',
+                    add: 'Hinzufügen',
+                    contents: 'Inhalt',
+                    empty: 'Diese Schublade ist noch leer.',
+                    inventoryEmpty: 'Das Inventar ist noch leer.',
+                    itemCount: ':count Artikel',
+                    unknownDrawer: 'Ohne Fach',
+                    editTitle: 'Artikel ändern',
+                    moveTitle: 'Artikel verschieben',
+                    moveTargetLabel: 'Neues Fach',
+                    save: 'Speichern',
+                    move: 'Verschieben',
+                    cancel: 'Abbrechen',
+                    deleteTitle: 'Artikel löschen?',
+                    deleteMessage: 'Möchtest du „:name“ wirklich löschen?',
+                    delete: 'Löschen',
+                    editAria: 'Artikel bearbeiten',
+                    moveAria: 'Artikel verschieben',
+                    deleteAria: 'Artikel löschen',
+                    increaseAria: 'Menge erhöhen',
+                    decreaseAria: 'Menge verringern',
+                    openDrawer: 'Fach öffnen',
                 },
                 it: {
+                    offlineBadge: 'Offline',
+                    sync: 'Sincronizza ora',
+                    syncing: 'Trasferimento in corso …',
                     title: 'Nessuna connessione',
-                    text: 'Coolventory carica i tuoi congelatori dal server. Appena torni online, si prosegue qui.',
+                    text: "Coolventory carica i tuoi congelatori dal server. Apri l'app una volta con connessione, poi potrai modificare il tuo inventario anche qui, senza rete.",
                     retry: 'Riprova',
-                    hint: "L'app non mostra di proposito articoli salvati: la scadenza non sarebbe più affidabile.",
+                    hint: 'Appena torni online, le tue modifiche vengono trasferite.',
+                    pending: ':count modifiche in attesa della connessione',
+                    pendingOne: 'Una modifica in attesa della connessione',
+                    synced: ':count modifiche trasferite.',
+                    syncedOne: 'Modifica trasferita.',
+                    skipped: ':count modifiche non sono state accettate.',
+                    failed: 'Trasferimento non riuscito – le modifiche restano salvate.',
+                    expiredSession: 'La sessione è scaduta. Accedi di nuovo online – le modifiche restano salvate.',
+                    stand: 'Aggiornato: :date',
+                    inventoryTitle: 'Inventario',
+                    back: 'Torna al congelatore',
+                    addHeading: 'Aggiungi articolo',
+                    nameLabel: 'Cosa ci metti?',
+                    namePlaceholder: 'es. Piselli',
+                    quantityLabel: 'Quantità',
+                    mhdLabel: 'Scadenza (opzionale)',
+                    quickLabel: 'Scelta rapida',
+                    categoryLabel: 'Categoria (opzionale)',
+                    add: 'Aggiungi',
+                    contents: 'Contenuto',
+                    empty: 'Questo cassetto è ancora vuoto.',
+                    inventoryEmpty: "L'inventario è ancora vuoto.",
+                    itemCount: ':count articoli',
+                    unknownDrawer: 'Senza vano',
+                    editTitle: 'Modifica articolo',
+                    moveTitle: 'Sposta articolo',
+                    moveTargetLabel: 'Nuovo vano',
+                    save: 'Salva',
+                    move: 'Sposta',
+                    cancel: 'Annulla',
+                    deleteTitle: "Eliminare l'articolo?",
+                    deleteMessage: 'Vuoi davvero eliminare “:name”?',
+                    delete: 'Elimina',
+                    editAria: "Modifica l'articolo",
+                    moveAria: "Sposta l'articolo",
+                    deleteAria: "Elimina l'articolo",
+                    increaseAria: 'Aumenta la quantità',
+                    decreaseAria: 'Riduci la quantità',
+                    openDrawer: 'Apri il vano',
                 },
                 en: {
+                    offlineBadge: 'Offline',
+                    sync: 'Sync now',
+                    syncing: 'Syncing …',
                     title: 'No connection',
-                    text: 'Coolventory loads your freezers from the server. As soon as you are back online, it continues here.',
+                    text: 'Coolventory loads your freezers from the server. Open the app once with a connection, after that you can edit your inventory here as well, without a network.',
                     retry: 'Try again',
-                    hint: 'The app deliberately shows no cached items – the best before date would not be reliable any more.',
+                    hint: 'As soon as you are back online, your changes are transferred.',
+                    pending: ':count changes are waiting for the connection',
+                    pendingOne: 'One change is waiting for the connection',
+                    synced: ':count changes transferred.',
+                    syncedOne: 'Change transferred.',
+                    skipped: ':count changes could not be accepted.',
+                    failed: 'Transfer not possible – the changes stay saved.',
+                    expiredSession: 'The session has expired. Please sign in again online – the changes stay saved.',
+                    stand: 'As of: :date',
+                    inventoryTitle: 'Inventory',
+                    back: 'Back to the freezer',
+                    addHeading: 'Add item',
+                    nameLabel: 'What goes in?',
+                    namePlaceholder: 'e.g. peas',
+                    quantityLabel: 'Quantity',
+                    mhdLabel: 'Best before (optional)',
+                    quickLabel: 'Quick choice',
+                    categoryLabel: 'Category (optional)',
+                    add: 'Add',
+                    contents: 'Contents',
+                    empty: 'This drawer is still empty.',
+                    inventoryEmpty: 'The inventory is still empty.',
+                    itemCount: ':count items',
+                    unknownDrawer: 'Without a drawer',
+                    editTitle: 'Edit item',
+                    moveTitle: 'Move item',
+                    moveTargetLabel: 'New drawer',
+                    save: 'Save',
+                    move: 'Move',
+                    cancel: 'Cancel',
+                    deleteTitle: 'Delete item?',
+                    deleteMessage: 'Do you really want to delete “:name”?',
+                    delete: 'Delete',
+                    editAria: 'Edit item',
+                    moveAria: 'Move item',
+                    deleteAria: 'Delete item',
+                    increaseAria: 'Increase quantity',
+                    decreaseAria: 'Decrease quantity',
+                    openDrawer: 'Open drawer',
                 },
+            };
+
+            /* ---------- the storage of the browser ---------- */
+
+            var KEYS = {
+                snapshot: 'offline-snapshot',
+                queue: 'offline-queue',
+                token: 'csrf-token',
+                locale: 'app-locale',
+                scheme: 'color-scheme',
             };
 
             function read(key) {
                 try {
                     return localStorage.getItem(key);
                 } catch (error) {
-                    // Storage is blocked (private mode) - the browser decides.
                     return null;
                 }
             }
 
+            function write(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                } catch (error) {
+                    // Storage is blocked or full: the page keeps working, the
+                    // change is simply not remembered.
+                }
+            }
+
+            function drop(key) {
+                try {
+                    localStorage.removeItem(key);
+                } catch (error) {
+                    // Nothing to remove.
+                }
+            }
+
+            function parsed(raw) {
+                if (raw === null) {
+                    return null;
+                }
+
+                try {
+                    return JSON.parse(raw);
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            /* ---------- language and colour scheme ---------- */
+
             function language() {
-                var stored = read('app-locale');
+                var stored = read(KEYS.locale);
 
                 if (stored !== null && TEXT[stored] !== undefined) {
                     return stored;
@@ -182,36 +827,1068 @@
             var texts = TEXT[locale];
 
             document.documentElement.lang = locale;
-            document.title = texts.title + ' · Coolventory';
 
-            var slots = document.querySelectorAll('[data-text]');
+            // The very same rule as in components/theme-script.blade.php: only
+            // the saved choice switches to the dark scheme.
+            if (read(KEYS.scheme) === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
 
-            for (var i = 0; i < slots.length; i++) {
-                var key = slots[i].getAttribute('data-text');
+            /* ---------- the data of the last visit ---------- */
 
-                if (texts[key] !== undefined) {
-                    slots[i].textContent = texts[key];
+            var snapshot = parsed(read(KEYS.snapshot));
+            var queue = parsed(read(KEYS.queue));
+
+            if (!Array.isArray(queue)) {
+                queue = [];
+            }
+
+            /*
+             | The words that arrive with the snapshot (the categories, the state
+             | of a best before date and its relative wording) and the drawers in
+             | it. Both are read again whenever a sync hands over a new snapshot.
+             */
+            var labels, stateLabels, mhdLabels, categoryLabels, noCategoryLabel, presets, warningDays, drawers;
+
+            function useSnapshot(data) {
+                snapshot = data;
+                labels = (snapshot !== null && snapshot.labels) || {};
+                stateLabels = labels.state || {};
+                mhdLabels = labels.mhd || {};
+                categoryLabels = labels.categories || {};
+                noCategoryLabel = labels.no_category || '';
+                presets = Array.isArray(labels.presets) ? labels.presets : [];
+                warningDays = snapshot !== null && typeof snapshot.warning_days === 'number'
+                    ? snapshot.warning_days
+                    : 7;
+                drawers = drawerList();
+            }
+
+            useSnapshot(snapshot);
+
+            /* ---------- small helpers ---------- */
+
+            /** Everything that comes from a name or a label goes through here. */
+            function esc(value) {
+                return String(value === null || value === undefined ? '' : value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            /** A text with ":count" in it, filled with a number. */
+            function count(pattern, number) {
+                return String(pattern === undefined ? '' : pattern).replace(':count', number);
+            }
+
+            /** A text with ":name" in it, filled with the name of an item. */
+            function named(pattern, name) {
+                return String(pattern === undefined ? '' : pattern).replace(':name', name);
+            }
+
+            /** One of the texts of this page, ":count" already replaced. */
+            function t(key, number) {
+                return number === undefined ? texts[key] : count(texts[key], number);
+            }
+
+            /**
+             * Today plus the months of a quick choice, without overflowing into
+             * the next month - the very same rule as
+             * InventoryItem::bestBeforeForPreset().
+             */
+            function dateForPreset(months) {
+                var today = new Date();
+                var target = new Date(today.getFullYear(), today.getMonth() + months, 1);
+                var lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+
+                target.setDate(Math.min(today.getDate(), lastDay));
+
+                return iso(target);
+            }
+
+            /** A date as the field of a browser wants it: 2027-01-31. */
+            function iso(date) {
+                var month = String(date.getMonth() + 1);
+                var day = String(date.getDate());
+
+                return date.getFullYear() + '-' + (month.length < 2 ? '0' + month : month)
+                    + '-' + (day.length < 2 ? '0' + day : day);
+            }
+
+            /** A date as the app writes it: 31.01.2027. */
+            function formatted(date) {
+                var parts = String(date).split('-');
+
+                return parts.length === 3 ? parts[2] + '.' + parts[1] + '.' + parts[0] : String(date);
+            }
+
+            /**
+             * Days until a best before date: negative when it is gone already,
+             * null while no date was entered. The clock of the device decides -
+             * the snapshot of the last visit could be days old.
+             */
+            function daysUntil(date) {
+                var parts = String(date).split('-');
+
+                if (parts.length !== 3) {
+                    return null;
+                }
+
+                var target = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+                var today = new Date();
+
+                today.setHours(0, 0, 0, 0);
+
+                return Math.round((target.getTime() - today.getTime()) / 86400000);
+            }
+
+            /**
+             * The UUID of an item that is entered here. crypto.randomUUID() only
+             * exists on a secure origin; over an address in the local network
+             * the version 4 UUID is built by hand.
+             */
+            function newUuid() {
+                if (window.crypto && typeof window.crypto.randomUUID === 'function') {
+                    return window.crypto.randomUUID();
+                }
+
+                var bytes = [];
+
+                for (var i = 0; i < 16; i++) {
+                    bytes.push(Math.floor(Math.random() * 256));
+                }
+
+                bytes[6] = (bytes[6] & 0x0f) | 0x40;
+                bytes[8] = (bytes[8] & 0x3f) | 0x80;
+
+                var hex = '';
+
+                for (var j = 0; j < 16; j++) {
+                    hex += ('0' + bytes[j].toString(16)).slice(-2);
+                }
+
+                return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16)
+                    + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+            }
+
+            /** One icon of the set of the app (components/icon.blade.php). */
+            function icon(name, className) {
+                var paths = {
+                    'plus': '<path d="M12 5v14"/><path d="M5 12h14"/>',
+                    'minus': '<path d="M5 12h14"/>',
+                    'pencil': '<path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5 17.5 10.5"/>',
+                    'trash': '<path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10.5 11v6"/><path d="M13.5 11v6"/>',
+                    'move': '<path d="M12 5v14"/><path d="M9 8l3-3 3 3"/><path d="M9 16l3 3 3-3"/><path d="M5 12h14"/><path d="M8 9l-3 3 3 3"/><path d="M16 9l3 3-3 3"/>',
+                    'arrow-left': '<path d="M19 12H5"/><path d="M11 6 5 12l6 6"/>',
+                    'chevron-right': '<path d="M9.5 5.5 16 12l-6.5 6.5"/>',
+                    'snowflake': '<path d="M12 3v18"/><path d="M4.2 7.5 19.8 16.5"/><path d="M19.8 7.5 4.2 16.5"/>',
+                };
+
+                return '<svg class="' + esc(className || '') + '" width="20" height="20" viewBox="0 0 24 24" fill="none"'
+                    + ' stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"'
+                    + ' aria-hidden="true" focusable="false">' + (paths[name] || paths.snowflake) + '</svg>';
+            }
+
+            /* ---------- the inventory: the snapshot plus the queue ---------- */
+
+            /** Every drawer of the snapshot, with the freezer it belongs to. */
+            function drawerList() {
+                var list = [];
+
+                if (snapshot === null) {
+                    return list;
+                }
+
+                (snapshot.freezers || []).forEach(function (freezer) {
+                    (freezer.drawers || []).forEach(function (drawer) {
+                        list.push({ id: drawer.id, name: drawer.name, freezer: freezer.name });
+                    });
+                });
+
+                return list;
+            }
+
+            function drawerById(id) {
+                for (var i = 0; i < drawers.length; i++) {
+                    if (drawers[i].id === id) {
+                        return drawers[i];
+                    }
+                }
+
+                return null;
+            }
+
+            /**
+             * Every item as this page knows it: the snapshot of the last visit
+             * with the changes of the queue laid over it. So a change is visible
+             * right away and still travels to the server later on.
+             */
+            function records() {
+                var list = [];
+
+                if (snapshot !== null) {
+                    (snapshot.freezers || []).forEach(function (freezer) {
+                        (freezer.drawers || []).forEach(function (drawer) {
+                            (drawer.items || []).forEach(function (item) {
+                                list.push({
+                                    uuid: item.uuid,
+                                    name: item.name,
+                                    quantity: item.quantity,
+                                    best_before: item.best_before,
+                                    category: item.category,
+                                    drawer_id: drawer.id,
+                                });
+                            });
+                        });
+                    });
+                }
+
+                queue.forEach(function (operation) {
+                    var position = -1;
+
+                    for (var i = 0; i < list.length; i++) {
+                        if (list[i].uuid === operation.uuid) {
+                            position = i;
+                        }
+                    }
+
+                    if (operation.type === 'delete') {
+                        if (position >= 0) {
+                            list.splice(position, 1);
+                        }
+
+                        return;
+                    }
+
+                    var record = {
+                        uuid: operation.uuid,
+                        name: operation.name,
+                        quantity: operation.quantity,
+                        best_before: operation.best_before,
+                        category: operation.category,
+                        drawer_id: operation.drawer_id,
+                    };
+
+                    if (position >= 0) {
+                        list[position] = record;
+                    } else {
+                        list.push(record);
+                    }
+                });
+
+                list.sort(function (a, b) {
+                    return String(a.name).localeCompare(String(b.name), locale);
+                });
+
+                return list;
+            }
+
+            function recordsOfDrawer(id) {
+                return records().filter(function (record) {
+                    return record.drawer_id === id;
+                });
+            }
+
+            function recordByUuid(uuid) {
+                var all = records();
+
+                for (var i = 0; i < all.length; i++) {
+                    if (all[i].uuid === uuid) {
+                        return all[i];
+                    }
+                }
+
+                return null;
+            }
+
+            /** Whether the snapshot of the last visit already knows this item. */
+            function inSnapshot(uuid) {
+                var found = false;
+
+                if (snapshot !== null) {
+                    (snapshot.freezers || []).forEach(function (freezer) {
+                        (freezer.drawers || []).forEach(function (drawer) {
+                            (drawer.items || []).forEach(function (item) {
+                                if (item.uuid === uuid) {
+                                    found = true;
+                                }
+                            });
+                        });
+                    });
+                }
+
+                return found;
+            }
+
+            /** The state of a best before date, exactly as the app names it. */
+            function stateOf(record) {
+                if (!record.best_before) {
+                    return 'unknown';
+                }
+
+                var days = daysUntil(record.best_before);
+
+                if (days === null) {
+                    return 'unknown';
+                }
+
+                if (days < 0) {
+                    return 'expired';
+                }
+
+                return days <= warningDays ? 'soon' : 'fresh';
+            }
+
+            function badgeClass(state) {
+                var classes = {
+                    'expired': 'badge-danger',
+                    'soon': 'badge-warn',
+                    'fresh': 'badge-ok',
+                    'unknown': 'badge-neutral',
+                };
+
+                return classes[state] === undefined ? 'badge-neutral' : classes[state];
+            }
+
+            function badgeOf(state) {
+                return '<span class="badge ' + badgeClass(state) + '">' + esc(stateLabels[state] || '') + '</span>';
+            }
+
+            /** The relative wording of the best before date ("MHD in 3 Tagen"). */
+            function mhdText(record) {
+                if (!record.best_before) {
+                    return mhdLabels.none || '';
+                }
+
+                var days = daysUntil(record.best_before);
+
+                if (days === null) {
+                    return mhdLabels.none || '';
+                }
+
+                if (days < -1) {
+                    return count(mhdLabels.days_ago, Math.abs(days));
+                }
+
+                if (days === -1) {
+                    return mhdLabels.yesterday;
+                }
+
+                if (days === 0) {
+                    return mhdLabels.today;
+                }
+
+                if (days === 1) {
+                    return mhdLabels.tomorrow;
+                }
+
+                return count(mhdLabels.in_days, days);
+            }
+
+            /** The row of one item - the shape the drawer of the app shows. */
+            function itemRow(record) {
+                var meta = '';
+
+                if (record.best_before) {
+                    meta = badgeOf(stateOf(record))
+                        + '<span>' + esc(mhdText(record)) + '</span>'
+                        + '<span>·</span>'
+                        + '<span>' + esc(formatted(record.best_before)) + '</span>';
+                }
+
+                if (record.category && categoryLabels[record.category] !== undefined) {
+                    meta += '<span class="badge badge-neutral">' + esc(categoryLabels[record.category]) + '</span>';
+                }
+
+                return '<div class="item">'
+                    + '<div class="spread">'
+                    + '<div>'
+                    + '<p class="item-name">' + esc(record.name) + '</p>'
+                    + (meta === '' ? '' : '<p class="item-meta">' + meta + '</p>')
+                    + '</div>'
+                    + '<div class="tools">'
+                    + '<button type="button" class="icon-btn" data-action="delete" data-uuid="' + esc(record.uuid)
+                    + '" aria-label="' + esc(texts.deleteAria) + '">' + icon('trash') + '</button>'
+                    + '<div class="counter">'
+                    + '<button type="button" class="icon-btn" data-action="decrease" data-uuid="' + esc(record.uuid)
+                    + '" aria-label="' + esc(texts.decreaseAria) + '">' + icon('minus') + '</button>'
+                    + '<span class="quantity">' + esc(record.quantity) + '</span>'
+                    + '<button type="button" class="icon-btn" data-action="increase" data-uuid="' + esc(record.uuid)
+                    + '" aria-label="' + esc(texts.increaseAria) + '">' + icon('plus') + '</button>'
+                    + '</div>'
+                    + '</div>'
+                    + '</div>'
+                    + '<div class="tools" style="justify-content: flex-end; margin-top: 0.5rem;'
+                    + ' border-top: 1px solid var(--line); padding-top: 0.5rem">'
+                    + '<button type="button" class="icon-btn" data-action="edit" data-uuid="' + esc(record.uuid)
+                    + '" aria-label="' + esc(texts.editAria) + '">' + icon('pencil') + '</button>'
+                    + '<button type="button" class="icon-btn" data-action="move" data-uuid="' + esc(record.uuid)
+                    + '" aria-label="' + esc(texts.moveAria) + '">' + icon('move') + '</button>'
+                    + '</div>'
+                    + '</div>';
+            }
+
+            /* ---------- drawing ---------- */
+
+            var elements = {
+                pending: document.querySelector('[data-pending]'),
+                sync: document.querySelector('[data-sync]'),
+                status: document.querySelector('[data-status]'),
+                empty: document.querySelector('[data-empty]'),
+                drawer: document.querySelector('[data-drawer]'),
+                drawerTitle: document.querySelector('[data-drawer-title]'),
+                drawerSubtitle: document.querySelector('[data-drawer-subtitle]'),
+                items: document.querySelector('[data-items]'),
+                inventory: document.querySelector('[data-inventory]'),
+                freezers: document.querySelector('[data-freezers]'),
+                stand: document.querySelector('[data-stand]'),
+                addForm: document.querySelector('[data-add]'),
+                presets: document.querySelector('[data-presets]'),
+                categories: document.querySelector('[data-categories]'),
+                sheet: document.querySelector('[data-sheet]'),
+                sheetForm: document.querySelector('[data-sheet-form]'),
+                sheetTitle: document.querySelector('[data-sheet-title]'),
+                sheetItem: document.querySelector('[data-sheet-item]'),
+                sheetFields: document.querySelector('[data-sheet-fields]'),
+                sheetSubmit: document.querySelector('[data-sheet-submit]'),
+                confirm: document.querySelector('[data-confirm]'),
+                confirmMessage: document.querySelector('[data-confirm-message]'),
+                confirmYes: document.querySelector('[data-confirm-yes]'),
+            };
+
+            function show(element, visible) {
+                if (element !== null) {
+                    element.hidden = !visible;
                 }
             }
 
-            // The link leads to the app on its own, so a page without script
-            // keeps working; with script it simply loads the page that was
-            // asked for once more.
-            var retry = document.querySelector('[data-retry]');
+            /** The words of this page, in the language that was picked. */
+            function translate() {
+                var slots = document.querySelectorAll('[data-text]');
 
-            if (retry !== null) {
-                retry.addEventListener('click', function (event) {
+                for (var i = 0; i < slots.length; i++) {
+                    var key = slots[i].getAttribute('data-text');
+
+                    if (texts[key] !== undefined) {
+                        slots[i].textContent = texts[key];
+                    }
+                }
+
+                var placeholders = document.querySelectorAll('[data-placeholder]');
+
+                for (var j = 0; j < placeholders.length; j++) {
+                    var name = placeholders[j].getAttribute('data-placeholder');
+
+                    if (texts[name] !== undefined) {
+                        placeholders[j].setAttribute('placeholder', texts[name]);
+                    }
+                }
+
+                var labelled = document.querySelectorAll('[data-aria]');
+
+                for (var k = 0; k < labelled.length; k++) {
+                    var aria = labelled[k].getAttribute('data-aria');
+
+                    if (texts[aria] !== undefined) {
+                        labelled[k].setAttribute('aria-label', texts[aria]);
+                    }
+                }
+
+                var icons = document.querySelectorAll('[data-icon]');
+
+                for (var m = 0; m < icons.length; m++) {
+                    icons[m].innerHTML = icon(icons[m].getAttribute('data-icon'));
+                }
+            }
+
+            /** The category selection of the add form and of the edit sheet. */
+            function categoryOptions(selected) {
+                var html = '<option value="">' + esc(noCategoryLabel) + '</option>';
+
+                Object.keys(categoryLabels).forEach(function (key) {
+                    html += '<option value="' + esc(key) + '"' + (key === selected ? ' selected' : '') + '>'
+                        + esc(categoryLabels[key]) + '</option>';
+                });
+
+                return html;
+            }
+
+            /**
+             * The quick choices of the best before field. ":target" is the id of
+             * the field a tap fills - the form of the drawer and the sheet of an
+             * item each have their own.
+             */
+            function presetChips(target) {
+                return presets.map(function (preset) {
+                    return '<button type="button" class="chip" data-action="preset" data-months="'
+                        + esc(preset.months) + '" data-target="' + esc(target) + '">' + esc(preset.label) + '</button>';
+                }).join('');
+            }
+
+            /** The drawer the address asks for, or null for the inventory. */
+            function currentDrawer() {
+                var match = /^\/freezer\/drawer\/(\d+)\/?$/.exec(location.pathname);
+
+                return match === null ? null : drawerById(Number(match[1]));
+            }
+
+            function draw() {
+                var drawer = currentDrawer();
+
+                if (snapshot === null) {
+                    document.title = texts.title + ' · Coolventory';
+
+                    show(elements.empty, true);
+                    show(elements.drawer, false);
+                    show(elements.inventory, false);
+                    show(elements.stand, false);
+                } else if (drawer !== null) {
+                    document.title = drawer.name + ' · Coolventory';
+
+                    show(elements.empty, false);
+                    show(elements.inventory, false);
+
+                    drawDrawer(drawer);
+                } else {
+                    document.title = texts.inventoryTitle + ' · Coolventory';
+
+                    show(elements.empty, false);
+                    show(elements.drawer, false);
+                    show(elements.inventory, true);
+
+                    drawInventory();
+                }
+
+                drawPending();
+                drawStand();
+            }
+
+            function drawDrawer(drawer) {
+                var list = recordsOfDrawer(drawer.id);
+
+                elements.drawerTitle.textContent = drawer.name;
+                elements.drawerSubtitle.textContent = drawer.freezer + ' · ' + t('itemCount', list.length);
+
+                elements.items.innerHTML = list.length === 0
+                    ? '<div class="card empty">' + icon('snowflake') + '<p>' + esc(texts.empty) + '</p></div>'
+                    : list.map(itemRow).join('');
+
+                show(elements.drawer, true);
+            }
+
+            function drawInventory() {
+                var html = '';
+
+                (snapshot.freezers || []).forEach(function (freezer) {
+                    html += '<p class="label">' + esc(freezer.name) + '</p>';
+
+                    (freezer.drawers || []).forEach(function (drawer) {
+                        html += drawerCard({ id: drawer.id, name: drawer.name, freezer: freezer.name });
+                    });
+                });
+
+                // An item that waits in a drawer the snapshot does not know (the
+                // drawer was deleted online in the meantime) would be invisible
+                // here - it gets a card of its own, so nothing disappears
+                // silently.
+                var orphans = records().filter(function (record) {
+                    return drawerById(record.drawer_id) === null;
+                });
+
+                if (orphans.length > 0) {
+                    html += drawerCard({ id: null, name: texts.unknownDrawer, freezer: '', items: orphans });
+                }
+
+                if (html === '') {
+                    html = '<div class="card empty"><p>' + esc(texts.inventoryEmpty) + '</p></div>';
+                }
+
+                elements.freezers.innerHTML = html;
+            }
+
+            /** One drawer of the inventory: its items at a glance, and its page. */
+            function drawerCard(drawer) {
+                var list = drawer.items === undefined ? recordsOfDrawer(drawer.id) : drawer.items;
+                var meta = (drawer.freezer === '' ? '' : drawer.freezer + ' · ') + t('itemCount', list.length);
+
+                var inner = '<div class="grow">'
+                    + '<p class="drawer-name">' + esc(drawer.name) + '</p>'
+                    + '<p class="drawer-meta">' + esc(meta) + '</p>'
+                    + '</div>'
+                    + (drawer.id === null ? '' : icon('chevron-right'));
+
+                // The card of a drawer is the link into it; the card of the
+                // items without a drawer has nowhere to go.
+                var head = drawer.id === null
+                    ? '<div class="drawer-head">' + inner + '</div>'
+                    : '<a class="drawer-head" href="/freezer/drawer/' + esc(drawer.id) + '" aria-label="'
+                        + esc(texts.openDrawer) + '">' + inner + '</a>';
+
+                var body = list.length === 0
+                    ? '<p>' + esc(texts.empty) + '</p>'
+                    : list.map(function (record) {
+                        var date = record.best_before
+                            ? badgeOf(stateOf(record)) + '<span class="line-date">'
+                                + esc(formatted(record.best_before)) + '</span>'
+                            : '';
+
+                        return '<div class="line">'
+                            + '<span class="line-name">' + esc(record.name) + '</span>'
+                            + '<span class="quantity">' + esc(record.quantity) + '</span>'
+                            + date
+                            + '</div>';
+                    }).join('');
+
+                return '<div class="card">' + head + '<div class="drawer-items">' + body + '</div></div>';
+            }
+
+            /** The bar: how many changes wait, and the button that sends them. */
+            function drawPending() {
+                var pending = queue.length;
+
+                elements.pending.textContent = pending === 0
+                    ? ''
+                    : (pending === 1 ? texts.pendingOne : count(texts.pending, pending));
+
+                show(elements.pending, pending > 0);
+                show(elements.sync, pending > 0);
+            }
+
+            /** When the copy on the device was made. */
+            function drawStand() {
+                if (snapshot === null || snapshot.generated_at === undefined) {
+                    show(elements.stand, false);
+
+                    return;
+                }
+
+                var when = new Date(snapshot.generated_at);
+
+                elements.stand.textContent = String(texts.stand).replace(':date',
+                    when.toLocaleDateString(locale) + ', '
+                    + when.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }));
+
+                show(elements.stand, true);
+            }
+
+            function status(message, ok) {
+                if (message === null) {
+                    show(elements.status, false);
+
+                    return;
+                }
+
+                elements.status.textContent = message;
+                elements.status.className = ok ? 'notice notice-ok' : 'notice';
+
+                show(elements.status, true);
+            }
+
+            /* ---------- changing the inventory ---------- */
+
+            /**
+             * Every change waits in the queue until the server took it: at most
+             * one operation per item, so the newest state of that item is what
+             * travels (the server writes what the last sync says).
+             */
+            function clearOperations(uuid) {
+                queue = queue.filter(function (operation) {
+                    return operation.uuid !== uuid;
+                });
+            }
+
+            function rememberQueue() {
+                write(KEYS.queue, JSON.stringify(queue));
+            }
+
+            function queueSave(record) {
+                clearOperations(record.uuid);
+
+                queue.push({
+                    type: 'save',
+                    uuid: record.uuid,
+                    drawer_id: record.drawer_id,
+                    name: record.name,
+                    quantity: quantityOf(record.quantity),
+                    best_before: record.best_before === undefined || record.best_before === ''
+                        ? null
+                        : record.best_before,
+                    category: record.category === undefined || record.category === ''
+                        ? null
+                        : record.category,
+                });
+
+                rememberQueue();
+                draw();
+            }
+
+            /**
+             * Delete an item. One that was entered here and never reached the
+             * server only loses its waiting change - there is nothing to delete
+             * online.
+             */
+            function queueDelete(uuid) {
+                var known = inSnapshot(uuid);
+
+                clearOperations(uuid);
+
+                if (known) {
+                    queue.push({ type: 'delete', uuid: uuid });
+                }
+
+                rememberQueue();
+                draw();
+            }
+
+            /** Never below one piece: removing an item is an explicit action. */
+            function quantityOf(value) {
+                var quantity = Number(value);
+
+                if (!isFinite(quantity) || quantity < 1) {
+                    return 1;
+                }
+
+                return Math.min(999, Math.round(quantity));
+            }
+
+            /**
+             * Take one piece out of an item. The last piece is not taken out in
+             * silence: the app knows no quantity of zero, so the sheet asks the
+             * very question its delete button asks (see openConfirm) - just like
+             * the drawer page does it with a network.
+             */
+            function changeQuantity(record, difference) {
+                var quantity = Number(record.quantity) + difference;
+
+                if (quantity < 1) {
+                    openConfirm(record);
+
+                    return;
+                }
+
+                queueSave({
+                    uuid: record.uuid,
+                    drawer_id: record.drawer_id,
+                    name: record.name,
+                    quantity: quantity,
+                    best_before: record.best_before,
+                    category: record.category,
+                });
+            }
+
+            /** A new item of the drawer the page stands in. */
+            function addItem(drawer, values) {
+                queueSave({
+                    uuid: newUuid(),
+                    drawer_id: drawer.id,
+                    name: values.name,
+                    quantity: values.quantity,
+                    best_before: values.best_before,
+                    category: values.category,
+                });
+            }
+
+            /* ---------- the sheet: change, move and delete ---------- */
+
+            /** The item and the mode the sheet stands open for. */
+            var editing = null;
+
+            function closeSheets() {
+                editing = null;
+
+                show(elements.sheet, false);
+                show(elements.confirm, false);
+            }
+
+            function openEdit(record) {
+                editing = { mode: 'edit', record: record };
+
+                elements.sheetTitle.textContent = texts.editTitle;
+                elements.sheetItem.textContent = record.name;
+                elements.sheetSubmit.textContent = texts.save;
+                elements.sheetFields.innerHTML = '<div>'
+                    + '<label class="label" for="edit-name">' + esc(texts.nameLabel) + '</label>'
+                    + '<input class="input" id="edit-name" name="name" type="text" maxlength="80" required value="'
+                    + esc(record.name) + '">'
+                    + '</div>'
+                    + '<div class="row">'
+                    + '<div class="w-28">'
+                    + '<label class="label" for="edit-quantity">' + esc(texts.quantityLabel) + '</label>'
+                    + '<input class="input" id="edit-quantity" name="quantity" type="number" min="1" max="999"'
+                    + ' inputmode="numeric" required value="' + esc(record.quantity) + '">'
+                    + '</div>'
+                    + '<div class="grow">'
+                    + '<label class="label" for="edit-best-before">' + esc(texts.mhdLabel) + '</label>'
+                    + '<input class="input" id="edit-best-before" name="best_before" type="date" value="'
+                    + esc(record.best_before || '') + '">'
+                    + '</div>'
+                    + '</div>'
+                    + '<div>'
+                    + '<p class="label">' + esc(texts.quickLabel) + '</p>'
+                    + '<div class="chips">' + presetChips('edit-best-before') + '</div>'
+                    + '</div>'
+                    + '<div>'
+                    + '<label class="label" for="edit-category">' + esc(texts.categoryLabel) + '</label>'
+                    + '<select class="input" id="edit-category" name="category">' + categoryOptions(record.category)
+                    + '</select>'
+                    + '</div>';
+
+                show(elements.sheet, true);
+            }
+
+            function openMove(record) {
+                editing = { mode: 'move', record: record };
+
+                var options = drawers.map(function (drawer) {
+                    return '<option value="' + esc(drawer.id) + '"' + (drawer.id === record.drawer_id ? ' selected' : '')
+                        + '>' + esc(drawer.freezer + ' · ' + drawer.name) + '</option>';
+                }).join('');
+
+                elements.sheetTitle.textContent = texts.moveTitle;
+                elements.sheetItem.textContent = record.name;
+                elements.sheetSubmit.textContent = texts.move;
+                elements.sheetFields.innerHTML = '<div>'
+                    + '<label class="label" for="move-drawer">' + esc(texts.moveTargetLabel) + '</label>'
+                    + '<select class="input" id="move-drawer" name="drawer_id" required>' + options + '</select>'
+                    + '</div>';
+
+                show(elements.sheet, true);
+            }
+
+            function openConfirm(record) {
+                editing = { mode: 'delete', record: record };
+
+                elements.confirmMessage.textContent = named(texts.deleteMessage, record.name);
+
+                show(elements.confirm, true);
+            }
+
+            /** The selections that carry words of the snapshot. */
+            function refreshOptions() {
+                elements.categories.innerHTML = categoryOptions('');
+                elements.presets.innerHTML = presetChips('new-best-before');
+            }
+
+            /* ---------- the way back to the server ---------- */
+
+            var syncing = false;
+
+            /**
+             * Hand the waiting changes to the server. The answer carries the
+             * inventory as it stands afterwards, so it replaces the copy on the
+             * device - only then is the queue empty. Everything that fails (no
+             * network, an expired session) keeps both, so no change is lost by
+             * trying.
+             */
+            function sync() {
+                if (syncing || queue.length === 0) {
+                    return;
+                }
+
+                syncing = true;
+                elements.sync.disabled = true;
+                elements.sync.textContent = texts.syncing;
+
+                fetch('/offline/sync', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': read(KEYS.token) || '',
+                    },
+                    body: JSON.stringify({ operations: queue }),
+                }).then(function (response) {
+                    if (response.status === 401 || response.status === 419) {
+                        throw new Error('session');
+                    }
+
+                    if (!response.ok) {
+                        throw new Error('failed');
+                    }
+
+                    return response.json();
+                }).then(function (answer) {
+                    queue = [];
+                    drop(KEYS.queue);
+
+                    if (answer.snapshot !== undefined) {
+                        useSnapshot(answer.snapshot);
+                        refreshOptions();
+                    }
+
+                    var message = answer.applied === 1 ? texts.syncedOne : count(texts.synced, answer.applied);
+
+                    if (answer.skipped > 0) {
+                        message += ' ' + count(texts.skipped, answer.skipped);
+                    }
+
+                    status(message, true);
+                    draw();
+                }).catch(function (error) {
+                    status(error.message === 'session' ? texts.expiredSession : texts.failed, false);
+                }).then(function () {
+                    syncing = false;
+                    elements.sync.disabled = false;
+                    elements.sync.textContent = texts.sync;
+                });
+            }
+
+            /* ---------- what the user does ---------- */
+
+            document.addEventListener('click', function (event) {
+                var element = event.target instanceof Element ? event.target.closest('[data-action]') : null;
+
+                if (element === null) {
+                    return;
+                }
+
+                var action = element.getAttribute('data-action');
+
+                if (action === 'preset') {
+                    var field = document.getElementById(element.getAttribute('data-target'));
+
+                    if (field !== null) {
+                        field.value = dateForPreset(Number(element.getAttribute('data-months')));
+                    }
+
+                    return;
+                }
+
+                var record = recordByUuid(element.getAttribute('data-uuid'));
+
+                if (record === null) {
+                    return;
+                }
+
+                if (action === 'increase') {
+                    changeQuantity(record, 1);
+                } else if (action === 'decrease') {
+                    changeQuantity(record, -1);
+                } else if (action === 'edit') {
+                    openEdit(record);
+                } else if (action === 'move') {
+                    openMove(record);
+                } else if (action === 'delete') {
+                    openConfirm(record);
+                }
+            });
+
+            elements.addForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                var drawer = currentDrawer();
+                var fields = elements.addForm.elements;
+                var name = String(fields.name.value).trim();
+
+                if (drawer === null || name === '') {
+                    return;
+                }
+
+                addItem(drawer, {
+                    name: name,
+                    quantity: quantityOf(fields.quantity.value),
+                    best_before: fields.best_before.value,
+                    category: fields.category.value,
+                });
+
+                // The form stands empty again, ready for the next item.
+                elements.addForm.reset();
+            });
+
+            elements.sheetForm.addEventListener('submit', function (event) {
+                event.preventDefault();
+
+                if (editing === null) {
+                    closeSheets();
+
+                    return;
+                }
+
+                var record = editing.record;
+                var fields = elements.sheetForm.elements;
+
+                if (editing.mode === 'move') {
+                    var target = drawerById(Number(fields.drawer_id.value));
+
+                    if (target !== null) {
+                        queueSave({
+                            uuid: record.uuid,
+                            drawer_id: target.id,
+                            name: record.name,
+                            quantity: record.quantity,
+                            best_before: record.best_before,
+                            category: record.category,
+                        });
+                    }
+                } else {
+                    var name = String(fields.name.value).trim();
+
+                    if (name !== '') {
+                        queueSave({
+                            uuid: record.uuid,
+                            drawer_id: record.drawer_id,
+                            name: name,
+                            quantity: fields.quantity.value,
+                            best_before: fields.best_before.value,
+                            category: fields.category.value,
+                        });
+                    }
+                }
+
+                closeSheets();
+            });
+
+            elements.confirmYes.addEventListener('click', function () {
+                if (editing !== null && editing.mode === 'delete') {
+                    queueDelete(editing.record.uuid);
+                }
+
+                closeSheets();
+            });
+
+            elements.sync.addEventListener('click', sync);
+
+            var cancels = document.querySelectorAll('[data-sheet-cancel], [data-confirm-cancel]');
+
+            for (var c = 0; c < cancels.length; c++) {
+                cancels[c].addEventListener('click', closeSheets);
+            }
+
+            document.addEventListener('keydown', function (event) {
+                if (event.key === 'Escape') {
+                    closeSheets();
+                }
+            });
+
+            // The link of the app leads to the server on its own, so a page
+            // without script keeps working; with script it simply loads the page
+            // that was asked for once more.
+            var retries = document.querySelectorAll('[data-retry]');
+
+            for (var r = 0; r < retries.length; r++) {
+                retries[r].addEventListener('click', function (event) {
                     event.preventDefault();
                     location.reload();
                 });
             }
 
-            // The very same rule as in components/theme-script.blade.php: only
-            // the saved choice switches to the dark scheme.
-            if (read('color-scheme') === 'dark') {
-                document.documentElement.classList.add('dark');
+            // The connection came back while the page stands: the changes go out
+            // on their own.
+            window.addEventListener('online', sync);
+
+            /* ---------- start ---------- */
+
+            translate();
+            refreshOptions();
+            draw();
+
+            if (navigator.onLine) {
+                sync();
             }
         })();
     </script>
 </body>
 </html>
+

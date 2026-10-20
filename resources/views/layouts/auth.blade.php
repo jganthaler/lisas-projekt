@@ -6,6 +6,11 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#0d8280">
 
+    {{-- Hier ist niemand angemeldet: die Kopie des Inventars und die wartenden
+         Offline-Änderungen, die die Offline-Seite auf dem Gerät hält
+         (resources/js/app.js), gehören damit gelöscht. --}}
+    <meta name="offline-clear" content="1">
+
     <x-app-icons />
 
     <title>{{ isset($title) ? __($title).' · '.config('app.name') : config('app.name') }}</title>

@@ -21,6 +21,11 @@ use Illuminate\Support\Str;
  * pre-calculated "name_sort" column, which keeps the alphabetical order
  * identical for German umlauts on MySQL and SQLite. The column is mandatory and
  * is filled by the "saving" hook below, so an item can never end up without it.
+ *
+ * The UUID is the identity the offline page works with: it can only invent an
+ * item itself (no database, no id), so it sends the UUID along and the sync
+ * creates the row under exactly that one (see App\Support\OfflineInventory).
+ * A new item gets its UUID here, an item that already carries one keeps it.
  */
 #[Fillable(['name', 'quantity', 'best_before', 'category'])]
 #[UsePolicy(InventoryItemPolicy::class)]
@@ -30,6 +35,20 @@ class InventoryItem extends Model
 
     /** Items that expire within this many days trigger the MHD warning. */
     public const WARNING_DAYS = 7;
+
+    /*
+     | The quick choices of the item form: one tap puts the best before date
+     | that far ahead ("3 Monate", "6 Monate", "1 Jahr", "2 Jahre"). The key is
+     | what the form sends (see DrawerPage::useBestBeforePreset()), the value is
+     | the number of months added to today - a year is twelve of them, two years
+     | are twenty-four, so there is only one calculation for all four.
+     */
+    public const BEST_BEFORE_PRESETS = [
+        '3_months' => 3,
+        '6_months' => 6,
+        '1_year' => 12,
+        '2_years' => 24,
+    ];
 
     /*
      | The categories an item may be assigned to. The slug is what is stored and
@@ -72,6 +91,12 @@ class InventoryItem extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (InventoryItem $item): void {
+            // An item that comes from the offline page already carries the UUID
+            // of the browser; only a row without one gets a fresh one here.
+            $item->uuid ??= (string) Str::uuid();
+        });
+
         static::saving(function (InventoryItem $item): void {
             $item->name = self::normalizeName((string) $item->name);
             $item->name_sort = self::sortKey($item->name);
@@ -128,6 +153,69 @@ class InventoryItem extends Model
     public function categoryLabel(): ?string
     {
         return self::categoryLabels()[$this->category] ?? null;
+    }
+
+    /**
+     * Background of the row in the inventory, one tint per category.
+     *
+     * The names are the utilities of the palette (the "--color-cat-*" tokens in
+     * resources/css/app.css); the dark scheme swaps the values behind those
+     * tokens, so the same class serves both schemes and the view needs no
+     * variant of its own. "Sonstiges" and an item without a category stay null:
+     * the plain card of the list is white, which is exactly what they should
+     * look like.
+     */
+    public function categoryTintClass(): ?string
+    {
+        return match ($this->category) {
+            self::CATEGORY_FLEISCH => 'bg-cat-fleisch',
+            self::CATEGORY_FISCH => 'bg-cat-fisch',
+            self::CATEGORY_GEMUESE => 'bg-cat-gemuese',
+            self::CATEGORY_SUPPE => 'bg-cat-suppe',
+            self::CATEGORY_OBST => 'bg-cat-obst',
+            self::CATEGORY_SOSSE => 'bg-cat-sosse',
+            default => null,
+        };
+    }
+
+    /**
+     * The date a quick choice points at: today plus the months of that choice.
+     *
+     * Deliberately without overflow, because the date has to stay inside the
+     * month it names - "3 Monate" from the 31.08. is the 30.11., not the
+     * 01.12., which would already be a different month. An unknown key yields
+     * null, so a request that invents a choice cannot invent a date either.
+     */
+    public static function bestBeforeForPreset(string $preset): ?string
+    {
+        if (! array_key_exists($preset, self::BEST_BEFORE_PRESETS)) {
+            return null;
+        }
+
+        return Carbon::today()
+            ->addMonthsNoOverflow(self::BEST_BEFORE_PRESETS[$preset])
+            ->toDateString();
+    }
+
+    /**
+     * Every quick choice as key => label, in the order the interface offers
+     * them.
+     *
+     * The labels come from the translation files (lang/<language>/drawers.php,
+     * because the form stands on the drawer page), so every language sees its
+     * own words - the keys are the ones the calculation above works with.
+     *
+     * @return array<string, string>
+     */
+    public static function bestBeforePresetLabels(): array
+    {
+        $labels = [];
+
+        foreach (array_keys(self::BEST_BEFORE_PRESETS) as $preset) {
+            $labels[$preset] = __('drawers.quick_best_before.'.$preset);
+        }
+
+        return $labels;
     }
 
     /**

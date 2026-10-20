@@ -142,15 +142,33 @@
                     $stats = $summary[$drawer->id] ?? ['items' => 0, 'warnings' => 0];
                 @endphp
 
+                {{-- A look into the drawer: what lies inside, alphabetically one
+                     below the other, and only the name and the amount. Changed is
+                     something in the drawer itself, so the whole card stays the
+                     way in - there is nothing to edit here. --}}
                 <a href="{{ route('drawers.show', $drawer) }}" wire:navigate
-                   class="drawer-row" wire:key="drawer-{{ $drawer->id }}">
+                   class="drawer-row items-start" wire:key="drawer-{{ $drawer->id }}">
                     <span class="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-frost-100 text-frost-600">
                         <x-icon name="list" class="h-5 w-5" />
                     </span>
 
                     <span class="min-w-0 flex-1">
                         <span class="block truncate text-sm font-semibold text-frost-900">{{ $drawer->name }}</span>
-                        <span class="block text-xs text-frost-500">{{ trans_choice('common.items', $stats['items']) }}</span>
+
+                        @if ($drawer->items->isEmpty())
+                            <span class="mt-1 block text-xs text-frost-500">{{ __('drawers.empty') }}</span>
+                        @else
+                            {{-- The items arrive sorted (see Drawer::items()), so the
+                                 list needs no order of its own. --}}
+                            <ul class="mt-1 space-y-1">
+                                @foreach ($drawer->items as $item)
+                                    <li class="flex items-baseline justify-between gap-2 text-xs">
+                                        <span class="min-w-0 truncate text-frost-700">{{ $item->name }}</span>
+                                        <span class="shrink-0 font-medium text-frost-500">{{ $item->quantity }}</span>
+                                    </li>
+                                @endforeach
+                            </ul>
+                        @endif
                     </span>
 
                     @if ($stats['warnings'] > 0)

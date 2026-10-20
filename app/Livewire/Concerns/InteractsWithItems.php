@@ -25,14 +25,24 @@ trait InteractsWithItems
         $item->increment('quantity');
     }
 
+    /**
+     * Take one piece out of an item.
+     *
+     * The last piece is not taken out in silence: the app does not know a
+     * quantity of zero, and "nothing happens" looks like a broken button. So the
+     * row asks its question instead - the dialog of the app that also belongs to
+     * its trash button (see resources/views/components/confirm-dialog.blade.php)
+     * - and only the answer deletes the item. Nothing happens without it.
+     */
     public function decrementQuantity(int $itemId): void
     {
         $item = InventoryItem::query()->findOrFail($itemId);
 
         Gate::authorize('update', $item);
 
-        // Never drop below one piece - removing an item is an explicit action.
         if ($item->quantity <= 1) {
+            $this->dispatch('confirm-dialog', name: 'item-delete-'.$item->getKey());
+
             return;
         }
 

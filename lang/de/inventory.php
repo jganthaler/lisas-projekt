@@ -16,5 +16,7 @@ return [
     'all_categories' => 'Alle Kategorien',
     'single_freezer' => 'Nur ein Gefrierschrank – nach der Kategorie kannst du trotzdem filtern.',
     'nothing_found' => 'Dazu wurde nichts gefunden.',
+    'show_all' => 'Alle Artikel zeigen',
+    'to_freezer' => 'Zum Gefrierschrank',
     'empty' => 'Das Inventar ist noch leer.',
 ];

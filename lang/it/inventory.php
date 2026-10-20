@@ -16,5 +16,7 @@ return [
     'all_categories' => 'Tutte le categorie',
     'single_freezer' => 'Un solo congelatore – puoi comunque filtrare per categoria.',
     'nothing_found' => 'Non è stato trovato nulla.',
+    'show_all' => 'Mostra tutti gli articoli',
+    'to_freezer' => 'Vai al congelatore',
     'empty' => 'L\'inventario è ancora vuoto.',
 ];

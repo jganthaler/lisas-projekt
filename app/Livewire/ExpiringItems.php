@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Livewire\Concerns\FollowsOfflineChanges;
 use App\Livewire\Concerns\InteractsWithItems;
 use App\Models\InventoryItem;
 use App\Support\FreezerContext;
@@ -21,6 +22,7 @@ use Livewire\Component;
 #[Title('expiring.title')]
 class ExpiringItems extends Component
 {
+    use FollowsOfflineChanges;
     use InteractsWithItems;
 
     public function render()

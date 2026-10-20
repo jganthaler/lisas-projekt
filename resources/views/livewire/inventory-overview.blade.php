@@ -103,13 +103,34 @@
             <p class="mt-2 text-sm font-medium text-frost-700">
                 {{ $isFiltered ? __('inventory.nothing_found') : __('inventory.empty') }}
             </p>
+
+            {{-- A list that ends without a way out is a dead end: a search that
+                 found nothing is taken back with one tap, and an inventory
+                 without items leads to the freezer where the first one is
+                 entered. --}}
+            @if ($isFiltered)
+                <button type="button" wire:click="clearFilters" class="btn btn-secondary mt-4">
+                    <x-icon name="close" class="h-4 w-4" />
+                    {{ __('inventory.show_all') }}
+                </button>
+            @else
+                <a href="{{ route('freezer.closed') }}" wire:navigate class="btn btn-secondary mt-4">
+                    <x-icon name="freezer" class="h-4 w-4" />
+                    {{ __('inventory.to_freezer') }}
+                </a>
+            @endif
         </div>
     @else
         <div class="space-y-2">
             @foreach ($items as $item)
+                {{-- The row stays quiet - it names the date and warns only while
+                     it matters - and it is painted in the colour of its
+                     category (see components/item-row). --}}
                 <x-item-row :item="$item"
                             :drawer-name="$item->drawer?->name"
-                            :freezer-name="$showFreezerNames ? $item->drawer?->freezer?->name : null" />
+                            :freezer-name="$showFreezerNames ? $item->drawer?->freezer?->name : null"
+                            :mhd-warnings-only="true"
+                            :category-tint="true" />
             @endforeach
         </div>
     @endif

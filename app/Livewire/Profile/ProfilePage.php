@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -18,8 +17,11 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use Livewire\WithFileUploads;
 
 /**
- * Profile of the signed in user: display name, e-mail address, password, the
- * profile picture that is shown in the header and the language of the app.
+ * Profile of the signed in user: display name, password, the profile picture
+ * that is shown in the header and the language of the app.
+ *
+ * The e-mail address is only shown here: it is confirmed and it is the name of
+ * the account (see updateProfile()).
  */
 #[Layout('layouts.app')]
 #[Title('profile.title')]
@@ -44,8 +46,6 @@ class ProfilePage extends Component
 
     public string $name = '';
 
-    public string $email = '';
-
     public string $currentPassword = '';
 
     public string $newPassword = '';
@@ -68,20 +68,24 @@ class ProfilePage extends Component
         $user = Auth::user();
 
         $this->name = (string) $user->name;
-        $this->email = (string) $user->email;
         $this->locale = $user->localeOrDefault();
     }
 
+    /**
+     * Der Name lässt sich ändern, die E-Mail-Adresse nicht: Sie ist bestätigt,
+     * sie ist der Name des Kontos und der Empfänger der Links zum Zurücksetzen
+     * des Passworts. Wer sie ändern könnte, würde die Bestätigung stillschweigend
+     * auf eine unbestätigte Adresse übertragen. So bleibt jede Person bei der
+     * Adresse, mit der sie sich angemeldet und die sie bestätigt hat; das Profil
+     * liegt ohnehin hinter "verified", es erreicht also nur bestätigte Konten.
+     */
     public function updateProfile(): void
     {
-        $user = Auth::user();
-
         $validated = $this->validate([
             'name' => ['required', 'string', 'max:60'],
-            'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->getKey())],
         ]);
 
-        $user->update($validated);
+        Auth::user()->update($validated);
 
         $this->feedback = __('profile.saved');
     }

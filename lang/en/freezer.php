@@ -52,5 +52,5 @@ return [
     'drawer_renamed' => 'Drawer renamed.',
     'drawer_deleted' => 'Drawer deleted.',
     'drawer_name_required' => 'Please give the drawer a name.',
-    'drawer_not_empty' => 'The drawer is not empty yet. Please remove all items first.',
+    'drawer_not_empty' => 'There are still items in “:name”. Please remove them first.',
 ];

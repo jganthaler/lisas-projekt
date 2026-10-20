@@ -52,5 +52,5 @@ return [
     'drawer_renamed' => 'Schublade umbenannt.',
     'drawer_deleted' => 'Schublade gelöscht.',
     'drawer_name_required' => 'Bitte gib der Schublade einen Namen.',
-    'drawer_not_empty' => 'Die Schublade ist noch nicht leer. Bitte zuerst alle Artikel entfernen.',
+    'drawer_not_empty' => 'In „:name“ liegen noch Artikel. Bitte zuerst alle entfernen.',
 ];

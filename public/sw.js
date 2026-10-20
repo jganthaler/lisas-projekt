@@ -2,15 +2,21 @@
  | The service worker of the app.
  |
  | Coolventory lives on the server: the drawers, the items and their best before
- | dates are loaded for every page, so this worker never answers a page from its
- | own storage - a stale freezer would be worse than none. What it does:
+ | dates are loaded for every page, so this worker never answers a page of the
+ | app from its own storage - a stale freezer page would be worse than none.
+ | What it does:
  |
  | - It makes the app installable. Chrome, Edge and Android only offer "Install"
  |   (and only fire the beforeinstallprompt event the profile waits for) when a
  |   service worker with a fetch handler is registered.
  | - It answers a navigation without network with the offline page
  |   (public/offline.html). The page is part of the precache below, so it is on
- |   the phone from the very first visit.
+ |   the phone from the very first visit. Since the cellar has no reception, the
+ |   page is not only a note: it is the inventory itself - it draws the copy that
+ |   resources/js/app.js keeps in the local storage of the browser, lets items be
+ |   entered, changed and deleted there, and hands those changes to
+ |   /offline/sync as soon as there is a network again. The copy is only as fresh
+ |   as the last visit of a page of the app.
  | - It keeps the built files of the app (public/build/*) in a cache: their names
  |   carry a hash, their content can never change, so a second visit paints
  |   without asking the server for them again.
@@ -25,7 +31,7 @@
  | deployment never has to wait for the HTTP cache of the browser.
  */
 
-const VERSION = "v1";
+const VERSION = "v3";
 
 const CACHE_PREFIX = "coolventory-";
 const SHELL_CACHE = CACHE_PREFIX + "shell-" + VERSION;

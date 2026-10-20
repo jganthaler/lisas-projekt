@@ -15,13 +15,17 @@
 
     <x-notice :message="$itemFeedback" />
 
-    {{-- New item --}}
-    <form wire:submit="addItem" class="card space-y-3 p-4">
+    {{-- New item. The name field takes the cursor back after every item (the
+         component fires "item-added"), so a whole drawer can be filled one line
+         after the other: type, Enter, type, Enter. --}}
+    <form wire:submit="addItem" class="card space-y-3 p-4"
+          x-on:item-added.window="$refs.itemName.focus()">
         <h3 class="text-sm font-semibold text-frost-900">{{ __('drawers.add_heading') }}</h3>
 
         <div>
             <label class="label" for="name">{{ __('drawers.name_label') }}</label>
-            <input id="name" type="text" wire:model="name" placeholder="{{ __('drawers.name_placeholder') }}"
+            <input id="name" type="text" wire:model="name" x-ref="itemName"
+                   placeholder="{{ __('drawers.name_placeholder') }}"
                    class="input @error('name') input-error @enderror">
             @error('name')
                 <p class="field-error">{{ $message }}</p>
@@ -45,6 +49,22 @@
                 @error('bestBefore')
                     <p class="field-error">{{ $message }}</p>
                 @enderror
+            </div>
+        </div>
+
+        {{-- Nobody knows the exact day a bag of peas goes bad, but most things
+             keep for three or six months, a year or two. A tap fills the field
+             above with today plus that span - saved is what the field holds,
+             so the date can still be corrected by hand. --}}
+        <div role="group" aria-label="{{ __('drawers.quick_best_before.label') }}">
+            <p class="text-xs font-medium text-frost-500">{{ __('drawers.quick_best_before.label') }}</p>
+
+            <div class="mt-1.5 flex flex-wrap gap-1.5">
+                @foreach ($bestBeforePresets as $preset => $label)
+                    <button type="button" wire:click="useBestBeforePreset('{{ $preset }}')" class="chip">
+                        {{ $label }}
+                    </button>
+                @endforeach
             </div>
         </div>
 
@@ -74,7 +94,13 @@
 
         @forelse ($items as $item)
             @if ($editingItemId === $item->id)
-                <form wire:submit="saveItem" class="card space-y-3 p-4" wire:key="edit-{{ $item->id }}">
+                {{-- A form that replaces a row is scrolled into view: the row may
+                     have been far down the list (or the page arrived from the
+                     inventory with "?item=<id>"), and a form nobody sees looks
+                     like nothing happened. "nearest" leaves a form alone that is
+                     already on screen. --}}
+                <form wire:submit="saveItem" class="card space-y-3 p-4" wire:key="edit-{{ $item->id }}"
+                      x-init="$el.scrollIntoView({ block: 'nearest' })">
                     <div>
                         <label class="label" for="editName">{{ __('drawers.item_label') }}</label>
                         <input id="editName" type="text" wire:model="editName"
@@ -104,6 +130,23 @@
                         </div>
                     </div>
 
+                    {{-- The same four quick choices as in the form above, in the
+                         same shape: the date of an item that is already there is
+                         corrected just as often from a span ("another six
+                         months") as it is entered the first time. --}}
+                    <div role="group" aria-label="{{ __('drawers.quick_best_before.label') }}">
+                        <p class="text-xs font-medium text-frost-500">{{ __('drawers.quick_best_before.label') }}</p>
+
+                        <div class="mt-1.5 flex flex-wrap gap-1.5">
+                            @foreach ($bestBeforePresets as $preset => $label)
+                                <button type="button" wire:click="useBestBeforePreset('{{ $preset }}', 'editBestBefore')"
+                                        class="chip">
+                                    {{ $label }}
+                                </button>
+                            @endforeach
+                        </div>
+                    </div>
+
                     <div>
                         <label class="label" for="editCategory">{{ __('common.category') }}</label>
                         <select id="editCategory" wire:model="editCategory"
@@ -124,6 +167,71 @@
                             {{ __('common.save') }}
                         </button>
                         <button type="button" wire:click="cancelEditingItem" class="btn btn-ghost">{{ __('common.cancel') }}</button>
+                    </div>
+                </form>
+            @elseif ($movingItemId === $item->id)
+                {{-- Moving instead of entering again: the item keeps its name,
+                     its quantity, its best before date and its category and only
+                     changes its place. The choice lists every drawer of the
+                     household - also those of the other freezers (see
+                     DrawerPage::moveTargets()). --}}
+                <form wire:submit="moveItem" class="card space-y-3 p-4" wire:key="move-{{ $item->id }}"
+                      x-init="$el.scrollIntoView({ block: 'nearest' })">
+                    <div>
+                        <h3 class="text-sm font-semibold text-frost-900">{{ __('drawers.move_heading') }}</h3>
+                        <p class="mt-1 text-xs text-frost-500">{{ $item->name }}</p>
+                    </div>
+
+                    @if ($moveTargets->isEmpty())
+                        {{-- A household with a single drawer has no target at all:
+                             the form says so instead of offering a choice that
+                             does not exist. --}}
+                        <p class="text-sm text-frost-500">{{ __('drawers.move_none') }}</p>
+                    @else
+                        @php
+                            // Two freezers may both have a "Schublade 1", so with
+                            // more than one freezer the drawers are grouped by it.
+                            $groupedByFreezer = $moveTargets->count() > 1;
+                        @endphp
+
+                        <div>
+                            <label class="label" for="moveTargetDrawerId">{{ __('drawers.move_target_label') }}</label>
+                            <select id="moveTargetDrawerId" wire:model="moveTargetDrawerId"
+                                    class="input @error('moveTargetDrawerId') input-error @enderror">
+                                <option value="">{{ __('drawers.move_target_placeholder') }}</option>
+
+                                @foreach ($moveTargets as $targetFreezer)
+                                    @if ($groupedByFreezer)
+                                        <optgroup label="{{ $targetFreezer->name }}">
+                                    @endif
+
+                                    @foreach ($targetFreezer->drawers as $targetDrawer)
+                                        <option value="{{ $targetDrawer->id }}">{{ $targetDrawer->name }}</option>
+                                    @endforeach
+
+                                    @if ($groupedByFreezer)
+                                        </optgroup>
+                                    @endif
+                                @endforeach
+                            </select>
+
+                            @error('moveTargetDrawerId')
+                                <p class="field-error">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    @endif
+
+                    <div class="flex gap-2">
+                        @if ($moveTargets->isNotEmpty())
+                            <button type="submit" class="btn btn-primary flex-1">
+                                <x-icon name="move" class="h-5 w-5" />
+                                {{ __('drawers.move_submit') }}
+                            </button>
+                        @endif
+
+                        <button type="button" wire:click="cancelMovingItem" class="btn btn-ghost flex-1">
+                            {{ __('common.cancel') }}
+                        </button>
                     </div>
                 </form>
             @else

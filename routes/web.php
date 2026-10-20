@@ -3,6 +3,7 @@
 use App\Http\Controllers\AvatarController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LogoutController;
+use App\Http\Controllers\OfflineController;
 use App\Http\Controllers\VerifyEmailController;
 use App\Livewire\Auth\ForgotPassword;
 use App\Livewire\Auth\Login;
@@ -70,6 +71,20 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::livewire('/expiring', ExpiringItems::class)->name('expiring.index');
     Route::livewire('/sharing', SharingPage::class)->name('sharing.index');
     Route::livewire('/profile', ProfilePage::class)->name('profile.edit');
+
+    /*
+    |----------------------------------------------------------------------
+    | The offline page
+    |----------------------------------------------------------------------
+    | public/offline.html is a static file and cannot render anything from
+    | the server, so it fetches its data and hands its changes in here. The
+    | snapshot is the inventory as data (App\Support\OfflineInventory), the
+    | sync takes the changes that were made without a network. Both need the
+    | session of the user; the page sends the CSRF token of the last visit
+    | along, which resources/js/app.js keeps for it.
+    */
+    Route::get('/offline/snapshot', [OfflineController::class, 'snapshot'])->name('offline.snapshot');
+    Route::post('/offline/sync', [OfflineController::class, 'sync'])->name('offline.sync');
 });
 
 /*

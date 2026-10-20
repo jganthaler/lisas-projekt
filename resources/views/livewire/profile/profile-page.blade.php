@@ -36,9 +36,12 @@
                     <p class="field-error">{{ $message }}</p>
                 @enderror
 
-                <p class="mt-1.5 text-xs text-frost-500">
-                    <span wire:loading.remove wire:target="avatar">{{ __('profile.image_hint') }}</span>
-                    <span wire:loading wire:target="avatar">{{ __('profile.uploading') }}</span>
+                {{-- Nur die Rückmeldung während des Hochladens; der Absatz ist
+                     sonst ausgeblendet (wire:loading). Was angenommen wird, sagt
+                     schon das Fenster der Dateiauswahl (accept), und ein zu
+                     großes Bild meldet sich selbst. --}}
+                <p wire:loading wire:target="avatar" class="mt-1.5 text-xs text-frost-500">
+                    {{ __('profile.uploading') }}
                 </p>
             </div>
         </div>
@@ -65,10 +68,7 @@
          und bleiben sonst in der alten Sprache stehen (siehe
          ProfilePage::setLocale()). --}}
     <section class="card space-y-3 p-4">
-        <div>
-            <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.language_heading') }}</h3>
-            <p class="mt-1 text-xs text-frost-500">{{ __('profile.language_hint') }}</p>
-        </div>
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.language_heading') }}</h3>
 
         <div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label="{{ __('profile.language_heading') }}">
             @foreach ($languages as $code => $label)
@@ -89,10 +89,7 @@
          Ein- und Ausblenden Sache des Skripts ist (resources/js/app.js); die
          Texte liegen in der Sprache, die die Seite geladen hat. --}}
     <section class="card space-y-3 p-4" data-install-section hidden wire:ignore>
-        <div>
-            <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.install_heading') }}</h3>
-            <p class="mt-1 text-xs text-frost-500">{{ __('profile.install_hint') }}</p>
-        </div>
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.install_heading') }}</h3>
 
         <p class="text-xs text-frost-500" data-install-ios hidden>{{ __('profile.install_ios') }}</p>
 
@@ -115,13 +112,19 @@
             @enderror
         </div>
 
+        {{-- Die bestätigte E-Mail-Adresse steht nur noch hier: Sie ist der Name
+             des Kontos und der Empfänger der Links zum Zurücksetzen, ein Wechsel
+             würde die Bestätigung entwerten (siehe ProfilePage::updateProfile()).
+             Ein Feld dafür gibt es deshalb nicht mehr. Das Häkchen sitzt rechts
+             der Adresse, damit die Adresse selbst links beginnt wie in einem
+             echten Feld. --}}
         <div>
-            <label class="label" for="email">{{ __('common.email') }}</label>
-            <input id="email" type="email" wire:model="email" autocomplete="email" inputmode="email"
-                   class="input @error('email') input-error @enderror">
-            @error('email')
-                <p class="field-error">{{ $message }}</p>
-            @enderror
+            <span class="label">{{ __('common.email') }}</span>
+            <p class="input flex items-center justify-between gap-2">
+                <span class="min-w-0 break-all">{{ $user->email }}</span>
+                <x-icon name="check" class="h-4 w-4 shrink-0 text-brand-600 dark:text-brand-400" />
+            </p>
+            <p class="mt-1.5 text-xs text-frost-500">{{ __('profile.email_locked') }}</p>
         </div>
 
         <button type="submit" class="btn btn-secondary w-full" wire:loading.attr="disabled" wire:target="updateProfile">
@@ -168,10 +171,7 @@
          Sie liegen außerhalb der App, weil sie auch ohne Konto lesbar sein
          müssen (siehe App\Http\Controllers\LegalController). --}}
     <section class="card space-y-2 p-4">
-        <div>
-            <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.legal_heading') }}</h3>
-            <p class="mt-1 text-xs text-frost-500">{{ __('profile.legal_hint') }}</p>
-        </div>
+        <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.legal_heading') }}</h3>
 
         <div class="flex flex-col">
             @foreach (['legal.imprint' => 'imprint', 'legal.privacy' => 'privacy', 'legal.terms' => 'terms'] as $route => $document)

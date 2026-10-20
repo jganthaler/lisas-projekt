@@ -13,24 +13,25 @@ return [
     'avatar' => 'Profilbild',
     'avatar_preview' => 'Vorschau',
     'choose_image' => 'Bild auswählen',
-    'image_hint' => 'JPG, PNG oder WebP · bis 10 MB, größere Bilder werden verkleinert',
     'uploading' => 'Wird hochgeladen …',
     'remove_avatar_title' => 'Profilbild entfernen?',
     'remove_avatar_message' => 'Dein Bild wird gelöscht – danach sind wieder deine Initialen zu sehen.',
     'details' => 'Angaben',
+    // Die bestätigte E-Mail-Adresse ist der Name des Kontos: Das Profil zeigt
+    // sie nur an, ein Feld zum Ändern gibt es nicht mehr (siehe
+    // App\Livewire\Profile\ProfilePage::updateProfile()).
+    'email_locked' => 'Deine Adresse ist bestätigt und kann deshalb nicht geändert werden.',
     'password_heading' => 'Passwort ändern',
     'current_password' => 'Aktuelles Passwort',
     'new_password' => 'Neues Passwort',
     'password_confirmation' => 'Neues Passwort wiederholen',
     'language_heading' => 'Sprache',
-    'language_hint' => 'Die ganze App wird danach in dieser Sprache angezeigt.',
     'language_saved' => 'Sprache geändert.',
 
     // Die installierte App (PWA): Der Abschnitt steht direkt unter der Sprache
     // und erscheint erst, wenn der Browser die Installation anbietet oder ein
     // iPhone den Umweg über das Teilen-Menü braucht (resources/js/app.js).
     'install_heading' => 'App installieren',
-    'install_hint' => 'Coolventory läuft auch vom Startbildschirm aus – ohne Adressleiste und mit dem Schneeflocken-Icon.',
     'install_ios' => 'Tippe unten auf „Teilen“ und dann auf „Zum Home-Bildschirm“.',
     'install_button' => 'Zum Startbildschirm hinzufügen',
     'saved' => 'Profil gespeichert.',
@@ -45,7 +46,6 @@ return [
     // Nutzungsbedingungen (resources/views/legal/*) und die Löschung des
     // Kontos, die Art. 17 DSGVO erfüllt.
     'legal_heading' => 'Rechtliches',
-    'legal_hint' => 'Impressum, Datenschutzerklärung und Nutzungsbedingungen.',
     'delete_heading' => 'Konto löschen',
     'delete_hint' => 'Entfernt dein Konto, dein Profilbild und alle von dir angelegten Gefrierschränke samt Inhalt. Das lässt sich nicht rückgängig machen.',
     'delete_password' => 'Passwort bestätigen',

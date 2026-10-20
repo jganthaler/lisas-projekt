@@ -98,6 +98,60 @@ class ClosedFreezerTest extends TestCase
     }
 
     /**
+     * Die Schublade auf der Startseite ist ein Blick hinein: sie nennt ihren
+     * Inhalt alphabetisch untereinander, aber nur Name und Menge. Gezählt wird
+     * dort nicht mehr - die Zahl steht oben in der Zusammenfassung des
+     * Gefrierschranks.
+     */
+    public function test_a_drawer_names_its_items_with_their_quantity(): void
+    {
+        $drawer = $this->freezer->drawers()->firstOrFail();
+
+        InventoryItem::factory()->create(['drawer_id' => $drawer->getKey(), 'name' => 'Zucchini', 'quantity' => 2]);
+        InventoryItem::factory()->create(['drawer_id' => $drawer->getKey(), 'name' => 'Äpfel', 'quantity' => 3]);
+        InventoryItem::factory()->create(['drawer_id' => $drawer->getKey(), 'name' => 'Erbsen', 'quantity' => 5]);
+
+        // „Äpfel“ steht vor „Erbsen“: sortiert wird über den Sortierschlüssel
+        // („aepfel“), nicht über das Zeichen selbst. Hinter jedem Namen steht
+        // seine Menge.
+        $html = $this->page($this->owner)
+            ->assertSeeInOrder(['Schublade 1', 'Äpfel', '3', 'Erbsen', '5', 'Zucchini', '2'])
+            ->html();
+
+        // Gezählt werden die Artikel nur noch oben am Gefrierschrank
+        // („3 Artikel in 3 Schubladen“), nicht mehr in jeder Schublade.
+        $this->assertSame(1, substr_count($html, '3 Artikel'));
+    }
+
+    /**
+     * Eine leere Schublade sagt das selbst - statt einer Liste steht dort der
+     * Hinweis, den auch die Schublade selbst kennt.
+     */
+    public function test_an_empty_drawer_says_that_it_is_empty(): void
+    {
+        $this->page($this->owner)->assertSee('Diese Schublade ist noch leer.');
+    }
+
+    /**
+     * Gelesen wird auf der Startseite nur: die Zeile einer Schublade ist ein
+     * Link in die Schublade. Geändert wird ein Artikel dort, wo er liegt - hier
+     * stellt also niemand eine Menge ein.
+     */
+    public function test_the_items_cannot_be_changed_on_the_start_page(): void
+    {
+        $drawer = $this->freezer->drawers()->firstOrFail();
+
+        InventoryItem::factory()->create(['drawer_id' => $drawer->getKey(), 'name' => 'Erbsen', 'quantity' => 2]);
+
+        $this->page($this->owner)
+            ->assertSeeHtml('href="'.route('drawers.show', $drawer).'"')
+            ->assertDontSeeHtml('decrementQuantity')
+            ->assertDontSeeHtml('incrementQuantity')
+            ->assertDontSeeHtml('startEditingItem')
+            ->assertDontSeeHtml('startMovingItem');
+    }
+
+    /**
      * Managing the drawers is the last thing on the start page - and it is called
      * "Schubladen bearbeiten" now.
      */

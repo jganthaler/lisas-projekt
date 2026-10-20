@@ -348,3 +348,230 @@ document.addEventListener('click', (event) => {
 
 document.addEventListener('livewire:navigated', showInstallHint);
 showInstallHint();
+
+/*
+ | The offline mode
+ |
+ | The basement has no reception, so the inventory has to stay editable without
+ | a network. The surface for that is the offline page (public/offline.html): a
+ | static file that knows nothing about the account and therefore keeps
+ | everything it needs in the local storage of the browser:
+ |
+ | - "offline-snapshot" is the inventory as data (freezers, drawers and items
+ |   with their best before dates), read from /offline/snapshot.
+ | - "offline-queue" collects the changes that were made without a network. The
+ |   next visit of a page of the app (or the offline page itself, as soon as it
+ |   is online again) hands them to /offline/sync.
+ | - "csrf-token" is the token of the standing session: the offline page has no
+ |   page of the app around it that could carry it.
+ |
+ | Both directions run through here, so the copy on the device is the one of the
+ | last visit: a page of the app that was loaded online takes care of it, and a
+ | queue that is waiting is sent before anything else. Nothing is written while
+ | a change is waiting - the sync answers with the fresh inventory anyway, and a
+ | snapshot taken in between would forget what the queue is about to change.
+ */
+
+const OFFLINE_SNAPSHOT_KEY = 'offline-snapshot';
+const OFFLINE_QUEUE_KEY = 'offline-queue';
+const CSRF_TOKEN_KEY = 'csrf-token';
+
+/** The note in the app frame; its presence marks a page of the app. */
+const OFFLINE_NOTICE_SELECTOR = '[data-offline-notice]';
+
+function readStorage(key) {
+    try {
+        return localStorage.getItem(key);
+    } catch (error) {
+        // Storage is blocked (private mode): there is no copy to keep.
+        return null;
+    }
+}
+
+function writeStorage(key, value) {
+    try {
+        localStorage.setItem(key, value);
+    } catch (error) {
+        // Private mode without storage: the app keeps working online.
+    }
+}
+
+function removeStorage(key) {
+    try {
+        localStorage.removeItem(key);
+    } catch (error) {
+        // Nothing to remove.
+    }
+}
+
+/** The changes the offline page collected and nobody has sent yet. */
+function offlineQueue() {
+    const raw = readStorage(OFFLINE_QUEUE_KEY);
+
+    if (raw === null) {
+        return [];
+    }
+
+    try {
+        const queue = JSON.parse(raw);
+
+        return Array.isArray(queue) ? queue : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+/**
+ * Drops the copy of the inventory and the changes of the account that just
+ * left. The sign in pages say so with a meta tag
+ * (resources/views/layouts/auth.blade.php); a page of the app never carries
+ * it, so nobody loses anything by simply walking through the app.
+ */
+function forgetOfflineCopy() {
+    removeStorage(OFFLINE_SNAPSHOT_KEY);
+    removeStorage(OFFLINE_QUEUE_KEY);
+    removeStorage(CSRF_TOKEN_KEY);
+}
+
+/** The token of the standing session, for the sync of the offline page. */
+function rememberCsrfToken() {
+    const meta = document.querySelector('meta[name="csrf-token"]');
+
+    if (meta === null) {
+        return;
+    }
+
+    writeStorage(CSRF_TOKEN_KEY, meta.getAttribute('content'));
+}
+
+/**
+ * The inventory as data, as the offline page needs it. Only for a visit
+ * without a waiting change (see above); a failure - no network, an expired
+ * session - leaves the copy as it is.
+ */
+async function refreshOfflineSnapshot() {
+    try {
+        const response = await fetch('/offline/snapshot', {
+            headers: { Accept: 'application/json' },
+            // An answer from the HTTP cache would be a copy of a copy.
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        writeStorage(OFFLINE_SNAPSHOT_KEY, JSON.stringify(await response.json()));
+    } catch (error) {
+        // No network: the copy of the last visit has to do.
+    }
+}
+
+/**
+ * Hands the waiting changes to the server. The answer carries the inventory as
+ * it stands afterwards, so it replaces the copy on the device and the queue is
+ * empty once the call succeeded. Anything that fails - no network, an expired
+ * session - keeps both, so no change is ever lost by trying.
+ */
+async function syncOfflineChanges() {
+    const queue = offlineQueue();
+
+    if (queue.length === 0) {
+        return;
+    }
+
+    const token = readStorage(CSRF_TOKEN_KEY);
+
+    try {
+        const response = await fetch('/offline/sync', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                'X-CSRF-TOKEN': token === null ? '' : token,
+            },
+            body: JSON.stringify({ operations: queue }),
+        });
+
+        if (!response.ok) {
+            return;
+        }
+
+        const answer = await response.json();
+
+        if (answer.snapshot !== undefined) {
+            writeStorage(OFFLINE_SNAPSHOT_KEY, JSON.stringify(answer.snapshot));
+        }
+
+        removeStorage(OFFLINE_QUEUE_KEY);
+
+        // The list on the screen was drawn before these changes arrived, so
+        // every component that shows items reads it again (see the #[On]
+        // listener of the Livewire components).
+        if (answer.applied > 0 && window.Livewire !== undefined) {
+            Livewire.dispatch('offline-synced');
+        }
+    } catch (error) {
+        // Still no network: the queue waits for the next attempt.
+    }
+}
+
+/**
+ * The note in the app frame (components/offline-notice.blade.php) is the way
+ * into the offline page while the device reports that it has no network. The
+ * page itself came from the server, so it cannot know it on its own.
+ */
+function showOfflineNotice() {
+    const notice = document.querySelector(OFFLINE_NOTICE_SELECTOR);
+
+    if (notice === null) {
+        return;
+    }
+
+    notice.hidden = navigator.onLine;
+}
+
+/**
+ * Takes care of the copy of the inventory. Only a page of the app carries the
+ * note (and with it an inventory); the sign in screens and the legal pages
+ * have nothing to keep, and their request would only end on the sign in page.
+ */
+function careForOfflineCopy() {
+    if (document.querySelector(OFFLINE_NOTICE_SELECTOR) === null) {
+        return;
+    }
+
+    rememberCsrfToken();
+
+    // A device without a network would only collect a failed request.
+    if (!navigator.onLine) {
+        return;
+    }
+
+    if (offlineQueue().length > 0) {
+        syncOfflineChanges();
+
+        return;
+    }
+
+    refreshOfflineSnapshot();
+}
+
+// Nobody is signed in on these pages, so the copy of the inventory goes with
+// the account that just left.
+if (document.querySelector('meta[name="offline-clear"]') !== null) {
+    forgetOfflineCopy();
+}
+
+document.addEventListener('livewire:navigated', showOfflineNotice);
+document.addEventListener('livewire:navigated', careForOfflineCopy);
+
+// The network comes back while a page of the app stands: the queue goes out on
+// its own, without the user having to do anything.
+window.addEventListener('online', showOfflineNotice);
+window.addEventListener('online', careForOfflineCopy);
+window.addEventListener('offline', showOfflineNotice);
+
+showOfflineNotice();
+careForOfflineCopy();
+

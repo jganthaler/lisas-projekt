@@ -11,11 +11,13 @@
 return [
     'delete_aria' => 'Delete item',
     'edit_aria' => 'Edit item',
+    'move_aria' => 'Move item',
     'increase_aria' => 'Increase quantity',
     'decrease_aria' => 'Decrease quantity',
     'delete_confirm_title' => 'Delete item?',
     'delete_confirm_message' => 'Do you really want to delete “:name”?',
     'deleted' => 'Item deleted.',
+    'open_in_drawer_aria' => 'Edit the item in “:drawer”',
 
     'state' => [
         'expired' => 'expired',

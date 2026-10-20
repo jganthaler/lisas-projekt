@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Freezer;
 
+use App\Livewire\Concerns\FollowsOfflineChanges;
 use App\Models\Freezer;
 use App\Support\FreezerContext;
 use Illuminate\Support\Facades\Gate;
@@ -11,7 +12,9 @@ use Livewire\Component;
 
 /**
  * The freezer as the user knows it from home: closed. It shows what is waiting
- * inside and how many items need attention, and it is the door to the inside.
+ * inside - every drawer with its content, name and amount, alphabetically one
+ * below the other - and how many items need attention, and it is the door to
+ * the inside.
  *
  * It is also the place where the freezers themselves are managed: every freezer
  * the user has access to is listed, another one can be created and the owned
@@ -21,6 +24,8 @@ use Livewire\Component;
 #[Title('freezer.title')]
 class ClosedFreezer extends Component
 {
+    use FollowsOfflineChanges;
+
     public string $newFreezerName = '';
 
     /** Whether the inline form for another freezer is open. */
@@ -164,7 +169,10 @@ class ClosedFreezer extends Component
         return view('livewire.freezer.closed-freezer', [
             'freezer' => $freezer,
             'freezers' => $user->freezers()->orderBy('name')->get(),
-            'drawers' => $freezer->drawers()->get(),
+            // The drawers come with their content: the start page names what lies
+            // in each of them, and the relation hands it over alphabetically
+            // sorted (see Drawer::items()) - one query for all drawers.
+            'drawers' => $freezer->drawers()->with('items')->get(),
             'summary' => $freezer->drawerSummary(),
             'itemCount' => $freezer->itemCount(),
         ]);

@@ -106,6 +106,35 @@ class InventoryItemStateTest extends TestCase
         $this->assertSame('15.06.2026', $this->item('2026-06-15')->formattedBestBefore());
     }
 
+    /**
+     * The quick choices of the item form ("3 Monate", "6 Monate", "1 Jahr",
+     * "2 Jahre") are today plus their span - a year is twelve months, two years
+     * are twenty-four (see InventoryItem::BEST_BEFORE_PRESETS). "Today" is the
+     * frozen 15.06.2026 of setUp().
+     */
+    public function test_a_quick_choice_points_at_today_plus_its_span(): void
+    {
+        $this->assertSame('2026-09-15', InventoryItem::bestBeforeForPreset('3_months'));
+        $this->assertSame('2026-12-15', InventoryItem::bestBeforeForPreset('6_months'));
+        $this->assertSame('2027-06-15', InventoryItem::bestBeforeForPreset('1_year'));
+        $this->assertSame('2028-06-15', InventoryItem::bestBeforeForPreset('2_years'));
+    }
+
+    /**
+     * A quick choice stays inside the month it names: from the 31.08. is
+     * "3 Monate" the 30.11. and not the 01.12., which would already be a
+     * different month. A choice the app does not know yields nothing at all.
+     */
+    public function test_a_quick_choice_never_overflows_into_the_next_month(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-08-31 09:30:00'));
+
+        $this->assertSame('2026-11-30', InventoryItem::bestBeforeForPreset('3_months'));
+        $this->assertSame('2027-02-28', InventoryItem::bestBeforeForPreset('6_months'));
+        $this->assertSame('2027-08-31', InventoryItem::bestBeforeForPreset('1_year'));
+        $this->assertNull(InventoryItem::bestBeforeForPreset('10_years'));
+    }
+
     public function test_names_are_trimmed_and_collapsed(): void
     {
         $this->assertSame('Hack fleisch', InventoryItem::normalizeName("  Hack \t fleisch  "));

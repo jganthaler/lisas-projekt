@@ -184,6 +184,36 @@ class LanguageTest extends TestCase
     }
 
     /**
+     * Jede Schnellauswahl des MHD ist in jeder Sprache benannt: angezeigt wird
+     * das Etikett aus lang/<Sprache>/drawers.php, gerechnet wird mit der
+     * Zeitspanne aus InventoryItem::BEST_BEFORE_PRESETS. Fehlt eine
+     * Übersetzung, stünde im Formular "drawers.quick_best_before.3_months"
+     * statt "3 Monate".
+     */
+    public function test_every_quick_choice_of_the_best_before_date_is_named_in_every_language(): void
+    {
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $labels = InventoryItem::bestBeforePresetLabels();
+
+            $this->assertCount(count(InventoryItem::BEST_BEFORE_PRESETS), $labels);
+
+            foreach ($labels as $key => $label) {
+                $this->assertNotSame(
+                    'drawers.quick_best_before.'.$key,
+                    $label,
+                    'Die Schnellauswahl "'.$key.'" fehlt in der Sprache "'.$locale.'".'
+                );
+                $this->assertNotSame('', trim($label));
+            }
+
+            // Zwei Auswahlen mit demselben Wort ließen sich nicht unterscheiden.
+            $this->assertSame(count($labels), count(array_unique($labels)));
+        }
+    }
+
+    /**
      * Laravel renders a notification inside the locale of its recipient, which
      * the app answers with User::preferredLocale() - so the mail is written in
      * the language of the account.

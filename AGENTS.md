@@ -55,6 +55,18 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
   the request travel together. Texts live under `<area>.delete_confirm_title` and
   `<area>.delete_confirm_message`. `tests/Feature/DeleteConfirmationTest.php`
   guards this rule.
+- A list that stands outside a drawer (the inventory, the MHD watch list) leads
+  into that drawer with `?item=<id>`: the name of the drawer in the row is the
+  link (`resources/views/components/item-row.blade.php`) and
+  `DrawerPage::mount()` opens the form of that item. An id from another drawer
+  or an invented one changes nothing. `tests/Feature/DrawerPageTest.php` guards
+  this rule.
+- "−" on the last piece of an item never does nothing: the app knows no
+  quantity of zero, so the row offers its delete question (the dialog of the
+  app, `InteractsWithItems::decrementQuantity()`) and only the answer inside it
+  deletes the item. The offline page asks the same way - with its own sheet
+  (`public/offline.html`, `changeQuantity`). `tests/Feature/DrawerPageTest.php`
+  guards this rule.
 - Changing the language answers with a page load (a Livewire redirect with
   `navigate: true`, see `ProfilePage::setLocale()`), never with an in-place
   update: the app frame in `resources/views/layouts/app.blade.php` - header and
@@ -81,4 +93,19 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
   section stays hidden until `resources/js/app.js` reveals it, and it carries
   `wire:ignore` so a Livewire update cannot hide it again.
   `tests/Feature/PwaTest.php` guards these rules.
+- The offline page is the inventory itself, because the cellar has no reception:
+  items have to be editable without a network. The copy travels through the
+  local storage of the browser - `resources/js/app.js` writes the snapshot of
+  `GET /offline/snapshot` into `offline-snapshot` (and the token of the session
+  into `csrf-token`), the offline page collects its changes in `offline-queue`
+  and hands them to `POST /offline/sync` as soon as there is a network again.
+  `app/Support/OfflineInventory.php` builds the snapshot and applies the
+  operations (one per item, addressed by its `uuid`; the last change wins, a
+  forbidden one is skipped instead of failing the batch) and
+  `app/Http/Controllers/OfflineController.php` answers both addresses. Every
+  screen that lists items listens for `offline-synced`
+  (`app/Livewire/Concerns/FollowsOfflineChanges.php`), so a page that stood open
+  does not keep a list that is older than the database. Deleting asks through
+  the sheet of the offline page, never through `window.confirm()`.
+  `tests/Feature/OfflineTest.php` and `tests/Feature/PwaTest.php` guard this.
 </laravel-boost-guidelines>

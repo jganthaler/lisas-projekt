@@ -218,6 +218,56 @@ class InventoryOverviewTest extends TestCase
             ->assertSee('Dazu wurde nichts gefunden.');
     }
 
+    /**
+     * A list without a hit is no dead end: the way back to the whole inventory
+     * stands right next to the message. It takes the search with it - that is
+     * what found nothing in the first place.
+     */
+    public function test_a_search_without_a_hit_offers_the_way_back(): void
+    {
+        $page = $this->page()->set('search', 'gibt-es-nicht');
+
+        $page->assertSee('Alle Artikel zeigen')
+            // Without a hit there is nothing to open a drawer for.
+            ->assertDontSeeHtml('?item=');
+
+        $page->call('clearFilters')
+            ->assertSet('search', '')
+            ->assertSee('Pommes');
+    }
+
+    /**
+     * An inventory without items leads to the freezer: that is where the first
+     * item is entered, and a list that only says "empty" would leave the user
+     * standing there.
+     */
+    public function test_an_empty_inventory_leads_to_the_freezer(): void
+    {
+        $user = User::factory()->create();
+
+        Freezer::factory()->withDrawers(2)->create(['owner_id' => $user->getKey()]);
+
+        Livewire::actingAs($user)->test(InventoryOverview::class)
+            ->assertSee('Das Inventar ist noch leer.')
+            ->assertSee('Zum Gefrierschrank')
+            ->assertSeeHtml('href="'.route('freezer.closed').'"');
+    }
+
+    /**
+     * The name of the drawer in a row is the way into it: the row hands the item
+     * over with "?item=<id>", so the drawer opens with the form of this very item
+     * (see DrawerPage::mount()). Without it, changing something the search found
+     * would be a trip over the freezer page and the whole drawer.
+     */
+    public function test_the_row_leads_into_the_drawer_of_the_item(): void
+    {
+        $item = InventoryItem::query()->firstWhere('name', 'Pommes');
+
+        $this->page()->assertSeeHtml(
+            'href="'.route('drawers.show', $this->sharedDrawer).'?item='.$item->getKey().'"'
+        );
+    }
+
     public function test_the_filters_can_be_reset(): void
     {
         $page = $this->page()
@@ -322,6 +372,96 @@ class InventoryOverviewTest extends TestCase
             ->assertDontSee('kein MHD');
     }
 
+    /**
+     * Ein frischer Artikel zeigt im Inventar nur sein Datum: "frisch" sagt
+     * nichts und der relative Zähler ("MHD in 60 Tagen") steht als Datum
+     * daneben schon da (siehe resources/views/components/item-row.blade.php).
+     */
+    public function test_a_fresh_item_shows_only_its_date(): void
+    {
+        $page = $this->page()->set('search', 'Zitrone');
+
+        $item = InventoryItem::query()->firstWhere('name', 'Zitrone');
+
+        $page->assertSee('Zitrone')
+            ->assertSee($item->formattedBestBefore())
+            ->assertDontSee($item->stateLabel())
+            ->assertDontSee($item->bestBeforeLabel());
+    }
+
+    /**
+     * Ein abgelaufener Artikel behält seine Warnung - nur der relative Zähler
+     * fällt weg, weil das Datum daneben steht.
+     */
+    public function test_an_expired_item_keeps_its_warning(): void
+    {
+        $page = $this->page()->set('search', 'Brot');
+
+        $item = InventoryItem::query()->firstWhere('name', 'Brot');
+
+        $page->assertSee('Brot')
+            ->assertSee($item->stateLabel())
+            ->assertSee($item->formattedBestBefore())
+            ->assertDontSee($item->bestBeforeLabel());
+    }
+
+    /**
+     * Die Zeile des Inventars trägt die Farbe ihrer Kategorie: Rot für Fleisch,
+     * Blau für Fisch, Grün für Gemüse, Gelb für Suppe, Braun für Soßen und
+     * Hellgrün für Obst (siehe InventoryItem::categoryTintClass()).
+     */
+    public function test_every_row_is_painted_in_the_colour_of_its_category(): void
+    {
+        $tints = [
+            InventoryItem::CATEGORY_FLEISCH => 'bg-cat-fleisch',
+            InventoryItem::CATEGORY_FISCH => 'bg-cat-fisch',
+            InventoryItem::CATEGORY_GEMUESE => 'bg-cat-gemuese',
+            InventoryItem::CATEGORY_SUPPE => 'bg-cat-suppe',
+            InventoryItem::CATEGORY_SOSSE => 'bg-cat-sosse',
+            InventoryItem::CATEGORY_OBST => 'bg-cat-obst',
+        ];
+
+        foreach (array_keys($tints) as $category) {
+            InventoryItem::factory()->fresh()->category($category)->create([
+                'drawer_id' => $this->firstDrawer->getKey(),
+                'name' => 'Artikel '.$category,
+            ]);
+        }
+
+        $page = $this->page();
+
+        foreach ($tints as $class) {
+            $page->assertSeeHtml('class="card p-3 '.$class.'"');
+        }
+
+        // Die Metazeile einer getönten Karte tritt eine Stufe dunkler, damit
+        // sie ihren Kontrast behält (siehe item-row).
+        $page->assertSeeHtml('text-xs text-frost-700');
+    }
+
+    /**
+     * „Sonstiges“ ist so weiß wie ein Artikel ohne Kategorie: beide behalten die
+     * Karte der Liste, die schon weiß ist.
+     */
+    public function test_sonstiges_and_an_item_without_a_category_keep_the_white_card(): void
+    {
+        InventoryItem::factory()->fresh()->create([
+            'drawer_id' => $this->secondDrawer->getKey(),
+            'name' => 'Salz',
+        ]);
+
+        // Brot ist „Sonstiges“, Salz hat gar keine Kategorie.
+        $this->page()
+            ->set('search', 'Brot')
+            ->assertSeeHtml('class="card p-3"')
+            ->assertSeeHtml('text-xs text-frost-500');
+
+        $this->page()
+            ->set('search', 'Salz')
+            ->assertSeeHtml('class="card p-3"')
+            ->assertDontSeeHtml('bg-cat-');
+    }
+
     public function test_an_item_can_be_deleted_from_the_overview(): void
     {
         $item = InventoryItem::query()->firstWhere('name', 'Brot');
@@ -358,5 +498,16 @@ class InventoryOverviewTest extends TestCase
         $page->call('decrementQuantity', $item->getKey());
 
         $this->assertSame($original, $item->refresh()->quantity);
+    }
+
+    /**
+     * Verschoben wird in der Schublade, in der der Artikel liegt: die Übersicht
+     * kennt nur Menge und Löschen (siehe DrawerPage::moveItem()).
+     */
+    public function test_the_overview_does_not_offer_moving_an_item(): void
+    {
+        $this->page()
+            ->assertDontSeeHtml('startMovingItem')
+            ->assertDontSeeHtml('startEditingItem');
     }
 }

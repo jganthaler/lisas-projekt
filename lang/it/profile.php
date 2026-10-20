@@ -11,24 +11,25 @@ return [
     'avatar' => 'Immagine del profilo',
     'avatar_preview' => 'Anteprima',
     'choose_image' => 'Scegli un\'immagine',
-    'image_hint' => 'JPG, PNG o WebP · fino a 10 MB, le immagini più grandi vengono ridotte',
     'uploading' => 'Caricamento …',
     'remove_avatar_title' => 'Rimuovere l\'immagine del profilo?',
     'remove_avatar_message' => 'La tua immagine viene eliminata – dopo torneranno visibili le tue iniziali.',
     'details' => 'Dati',
+    // L'indirizzo e-mail confermato è il nome dell'account: il profilo lo mostra
+    // soltanto, non c'è più un campo per modificarlo (vedi
+    // App\Livewire\Profile\ProfilePage::updateProfile()).
+    'email_locked' => 'Il tuo indirizzo è confermato e non può quindi essere modificato.',
     'password_heading' => 'Cambia la password',
     'current_password' => 'Password attuale',
     'new_password' => 'Nuova password',
     'password_confirmation' => 'Ripeti la nuova password',
     'language_heading' => 'Lingua',
-    'language_hint' => 'Dopo la scelta l\'intera app viene mostrata in questa lingua.',
     'language_saved' => 'Lingua modificata.',
 
     // L'app installata (PWA): la sezione sta subito sotto la lingua e compare
     // solo quando il browser offre l'installazione o un iPhone ha bisogno del
     // menu di condivisione (resources/js/app.js).
     'install_heading' => 'Installa l\'app',
-    'install_hint' => 'Coolventory funziona anche dalla schermata Home – senza barra degli indirizzi e con l\'icona del fiocco di neve.',
     'install_ios' => 'Tocca «Condividi» in basso, poi «Aggiungi alla schermata Home».',
     'install_button' => 'Aggiungi alla schermata Home',
     'saved' => 'Profilo salvato.',
@@ -43,7 +44,6 @@ return [
     // delle condizioni d’uso (resources/views/legal/*) e la cancellazione
     // dell’account, che attua l’art. 17 GDPR.
     'legal_heading' => 'Note legali',
-    'legal_hint' => 'Note legali, informativa sulla privacy e condizioni d’uso.',
     'delete_heading' => 'Cancella account',
     'delete_hint' => 'Rimuove il tuo account, l’immagine del profilo e tutti i congelatori che hai creato con il loro contenuto. Non è reversibile.',
     'delete_password' => 'Conferma la password',

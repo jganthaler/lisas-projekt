@@ -52,5 +52,5 @@ return [
     'drawer_renamed' => 'Cassetto rinominato.',
     'drawer_deleted' => 'Cassetto eliminato.',
     'drawer_name_required' => 'Dai un nome al cassetto.',
-    'drawer_not_empty' => 'Il cassetto non è ancora vuoto. Rimuovi prima tutti gli articoli.',
+    'drawer_not_empty' => 'In “:name” ci sono ancora articoli. Rimuovili prima.',
 ];

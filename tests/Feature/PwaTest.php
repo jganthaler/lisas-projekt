@@ -168,6 +168,126 @@ class PwaTest extends TestCase
     }
 
     /**
+     * The offline page is not only a note: the cellar has no reception, so it
+     * is the inventory itself. It draws the copy that resources/js/app.js keeps
+     * in the local storage of the browser and hands its changes to the sync -
+     * the three keys below are the contract between the two.
+     */
+    public function test_the_offline_page_can_work_with_the_inventory(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        foreach (['offline-snapshot', 'offline-queue', 'csrf-token'] as $key) {
+            $this->assertStringContainsString("'".$key."'", $page, 'Die Offline-Seite kennt "'.$key.'" nicht.');
+        }
+
+        $this->assertStringContainsString("'/offline/sync'", $page);
+
+        // Deleting asks through the sheet of the page, never through the dialog
+        // of the browser - the same rule as in the app itself (see
+        // tests/Feature/DeleteConfirmationTest.php).
+        $this->assertStringNotContainsString('window.confirm', $page);
+        $this->assertStringContainsString('data-confirm-yes', $page);
+    }
+
+    /**
+     * What the offline page can do, in every language of the app.
+     */
+    public function test_the_offline_page_carries_the_editor_in_every_language(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $texts = [
+            'de' => ['Artikel hinzufügen', 'Jetzt synchronisieren', 'Artikel verschieben', 'Löschen'],
+            'it' => ['Aggiungi articolo', 'Sincronizza ora', 'Sposta articolo', 'Elimina'],
+            'en' => ['Add item', 'Sync now', 'Move item', 'Delete'],
+        ];
+
+        foreach ($texts as $locale => $phrases) {
+            foreach ($phrases as $phrase) {
+                $this->assertStringContainsString(
+                    $phrase,
+                    $page,
+                    'Dem Offline-Modus fehlt in der Sprache "'.$locale.'" das Wort "'.$phrase.'".'
+                );
+            }
+        }
+    }
+
+    /**
+     * The copy of the inventory belongs to the account that filled it: the sign
+     * in screens say so with a meta tag, and the script of the app drops it.
+     */
+    public function test_the_sign_in_screen_drops_the_copy_of_the_inventory(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSeeHtml('<meta name="offline-clear" content="1">');
+
+        $owner = User::factory()->create();
+
+        Freezer::factory()->withDrawers()->create(['owner_id' => $owner->getKey()]);
+
+        // A page of the app never carries the tag - nobody loses the copy of
+        // the inventory by walking through the app.
+        $this->actingAs($owner)
+            ->get(route('freezer.closed'))
+            ->assertOk()
+            ->assertDontSeeHtml('offline-clear');
+    }
+
+    /**
+     * The note in the app frame is the way into the offline mode: the script of
+     * the app reveals it as soon as the device reports that it has no network,
+     * and the link leads to the offline page itself - a plain link, because the
+     * page change has to pass the server.
+     */
+    public function test_the_app_frame_leads_into_the_offline_mode(): void
+    {
+        $owner = User::factory()->create();
+
+        Freezer::factory()->withDrawers()->create(['owner_id' => $owner->getKey()]);
+
+        $this->actingAs($owner)
+            ->get(route('freezer.closed'))
+            ->assertOk()
+            ->assertSeeHtml('data-offline-notice')
+            ->assertSee('Keine Verbindung – dein Inventar kannst du trotzdem bearbeiten.')
+            ->assertSeeHtml('href="/offline.html"');
+
+        // The note follows the language of the account, like every other text.
+        $italian = User::factory()->create(['locale' => 'it']);
+
+        $this->actingAs($italian)
+            ->get(route('freezer.closed'))
+            ->assertOk()
+            ->assertSee('Apri la modalità offline');
+    }
+
+    /**
+     * The script of the app is what fills the copy and sends it: it reads the
+     * snapshot, keeps the queue and the token for the offline page, and tells
+     * the screens of the app when the changes arrived.
+     */
+    public function test_the_app_fills_the_copy_for_the_offline_page(): void
+    {
+        $script = (string) file_get_contents(resource_path('js/app.js'));
+
+        $needles = [
+            "'/offline/snapshot'",
+            "'/offline/sync'",
+            "'offline-snapshot'",
+            "'offline-queue'",
+            "'csrf-token'",
+            "'offline-synced'",
+        ];
+
+        foreach ($needles as $needle) {
+            $this->assertStringContainsString($needle, $script, 'Dem Skript der App fehlt '.$needle.'.');
+        }
+    }
+
+    /**
      * The worker is registered from the one script every layout loads - and
      * "updateViaCache: none" keeps a deployment from waiting for the HTTP cache
      * of the browser before a new worker is seen.
