@@ -9,15 +9,13 @@
  */
 
 return [
-    'delete_aria' => 'Delete item',
-    'edit_aria' => 'Edit item',
-    'move_aria' => 'Move item',
     'increase_aria' => 'Increase quantity',
     'decrease_aria' => 'Decrease quantity',
     'delete_confirm_title' => 'Delete item?',
     'delete_confirm_message' => 'Do you really want to delete “:name”?',
     'deleted' => 'Item deleted.',
     'open_in_drawer_aria' => 'Edit the item in “:drawer”',
+    'menu_aria' => 'More actions for “:name”',
 
     'state' => [
         'expired' => 'expired',
@@ -26,8 +24,14 @@ return [
         'unknown' => 'without a best before date',
     ],
 
+    /*
+     | The wording of the best before date: its relative form ("best before in 3
+     | days") and, under "none", the one that stands where a row would name the
+     | date ("No best before date") - the place of the date is never left empty
+     | (see resources/views/components/item-row.blade.php).
+     */
     'mhd' => [
-        'none' => 'no best before date',
+        'none' => 'No best before date',
         'today' => 'best before today',
         'tomorrow' => 'best before tomorrow',
         'yesterday' => 'best before since yesterday',

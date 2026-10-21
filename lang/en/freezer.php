@@ -7,8 +7,6 @@
  | "default_name" and "drawer_name" are the names a brand new freezer and its
  | drawers get - they are stored, so they carry the language of the moment the
  | account was created.
- |
- | "summary" is filled with the two counters of common.php.
  */
 
 return [
@@ -18,16 +16,21 @@ return [
     'close_aria' => 'Close the freezer',
     'default_name' => 'My freezer',
     'drawer_name' => 'Drawer :position',
-    'empty' => 'Nothing is frozen in here yet.',
-    'summary' => ':items in :drawers',
     'mine' => 'My freezers',
-    'add_aria' => 'Add freezer',
-    'add_cancel_aria' => 'Cancel creating',
+    /*
+     | The field "My freezers" on the start page: its menu ("⋮") acts on the
+     | active freezer, the name opens the list of all of them, and the two arrows
+     | name the step to the neighbours of the active one.
+     */
+    'add' => 'Add freezer',
+    'edit' => 'Edit freezer',
+    'delete' => 'Delete freezer',
+    'previous_aria' => 'Previous freezer',
+    'next_aria' => 'Next freezer',
+    'menu_aria' => 'More actions for “:name”',
     'new_label' => 'New freezer',
     'new_placeholder' => 'e.g. the chest freezer in the cellar',
     'rename_label' => 'Name of the freezer',
-    'rename_aria' => 'Rename the freezer',
-    'delete_aria' => 'Delete the freezer',
     'delete_confirm_title' => 'Delete freezer?',
     'delete_confirm_message' => '“:name” disappears with all drawers and items for good.',
     'owned' => 'Your freezer',
@@ -43,8 +46,13 @@ return [
     'new_drawer_placeholder' => 'e.g. vegetables',
     'add_drawer_aria' => 'Add drawer',
     'rename_drawer_label' => 'Name of the drawer',
-    'rename_drawer_aria' => 'Rename the drawer',
-    'delete_drawer_aria' => 'Delete the drawer',
+
+    /*
+     | The menu of a drawer row ("⋮"): its two actions carry their own label, and
+     | the button of the menu names the row it belongs to.
+     */
+    'rename_drawer' => 'Rename',
+    'drawer_menu_aria' => 'More actions for “:name”',
     'delete_drawer_confirm_title' => 'Delete drawer?',
     'delete_drawer_confirm_message' => '“:name” is removed. That only works while it is empty.',
     'no_drawers' => 'No drawer created yet.',

@@ -207,6 +207,47 @@ window.toggleColorScheme = function () {
 };
 
 /*
+ | Revealing a password
+ |
+ | The eye at the right edge of a password field (see the sign in screen,
+ | resources/views/livewire/auth/login.blade.php) switches the field between
+ | "password" and "text". Only that attribute changes: the value stays where the
+ | user put it, so nothing that was typed is lost, and the caret keeps its place
+ | because the button holds the click back (onmousedown) and never takes the
+ | focus away from the field.
+ |
+ | The state lives as data-revealed on the field itself; the two icons of the
+ | button follow it through CSS (group-data-[revealed=true]), so this function
+ | only flips that one attribute and the words the screen reader reads. The
+ | label travels in the markup of the button (data-label-show/hide), because
+ | only the server knows the language of the page.
+ |
+ | A Livewire update draws the field the way the server sent it - hidden - which
+ | is what a turned down attempt should show anyway.
+ */
+window.togglePasswordVisibility = function (button) {
+    const field = button.closest('[data-password-field]');
+    const input = field === null ? null : field.querySelector('[data-password-input]');
+
+    if (field === null || input === null) {
+        return;
+    }
+
+    const revealed = field.dataset.revealed !== 'true';
+    const label = revealed ? button.dataset.labelHide : button.dataset.labelShow;
+
+    field.dataset.revealed = revealed ? 'true' : 'false';
+    input.type = revealed ? 'text' : 'password';
+
+    button.setAttribute('aria-pressed', revealed ? 'true' : 'false');
+
+    if (label !== undefined) {
+        button.setAttribute('aria-label', label);
+        button.title = label;
+    }
+};
+
+/*
  | The installed app
  |
  | Coolventory can be added to the home screen and then runs without the bar of

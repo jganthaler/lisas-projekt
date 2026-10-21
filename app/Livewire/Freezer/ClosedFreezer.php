@@ -5,20 +5,23 @@ namespace App\Livewire\Freezer;
 use App\Livewire\Concerns\FollowsOfflineChanges;
 use App\Models\Freezer;
 use App\Support\FreezerContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
 /**
- * The freezer as the user knows it from home: closed. It shows what is waiting
- * inside - every drawer with its content, name and amount, alphabetically one
- * below the other - and how many items need attention, and it is the door to
- * the inside.
+ * The freezer page: the place where the freezers themselves are managed. The
+ * field at its top carries the active freezer - the tile with the icon of the
+ * app, its name and who owns it - and the ways to leave it: the arrows step to
+ * its neighbours, its name opens the list of all freezers, and behind the "⋮"
+ * another one is created, the active one is renamed and it is deleted.
  *
- * It is also the place where the freezers themselves are managed: every freezer
- * the user has access to is listed, another one can be created and the owned
- * ones can be renamed.
+ * Below the field it shows what is waiting inside the active freezer: every
+ * drawer with the names of its items, alphabetically one below the other,
+ * without their amount (that one stands in the drawer itself) - and it is the
+ * door to the inside.
  */
 #[Layout('layouts.app')]
 #[Title('freezer.title')]
@@ -36,11 +39,12 @@ class ClosedFreezer extends Component
     public string $editingFreezerName = '';
 
     /**
-     * Open the inline form for another freezer.
+     * Open the inline form for another freezer. The field carries one form at a
+     * time, so opening this one closes the form that renames.
      */
     public function startAddingFreezer(): void
     {
-        $this->resetErrorBag();
+        $this->cancelRenaming();
         $this->addingFreezer = true;
     }
 
@@ -90,15 +94,65 @@ class ClosedFreezer extends Component
         $this->redirectRoute('freezer.closed', navigate: true);
     }
 
+    /**
+     * Make the freezer before the active one the active one: the arrow on the
+     * left of the field.
+     */
+    public function selectPreviousFreezer(): void
+    {
+        $this->stepToNeighbour(-1);
+    }
+
+    /**
+     * Make the freezer after the active one the active one: the arrow on the
+     * right of the field.
+     */
+    public function selectNextFreezer(): void
+    {
+        $this->stepToNeighbour(1);
+    }
+
+    /**
+     * Walk the list of the freezers by one step. The first freezer follows the
+     * last one, so the arrows never stop at an end and every freezer of the user
+     * is reachable without opening the list. With a single freezer there is
+     * nothing to step to - the field shows no arrow then - so nothing happens.
+     */
+    private function stepToNeighbour(int $step): void
+    {
+        $freezers = $this->freezers();
+
+        if ($freezers->count() < 2) {
+            return;
+        }
+
+        $active = FreezerContext::current(auth()->user());
+
+        $index = $freezers->search(fn (Freezer $freezer): bool => $freezer->is($active));
+
+        if ($index === false) {
+            return;
+        }
+
+        FreezerContext::select($freezers->get(($index + $step + $freezers->count()) % $freezers->count()));
+
+        $this->redirectRoute('freezer.closed', navigate: true);
+    }
+
+    /**
+     * Open the inline form that renames the given freezer - the one the menu of
+     * the field belongs to, so the active one. The form for another freezer
+     * closes with it: the field carries one form at a time.
+     */
     public function startRenaming(int $freezerId): void
     {
         $freezer = $this->findFreezer($freezerId);
 
         Gate::authorize('update', $freezer);
 
+        $this->cancelAddingFreezer();
         $this->editingFreezerId = $freezer->getKey();
         $this->editingFreezerName = $freezer->name;
-        $this->resetErrorBag();
     }
 
     public function renameFreezer(): void
@@ -168,14 +222,24 @@ class ClosedFreezer extends Component
 
         return view('livewire.freezer.closed-freezer', [
             'freezer' => $freezer,
-            'freezers' => $user->freezers()->orderBy('name')->get(),
+            'freezers' => $this->freezers(),
             // The drawers come with their content: the start page names what lies
             // in each of them, and the relation hands it over alphabetically
             // sorted (see Drawer::items()) - one query for all drawers.
             'drawers' => $freezer->drawers()->with('items')->get(),
             'summary' => $freezer->drawerSummary(),
-            'itemCount' => $freezer->itemCount(),
         ]);
+    }
+
+    /**
+     * Every freezer the user has access to, in the order the field shows them:
+     * by name, so the arrows step through the same order as the list.
+     *
+     * @return Collection<int, Freezer>
+     */
+    private function freezers(): Collection
+    {
+        return auth()->user()->freezers()->orderBy('name')->get();
     }
 
     /**

@@ -12,6 +12,14 @@ return [
     'subtitle' => 'Deine Angaben und dein Profilbild',
     'avatar' => 'Profilbild',
     'avatar_preview' => 'Vorschau',
+    // Die Bedienung des Bildes: ein Knopf öffnet das Menü der App, und seine
+    // Einträge folgen dem Zustand - hinzufügen ohne Bild, ändern und löschen mit
+    // Bild (resources/views/livewire/profile/profile-page.blade.php).
+    'edit_avatar' => 'Profilbild bearbeiten',
+    'add_avatar' => 'Profilbild hinzufügen',
+    'change_avatar' => 'Profilbild ändern',
+    'delete_avatar' => 'Profilbild löschen',
+    // Der Name des unsichtbaren Feldes, aus dem das Bild kommt.
     'choose_image' => 'Bild auswählen',
     'uploading' => 'Wird hochgeladen …',
     'remove_avatar_title' => 'Profilbild entfernen?',

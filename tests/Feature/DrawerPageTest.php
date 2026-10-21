@@ -64,6 +64,99 @@ class DrawerPageTest extends TestCase
         $this->page()->assertSee('Erbsen');
     }
 
+    /**
+     * Der Weg zurück führt auf die Startseite des Gefrierschranks - nicht in
+     * das Bearbeiten der Schubladen: der Pfeil verspricht mit „Zurück zum
+     * Gefrierschrank“ (drawers.back_aria) die Startseite, und die Schublade
+     * gehört zum Reiter „Gefrierschrank“ der Fußleiste. Das Bearbeiten der
+     * Schubladen hängt am Fuß der Startseite, nicht am Rücken der Schublade.
+     */
+    public function test_the_way_back_leads_to_the_start_page(): void
+    {
+        $this->page()
+            ->assertSeeHtml('href="'.route('freezer.closed').'" wire:navigate class="btn btn-ghost btn-icon"')
+            ->assertDontSeeHtml('href="'.route('freezer.open').'"');
+    }
+
+    /**
+     * A drawer appears with its contents, not with a form: the form for a new
+     * item waits behind the plus next to the name of the drawer - the same shape
+     * the app gives the freezers (see closed-freezer.blade.php), so the list
+     * keeps the room on a phone.
+     */
+    public function test_the_drawer_appears_without_the_form_for_a_new_item(): void
+    {
+        $this->page()
+            ->assertSet('addingItem', false)
+            ->assertSeeHtml('wire:click="startAddingItem"')
+            ->assertSeeHtml('aria-label="Artikel hinzufügen"')
+            ->assertDontSeeHtml('wire:submit="addItem"')
+            ->call('startAddingItem')
+            ->assertSet('addingItem', true)
+            ->assertSeeHtml('wire:submit="addItem"')
+            ->assertSee('Artikel hinzufügen');
+    }
+
+    /**
+     * While the form stands open, the plus is the cross that closes it again -
+     * and it closes it without entering anything: the next tap on the plus
+     * begins with empty fields, as if the form had never been opened. Escape
+     * does the same (see the name field of the form).
+     */
+    public function test_the_form_for_a_new_item_can_be_closed_again(): void
+    {
+        $this->page()
+            ->call('startAddingItem')
+            ->set('name', 'Erbsen')
+            ->set('quantity', '4')
+            ->set('bestBefore', '2026-12-24')
+            ->set('category', InventoryItem::CATEGORY_GEMUESE)
+            ->assertSeeHtml('wire:click="cancelAddingItem"')
+            ->assertSeeHtml('wire:keydown.escape="cancelAddingItem"')
+            ->call('cancelAddingItem')
+            ->assertSet('addingItem', false)
+            ->assertSet('name', '')
+            ->assertSet('quantity', '1')
+            ->assertSet('bestBefore', '')
+            ->assertSet('category', '')
+            ->assertDontSeeHtml('wire:submit="addItem"');
+
+        $this->assertSame(0, InventoryItem::query()->count());
+    }
+
+    /**
+     * Solange das Formular für einen neuen Artikel offen steht, ist es die ganze
+     * Schublade: der Inhalt darunter tritt weg, damit nichts von dem Feld
+     * wegführt, das gerade ausgefüllt wird. Nach dem Speichern bleibt das
+     * Formular offen – die Liste bleibt also weg, bis das Kreuz sie zurückholt.
+     */
+    public function test_the_form_for_a_new_item_is_the_whole_drawer(): void
+    {
+        InventoryItem::factory()->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Erbsen fein',
+        ]);
+
+        $this->page()
+            ->assertSee('Erbsen fein')
+            ->assertSee('Inhalt')
+            ->assertSeeHtml('<section class="space-y-2">')
+            ->call('startAddingItem')
+            ->assertSeeHtml('wire:submit="addItem"')
+            ->assertDontSee('Erbsen fein')
+            ->assertDontSee('Inhalt')
+            ->assertDontSeeHtml('<section class="space-y-2">')
+            ->set('name', 'Bohnen')
+            ->call('addItem')
+            ->assertHasNoErrors()
+            ->assertDontSee('Erbsen fein')
+            ->assertDontSee('Inhalt')
+            ->call('cancelAddingItem')
+            ->assertSee('Inhalt')
+            ->assertSee('Erbsen fein')
+            ->assertSee('Bohnen');
+    }
+
     public function test_an_item_can_be_added(): void
     {
         $this->page()
@@ -120,6 +213,7 @@ class DrawerPageTest extends TestCase
     public function test_the_form_is_ready_for_the_next_item(): void
     {
         $page = $this->page()
+            ->call('startAddingItem')
             ->set('name', 'Erbsen')
             ->set('quantity', '4')
             ->set('bestBefore', '2026-12-24')
@@ -131,7 +225,9 @@ class DrawerPageTest extends TestCase
             ->assertSet('bestBefore', '')
             ->assertSet('category', InventoryItem::CATEGORY_GEMUESE);
 
-        // The form listens for this and puts the cursor back into its name field.
+        // The form stays open and listens for this, so the cursor lands back in
+        // its name field.
+        $page->assertSet('addingItem', true);
         $page->assertDispatched('item-added');
         $page->assertSeeHtml('x-on:item-added.window="$refs.itemName.focus()"');
 
@@ -204,16 +300,32 @@ class DrawerPageTest extends TestCase
     /**
      * Entering an item offers four quick choices for the MHD: one tap puts the
      * date that far ahead of today (see InventoryItem::BEST_BEFORE_PRESETS).
+     *
+     * The four stand in a grid of four equal columns over the whole width of the
+     * field above them, and every pill fills its column and centres its label
+     * (resources/css/app.css, .chip) - so "1 Jahr" is exactly as wide as "3
+     * Monate". A row of flexible pills would make each one as wide as its word.
+     *
+     * The form stands open for this - it waits behind the plus next to the name
+     * of the drawer (see the tests above).
      */
     public function test_the_best_before_field_offers_the_four_quick_choices(): void
     {
-        $this->page()
-            ->assertSee('Schnellauswahl')
+        $page = $this->page()
+            ->call('startAddingItem')
+            ->assertSee('MHD Schnellauswahl')
             ->assertSee('3 Monate')
             ->assertSee('6 Monate')
             ->assertSee('1 Jahr')
             ->assertSee('2 Jahre')
-            ->assertSeeHtml("useBestBeforePreset('2_years')");
+            ->assertSeeHtml("useBestBeforePreset('2_years')")
+            ->assertSeeHtml('class="chip"');
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-4 gap-1.5'),
+            'Die vier Schnellauswahlen des MHD stehen nicht in vier gleich breiten Spalten.'
+        );
     }
 
     /**
@@ -261,6 +373,11 @@ class DrawerPageTest extends TestCase
      * The quick choices stand in the form of an item that is being corrected as
      * well - a date is just as often corrected from a span ("another six
      * months") as it is entered the first time.
+     *
+     * Die beiden Formulare stehen nie zusammen: solange das Formular für einen
+     * neuen Artikel offen ist, tritt der Inhalt der Schublade weg, und mit ihm
+     * das Formular des Artikels. Darum werden sie hier nacheinander angesehen -
+     * jedes mit den vier Auswahlen in vier gleich breiten Spalten.
      */
     public function test_a_quick_choice_fills_the_date_of_an_item_being_edited(): void
     {
@@ -273,9 +390,26 @@ class DrawerPageTest extends TestCase
         ]);
 
         $page = $this->page()
+            ->call('startAddingItem')
+            ->assertSeeHtml("useBestBeforePreset('6_months')");
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-4 gap-1.5'),
+            'Das Formular eines neuen Artikels bietet die Schnellauswahl nicht in vier gleich breiten Spalten.'
+        );
+
+        $page->call('cancelAddingItem')
             ->call('startEditingItem', $item->getKey())
-            ->assertSeeHtml("useBestBeforePreset('6_months', 'editBestBefore')")
-            ->call('useBestBeforePreset', '6_months', 'editBestBefore');
+            ->assertSeeHtml("useBestBeforePreset('6_months', 'editBestBefore')");
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-4 gap-1.5'),
+            'Das Formular eines Artikels bietet die Schnellauswahl nicht wie das Formular oben.'
+        );
+
+        $page->call('useBestBeforePreset', '6_months', 'editBestBefore');
 
         Carbon::setTestNow();
 
@@ -746,10 +880,12 @@ class DrawerPageTest extends TestCase
     }
 
     /**
-     * Die Schublade zeigt weiterhin den ganzen MHD-Hinweis - Zustand, relativer
-     * Zähler und Datum. Nur das Inventar kürzt die Zeile (siehe item-row).
+     * Die Schublade zeigt jeden Artikel in zwei Zeilen: den Namen und darunter
+     * das MHD als Datum („MHD: 15.12.2026“). Zustand und relativer Zähler
+     * bleiben der Warnliste - hier steht neben dem Namen nur das Datum (siehe
+     * resources/views/components/drawer-item-row.blade.php).
      */
-    public function test_the_drawer_keeps_the_state_and_the_relative_mhd(): void
+    public function test_the_drawer_shows_the_name_and_the_best_before_date(): void
     {
         $item = InventoryItem::factory()->expiringSoon(2)->create([
             'drawer_id' => $this->drawer->getKey(),
@@ -757,14 +893,70 @@ class DrawerPageTest extends TestCase
         ]);
 
         $this->page()
-            ->assertSee($item->stateLabel())
-            ->assertSee($item->bestBeforeLabel())
-            ->assertSee($item->formattedBestBefore());
+            ->assertSee('Erbsen')
+            ->assertSeeHtml('MHD: '.$item->formattedBestBefore())
+            ->assertDontSee($item->stateLabel())
+            ->assertDontSee($item->bestBeforeLabel());
     }
 
     /**
-     * Die Farbe der Kategorie gehört dem Inventar: die Schublade zeigt ihre
-     * Artikel weiterhin auf der weißen Karte (siehe item-row).
+     * Ein Artikel ohne MHD lässt die Stelle des Datums nicht leer: dort steht
+     * „Kein MHD“ (items.mhd.none) statt eines Etiketts ohne Datum. Die Zeile der
+     * Schublade kennt zwei Zeilen, und keine davon bleibt leer (siehe
+     * components/drawer-item-row.blade.php).
+     */
+    public function test_an_item_without_a_best_before_date_says_so(): void
+    {
+        InventoryItem::factory()->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Erbsen',
+            'best_before' => null,
+        ]);
+
+        $this->page()
+            ->assertSeeHtmlInOrder(['Erbsen', '<span>Kein MHD</span>'])
+            // Kein Etikett ohne Datum und kein Zustand, der nichts sagt.
+            ->assertDontSee('MHD:')
+            ->assertDontSee('ohne MHD');
+    }
+
+    /**
+     * Bearbeiten, Löschen und Verschieben stehen hinter dem Menü ihrer Zeile
+     * („⋮“, siehe resources/views/components/menu.blade.php): die Zeile behält
+     * den Namen, das MHD und die Menge, und jede der drei Aktionen bleibt die
+     * Funktion dieser Seite. Jede Zeile hat ihr eigenes Menü - die Aktionen
+     * nennen den Artikel, auf den sie sich beziehen.
+     */
+    public function test_every_item_row_carries_its_own_menu(): void
+    {
+        $item = InventoryItem::factory()->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Erbsen',
+        ]);
+
+        $second = InventoryItem::factory()->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Bohnen',
+        ]);
+
+        $this->page()
+            // Das Menü sitzt in der Zeile und nennt sie in seinem Namen ...
+            ->assertSeeHtml('aria-haspopup="menu"')
+            ->assertSeeHtml('aria-label="Weitere Aktionen für „Erbsen“"')
+            ->assertSeeHtml('aria-label="Weitere Aktionen für „Bohnen“"')
+            ->assertSee('Bearbeiten')
+            ->assertSee('Löschen')
+            ->assertSee('Verschieben')
+            // ... und die Aktionen gehören zu genau diesem Artikel.
+            ->assertSeeHtml('wire:click="startEditingItem('.$item->getKey().')"')
+            ->assertSeeHtml('wire:click="startMovingItem('.$item->getKey().')"')
+            ->assertSeeHtml("name: 'item-delete-".$item->getKey()."'")
+            ->assertSeeHtml("name: 'item-delete-".$second->getKey()."'");
+    }
+
+    /**
+     * Die Karte der Schublade bleibt weiß – wie jede Zeile der App: die Kategorie
+     * eines Artikels dient dem Filter des Inventars (siehe drawer-item-row).
      */
     public function test_the_drawer_keeps_the_white_card(): void
     {
@@ -775,6 +967,32 @@ class DrawerPageTest extends TestCase
 
         $this->page()
             ->assertSee('Hackfleisch')
+            ->assertSeeHtml('class="card p-3"')
             ->assertDontSeeHtml('bg-cat-');
+    }
+
+    /**
+     * „&move=1“ neben „?item=<id>“ bringt statt des Bearbeiten-Formulars das
+     * Verschieben-Formular hoch: die Zeile einer Liste außerhalb der Schublade
+     * bietet beide Aktionen an (siehe components/item-row.blade.php).
+     */
+    public function test_the_move_form_of_an_item_can_be_opened_straight_from_the_address(): void
+    {
+        $item = InventoryItem::factory()->create([
+            'drawer_id' => $this->drawer->getKey(),
+            'name' => 'Erbsen',
+        ]);
+
+        Livewire::withQueryParams(['item' => (string) $item->getKey(), 'move' => '1'])
+            ->actingAs($this->owner)
+            ->test(DrawerPage::class, ['drawer' => $this->drawer])
+            ->assertSet('movingItemId', $item->getKey())
+            ->assertSet('editingItemId', null)
+            // Das Verschieben-Formular steht offen, das Bearbeiten-Formular nicht.
+            ->assertSeeHtml('wire:submit="moveItem"')
+            ->assertDontSeeHtml('wire:submit="saveItem"')
+            // Auch dieses Formular bringt sich in Sicht - der Artikel kann weit
+            // unten in der Liste liegen.
+            ->assertSeeHtml('scrollIntoView');
     }
 }

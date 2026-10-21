@@ -10,6 +10,15 @@ return [
     'subtitle' => 'I tuoi dati e la tua immagine del profilo',
     'avatar' => 'Immagine del profilo',
     'avatar_preview' => 'Anteprima',
+    // L'immagine si comanda con un solo pulsante: apre il menu dell'app e le
+    // sue voci seguono lo stato - aggiungere senza immagine, cambiare ed
+    // eliminare con un'immagine
+    // (resources/views/livewire/profile/profile-page.blade.php).
+    'edit_avatar' => 'Modifica l\'immagine del profilo',
+    'add_avatar' => 'Aggiungi un\'immagine del profilo',
+    'change_avatar' => 'Cambia l\'immagine del profilo',
+    'delete_avatar' => 'Elimina l\'immagine del profilo',
+    // Il nome del campo invisibile da cui arriva l'immagine.
     'choose_image' => 'Scegli un\'immagine',
     'uploading' => 'Caricamento …',
     'remove_avatar_title' => 'Rimuovere l\'immagine del profilo?',

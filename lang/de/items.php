@@ -9,15 +9,13 @@
  */
 
 return [
-    'delete_aria' => 'Artikel löschen',
-    'edit_aria' => 'Artikel bearbeiten',
-    'move_aria' => 'Artikel verschieben',
     'increase_aria' => 'Menge erhöhen',
     'decrease_aria' => 'Menge verringern',
     'delete_confirm_title' => 'Artikel löschen?',
     'delete_confirm_message' => 'Möchtest du „:name“ wirklich löschen?',
     'deleted' => 'Artikel gelöscht.',
     'open_in_drawer_aria' => 'Artikel in „:drawer“ bearbeiten',
+    'menu_aria' => 'Weitere Aktionen für „:name“',
 
     'state' => [
         'expired' => 'abgelaufen',
@@ -26,8 +24,14 @@ return [
         'unknown' => 'ohne MHD',
     ],
 
+    /*
+     | The wording of the best before date: its relative form ("MHD in 3 Tagen")
+     | and, under "none", the one that stands where a row would name the date
+     | ("Kein MHD") - the place of the date is never left empty (see
+     | resources/views/components/item-row.blade.php).
+     */
     'mhd' => [
-        'none' => 'kein MHD',
+        'none' => 'Kein MHD',
         'today' => 'MHD heute',
         'tomorrow' => 'MHD morgen',
         'yesterday' => 'MHD seit gestern',

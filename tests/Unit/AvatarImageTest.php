@@ -41,4 +41,24 @@ class AvatarImageTest extends TestCase
         $this->assertSame([512, 1], AvatarImage::fit(4000, 1));
         $this->assertSame([1, 512], AvatarImage::fit(1, 4000));
     }
+
+    /**
+     * Der Typ, den ein gespeichertes Bild an den Browser bekommt, kommt aus der
+     * Endung der Datei - ohne ihn zeigt ein iPhone das Bild nicht an (siehe
+     * App\Http\Controllers\AvatarController).
+     */
+    public function test_the_type_of_a_stored_picture_comes_from_its_extension(): void
+    {
+        $this->assertSame('image/jpeg', AvatarImage::mimeTypeOf('avatars/avatar-1-abc.jpg'));
+        $this->assertSame('image/jpeg', AvatarImage::mimeTypeOf('avatars/avatar-1-abc.JPEG'));
+        $this->assertSame('image/png', AvatarImage::mimeTypeOf('avatars/avatar-1-abc.png'));
+        $this->assertSame('image/webp', AvatarImage::mimeTypeOf('avatars/avatar-1-abc.webp'));
+    }
+
+    /** Eine unbekannte Endung überlässt die Erkennung dem Speicher. */
+    public function test_an_unknown_extension_has_no_type_of_its_own(): void
+    {
+        $this->assertNull(AvatarImage::mimeTypeOf('avatars/avatar-1-abc.heic'));
+        $this->assertNull(AvatarImage::mimeTypeOf('avatars/avatar-1-abc'));
+    }
 }

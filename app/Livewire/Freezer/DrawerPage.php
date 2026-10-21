@@ -48,6 +48,17 @@ class DrawerPage extends Component
     /** Empty means "without a category". */
     public string $category = '';
 
+    /**
+     * Whether the form for a new item stands open.
+     *
+     * A drawer appears with its contents, not with a form: the plus next to the
+     * name of the drawer brings the form up (see the view), so the list keeps
+     * the room on a phone. While it stands open the form is the whole drawer -
+     * the contents below it step aside, so nothing leads away from the field
+     * that is being filled in (see the view).
+     */
+    public bool $addingItem = false;
+
     public ?int $editingItemId = null;
 
     public string $editName = '';
@@ -73,10 +84,32 @@ class DrawerPage extends Component
 
         // A list outside the drawer (the inventory, the MHD watch list) links
         // straight to one of its items: the address carries "?item=<id>" and
-        // the form of that item stands open as soon as the drawer appears.
+        // the form of that item stands open as soon as the drawer appears
+        // ("&move=1" asks for its move form instead, see openItemFromQuery()).
         // Looking the item up in the list first would be the long way round
         // (see resources/views/components/item-row.blade.php).
         $this->openItemFromQuery($drawer);
+    }
+
+    /**
+     * Bring up the form for a new item - the plus next to the name of the
+     * drawer (see the view).
+     */
+    public function startAddingItem(): void
+    {
+        $this->resetErrorBag();
+
+        $this->addingItem = true;
+    }
+
+    /**
+     * Close the form again without entering anything: the next tap on the plus
+     * begins with empty fields, as if the form had never been opened.
+     */
+    public function cancelAddingItem(): void
+    {
+        $this->reset('name', 'quantity', 'bestBefore', 'category', 'addingItem');
+        $this->resetErrorBag();
     }
 
     public function addItem(): void
@@ -109,9 +142,10 @@ class DrawerPage extends Component
         $this->resetErrorBag();
         $this->itemFeedback = __('drawers.item_added');
 
-        // The cursor stays where the last item was typed, so a whole drawer can
-        // be filled without ever reaching for the field again (the form listens
-        // for this event, see the view).
+        // The form stays open and the cursor stays in its name field, so a whole
+        // drawer can be filled without ever reaching for the field again (the
+        // form listens for this event, see the view).
+        $this->addingItem = true;
         $this->dispatch('item-added');
     }
 
@@ -295,6 +329,10 @@ class DrawerPage extends Component
      * Open the form of the item the address points at - as long as it names an
      * item of this drawer. An unknown or foreign id changes nothing at all: the
      * drawer then simply appears the way it always does.
+     *
+     * "&move=1" (see resources/views/components/item-row.blade.php) brings up the
+     * move form instead of the edit form: the row of a list outside the drawer
+     * offers both actions, and both stay the functions of this page.
      */
     private function openItemFromQuery(Drawer $drawer): void
     {
@@ -307,6 +345,12 @@ class DrawerPage extends Component
         $item = $drawer->items()->whereKey($itemId)->first();
 
         if ($item === null) {
+            return;
+        }
+
+        if (request()->boolean('move')) {
+            $this->startMovingItem($item->getKey());
+
             return;
         }
 

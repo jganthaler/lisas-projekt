@@ -75,6 +75,9 @@ class OfflineTest extends TestCase
             ->assertJsonPath('labels.categories.fleisch', 'Fleisch')
             ->assertJsonPath('labels.no_category', 'Ohne Kategorie')
             ->assertJsonPath('labels.mhd.in_days', 'MHD in :count Tagen')
+            // Die Zeile eines Artikels ohne MHD sagt es auch offline (siehe
+            // public/offline.html, itemRow()).
+            ->assertJsonPath('labels.mhd.none', 'Kein MHD')
             ->assertJsonPath('labels.presets.0.key', '3_months')
             ->assertJsonPath('labels.presets.0.months', 3);
     }
@@ -90,6 +93,7 @@ class OfflineTest extends TestCase
             ->assertOk()
             ->assertJsonPath('locale', 'it')
             ->assertJsonPath('labels.state.fresh', 'fresco')
+            ->assertJsonPath('labels.mhd.none', 'Nessuna scadenza')
             ->assertJsonPath('labels.categories.gemuese', 'Verdure');
     }
 

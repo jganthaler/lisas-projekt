@@ -7,8 +7,6 @@
  | "default_name" and "drawer_name" are the names a brand new freezer and its
  | drawers get - they are stored, so they carry the language of the moment the
  | account was created.
- |
- | "summary" is filled with the two counters of common.php.
  */
 
 return [
@@ -18,16 +16,21 @@ return [
     'close_aria' => 'Gefrierschrank schließen',
     'default_name' => 'Mein Gefrierschrank',
     'drawer_name' => 'Schublade :position',
-    'empty' => 'Hier ist noch nichts eingefroren.',
-    'summary' => ':items in :drawers',
     'mine' => 'Meine Gefrierschränke',
-    'add_aria' => 'Gefrierschrank hinzufügen',
-    'add_cancel_aria' => 'Anlegen abbrechen',
+    /*
+     | The field "Meine Gefrierschränke" on the start page: its menu ("⋮") acts on
+     | the active freezer, the name opens the list of all of them, and the two
+     | arrows name the step to the neighbours of the active one.
+     */
+    'add' => 'Gefrierschrank hinzufügen',
+    'edit' => 'Gefrierschrank bearbeiten',
+    'delete' => 'Gefrierschrank löschen',
+    'previous_aria' => 'Vorheriger Gefrierschrank',
+    'next_aria' => 'Nächster Gefrierschrank',
+    'menu_aria' => 'Weitere Aktionen für „:name“',
     'new_label' => 'Neuer Gefrierschrank',
     'new_placeholder' => 'z. B. Truhe im Keller',
     'rename_label' => 'Name des Gefrierschranks',
-    'rename_aria' => 'Gefrierschrank umbenennen',
-    'delete_aria' => 'Gefrierschrank löschen',
     'delete_confirm_title' => 'Gefrierschrank löschen?',
     'delete_confirm_message' => '„:name“ verschwindet mit allen Schubladen und Artikeln für immer.',
     'owned' => 'Dein Gefrierschrank',
@@ -43,8 +46,13 @@ return [
     'new_drawer_placeholder' => 'z. B. Gemüse',
     'add_drawer_aria' => 'Schublade hinzufügen',
     'rename_drawer_label' => 'Name der Schublade',
-    'rename_drawer_aria' => 'Schublade umbenennen',
-    'delete_drawer_aria' => 'Schublade löschen',
+
+    /*
+     | The menu of a drawer row ("⋮"): its two actions carry their own label, and
+     | the button of the menu names the row it belongs to.
+     */
+    'rename_drawer' => 'Umbenennen',
+    'drawer_menu_aria' => 'Weitere Aktionen für „:name“',
     'delete_drawer_confirm_title' => 'Schublade löschen?',
     'delete_drawer_confirm_message' => '„:name“ wird entfernt. Das geht nur, solange sie leer ist.',
     'no_drawers' => 'Noch keine Schublade angelegt.',

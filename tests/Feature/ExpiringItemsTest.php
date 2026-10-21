@@ -97,8 +97,26 @@ class ExpiringItemsTest extends TestCase
     }
 
     /**
-     * Auch die Warnliste bleibt weiß: die Farbe der Kategorie gehört dem
-     * Inventar (siehe resources/views/components/item-row.blade.php).
+     * Die Warnliste selbst zeigt nie einen Artikel ohne MHD – die Abfrage
+     * verlangt ein Datum (siehe ExpiringItems). Ihre Zeile sagt es aber genauso
+     * wie die des Inventars: an der Stelle des Datums steht „Kein MHD“
+     * (items.mhd.none, siehe resources/views/components/item-row.blade.php).
+     */
+    public function test_the_row_of_the_watch_list_says_when_there_is_no_mhd(): void
+    {
+        $item = $this->item('Beeren', null);
+
+        $this->blade('<x-item-row :item="$item" />', ['item' => $item])
+            ->assertSeeHtml('<span>Kein MHD</span>')
+            // Kein Etikett ohne Datum und kein Zustand, der nichts sagt.
+            ->assertDontSee('MHD:')
+            ->assertDontSee('ohne MHD');
+    }
+
+    /**
+     * Auch die Warnliste bleibt weiß – wie jede Zeile der App: die Kategorie
+     * eines Artikels dient dem Filter des Inventars (siehe
+     * resources/views/components/item-row.blade.php).
      */
     public function test_the_watch_list_keeps_the_white_card(): void
     {
@@ -109,7 +127,45 @@ class ExpiringItemsTest extends TestCase
 
         $this->page()
             ->assertSee('Erbsen')
+            ->assertSeeHtml('class="card p-3"')
             ->assertDontSeeHtml('bg-cat-');
+    }
+
+    /**
+     * Drei Zeilen je Artikel: der Name, darunter „MHD: <Datum>“ mit Zustand und
+     * relativem Zähler und darunter der Ort – Gefrierschrank und Schublade mit
+     * Komma, der Name der Schublade als Weg in sie (siehe
+     * resources/views/components/item-row.blade.php).
+     */
+    public function test_the_row_names_the_place_of_the_item(): void
+    {
+        $item = $this->item('Brot', '2026-06-10');
+
+        $this->page()
+            ->assertSeeHtmlInOrder([
+                'Brot',
+                'MHD: '.$item->formattedBestBefore(),
+                $this->drawer->freezer->name.', ',
+            ])
+            ->assertSeeHtml('href="'.route('drawers.show', $this->drawer).'?item='.$item->getKey().'"');
+    }
+
+    /**
+     * Auch die Warnliste trägt an jeder Zeile ihr eigenes Menü („⋮“) mit
+     * Bearbeiten, Löschen und Verschieben – dieselben drei Aktionen wie in der
+     * Schublade, mit diesem Artikel als Ziel (siehe components/item-row).
+     */
+    public function test_every_row_carries_its_own_menu(): void
+    {
+        $item = $this->item('Brot', '2026-06-10');
+
+        $this->page()
+            ->assertSeeHtml('aria-label="Weitere Aktionen für „Brot“"')
+            ->assertSee('Bearbeiten')
+            ->assertSee('Löschen')
+            ->assertSee('Verschieben')
+            ->assertSeeHtml('href="'.route('drawers.show', $this->drawer).'?item='.$item->getKey().'&amp;move=1"')
+            ->assertSeeHtml("name: 'item-delete-".$item->getKey()."'");
     }
 
     /**

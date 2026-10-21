@@ -9,15 +9,13 @@
  */
 
 return [
-    'delete_aria' => 'Elimina l\'articolo',
-    'edit_aria' => 'Modifica l\'articolo',
-    'move_aria' => 'Sposta l\'articolo',
     'increase_aria' => 'Aumenta la quantità',
     'decrease_aria' => 'Riduci la quantità',
     'delete_confirm_title' => 'Eliminare l’articolo?',
     'delete_confirm_message' => 'Vuoi davvero eliminare “:name”?',
     'deleted' => 'Articolo eliminato.',
     'open_in_drawer_aria' => 'Modifica l’articolo in “:drawer”',
+    'menu_aria' => 'Altre azioni per “:name”',
 
     'state' => [
         'expired' => 'scaduto',
@@ -26,8 +24,14 @@ return [
         'unknown' => 'senza scadenza',
     ],
 
+    /*
+     | The wording of the best before date: its relative form ("scade tra 3
+     | giorni") and, under "none", the one that stands where a row would name
+     | the date ("Nessuna scadenza") - the place of the date is never left empty
+     | (see resources/views/components/item-row.blade.php).
+     */
     'mhd' => [
-        'none' => 'nessuna scadenza',
+        'none' => 'Nessuna scadenza',
         'today' => 'scade oggi',
         'tomorrow' => 'scade domani',
         'yesterday' => 'scaduto ieri',

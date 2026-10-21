@@ -19,7 +19,8 @@ use Illuminate\Support\Str;
  * The same product may exist several times (different batches / different best
  * before dates), therefore the name is not unique. All sorting happens on the
  * pre-calculated "name_sort" column, which keeps the alphabetical order
- * identical for German umlauts on MySQL and SQLite. The column is mandatory and
+ * identical for German umlauts on MySQL and SQLite - and it is the tie breaker
+ * of every other order as well (see sortedBy()). The column is mandatory and
  * is filled by the "saving" hook below, so an item can never end up without it.
  *
  * The UUID is the identity the offline page works with: it can only invent an
@@ -70,6 +71,23 @@ class InventoryItem extends Model
 
     public const CATEGORY_SONSTIGES = 'sonstiges';
 
+    /*
+     | The orders the inventory offers. The key is what the page sends (see
+     | InventoryOverview::sortBy()), the word is what the buttons show - it
+     | comes from the translation files (lang/<language>/inventory.php), so
+     | every language offers its own. "alphabetical" is the order the list has
+     | without a choice, therefore an unknown key can simply fall back to it.
+     |
+     | The best before date knows one order, the ascending one: the top of the
+     | list belongs to what has to be eaten, and a descending order - the
+     | latest date first - is nothing the inventory offers.
+     */
+    public const SORT_ALPHABETICAL = 'alphabetical';
+
+    public const SORT_CATEGORY = 'category';
+
+    public const SORT_BEST_BEFORE_ASC = 'best_before_asc';
+
     public const STATE_EXPIRED = 'expired';
 
     public const STATE_SOON = 'soon';
@@ -77,6 +95,29 @@ class InventoryItem extends Model
     public const STATE_FRESH = 'fresh';
 
     public const STATE_UNKNOWN = 'unknown';
+
+    /*
+     | The sections the order by best before date forms: the remaining shelf
+     | life, read from today in two windows ("Aufzubrauchen innerhalb 1 Monats",
+     | "Aufzubrauchen innerhalb 6 Monate"), everything that keeps longer - and,
+     | as the last one, the items without a date ("Kein MHD hinterlegt"). The
+     | key is what InventoryOverview::groups() groups by, the words come from
+     | the translation files (lang/<language>/inventory.php), so every language
+     | reads its own headings.
+     |
+     | The windows are calendar months, not days: "innerhalb 1 Monats" from the
+     | 15.06. reaches to the 15.07. and not a day further - the same counting
+     | the quick choices of the item form use (addMonthsNoOverflow, see
+     | bestBeforeForPreset()). An expired date belongs to the first window:
+     | nothing is more urgent than what is already too late.
+     */
+    public const BEST_BEFORE_GROUP_MONTH = 'month';
+
+    public const BEST_BEFORE_GROUP_SIX_MONTHS = 'six_months';
+
+    public const BEST_BEFORE_GROUP_LONGER = 'longer';
+
+    public const BEST_BEFORE_GROUP_NONE = 'none';
 
     /**
      * @return array<string, string>
@@ -156,26 +197,71 @@ class InventoryItem extends Model
     }
 
     /**
-     * Background of the row in the inventory, one tint per category.
+     * Every order as key => label, in the order the interface offers them.
      *
-     * The names are the utilities of the palette (the "--color-cat-*" tokens in
-     * resources/css/app.css); the dark scheme swaps the values behind those
-     * tokens, so the same class serves both schemes and the view needs no
-     * variant of its own. "Sonstiges" and an item without a category stay null:
-     * the plain card of the list is white, which is exactly what they should
-     * look like.
+     * The keys are the ones sortedBy() works with, the labels come from the
+     * translation files (lang/<language>/inventory.php), because the buttons
+     * stand on the inventory page.
+     *
+     * @return array<string, string>
      */
-    public function categoryTintClass(): ?string
+    public static function sortLabels(): array
     {
-        return match ($this->category) {
-            self::CATEGORY_FLEISCH => 'bg-cat-fleisch',
-            self::CATEGORY_FISCH => 'bg-cat-fisch',
-            self::CATEGORY_GEMUESE => 'bg-cat-gemuese',
-            self::CATEGORY_SUPPE => 'bg-cat-suppe',
-            self::CATEGORY_OBST => 'bg-cat-obst',
-            self::CATEGORY_SOSSE => 'bg-cat-sosse',
-            default => null,
-        };
+        return [
+            self::SORT_ALPHABETICAL => __('inventory.sort.alphabetical'),
+            self::SORT_CATEGORY => __('inventory.sort.category'),
+            self::SORT_BEST_BEFORE_ASC => __('inventory.sort.best_before_asc'),
+        ];
+    }
+
+    /**
+     * The keys of every order - what the page may send and a sort accepts.
+     *
+     * @return list<string>
+     */
+    public static function sortKeys(): array
+    {
+        return array_keys(self::sortLabels());
+    }
+
+    /**
+     * The order that was asked for. An unknown key - just like an unknown
+     * category - changes nothing: the list stays alphabetical.
+     */
+    public static function sortOrDefault(string $sort): string
+    {
+        return in_array($sort, self::sortKeys(), true) ? $sort : self::SORT_ALPHABETICAL;
+    }
+
+    /**
+     * Every section of the order by best before date as key => label, in the
+     * order the list has to be read: the most urgent window first, the items
+     * without a date last.
+     *
+     * The keys are the ones bestBeforeGroup() returns, the labels come from the
+     * translation files (lang/<language>/inventory.php), because the headings
+     * stand on the inventory page.
+     *
+     * @return array<string, string>
+     */
+    public static function bestBeforeGroupLabels(): array
+    {
+        return [
+            self::BEST_BEFORE_GROUP_MONTH => __('inventory.best_before_groups.month'),
+            self::BEST_BEFORE_GROUP_SIX_MONTHS => __('inventory.best_before_groups.six_months'),
+            self::BEST_BEFORE_GROUP_LONGER => __('inventory.best_before_groups.longer'),
+            self::BEST_BEFORE_GROUP_NONE => __('inventory.best_before_groups.none'),
+        ];
+    }
+
+    /**
+     * The keys of every section, in the order they stand in.
+     *
+     * @return list<string>
+     */
+    public static function bestBeforeGroupKeys(): array
+    {
+        return array_keys(self::bestBeforeGroupLabels());
     }
 
     /**
@@ -270,6 +356,54 @@ class InventoryItem extends Model
     }
 
     /**
+     * The order of the list: by name, by category or by the best before date -
+     * soonest first.
+     *
+     * Every order ends on "name_sort" (and the id), so two items that share a
+     * category or a date never swap places between two calls - the list stays
+     * still while the user works in it. An unknown order keeps the list
+     * alphabetical (see sortOrDefault()).
+     *
+     * The items without a best before date close the list: "kein MHD" is no
+     * date that could become urgent, and the top of the list belongs to what
+     * has to be eaten. A plain "ORDER BY best_before" would put the NULLs first
+     * on MySQL and SQLite alike, hence the case expression.
+     */
+    #[Scope]
+    public function sortedBy(Builder $query, string $sort): void
+    {
+        if ($sort === self::SORT_CATEGORY) {
+            // The categories in the order the interface offers them (the chips
+            // of the filter panel); "Sonstiges" and the items without a
+            // category close the list.
+            $expression = 'case category';
+            $categories = [];
+
+            foreach (array_keys(self::categoryLabels()) as $position => $category) {
+                $expression .= ' when ? then '.$position;
+                $categories[] = $category;
+            }
+
+            $query->orderByRaw($expression.' else '.count($categories).' end', $categories)
+                ->orderBy('name_sort')
+                ->orderBy('id');
+
+            return;
+        }
+
+        if ($sort === self::SORT_BEST_BEFORE_ASC) {
+            $query->orderByRaw('case when best_before is null then 1 else 0 end')
+                ->orderBy('best_before')
+                ->orderBy('name_sort')
+                ->orderBy('id');
+
+            return;
+        }
+
+        $query->alphabetical();
+    }
+
+    /**
      * Only the items that were sorted into one category.
      */
     #[Scope]
@@ -303,6 +437,29 @@ class InventoryItem extends Model
             $days < 0 => self::STATE_EXPIRED,
             $days <= self::WARNING_DAYS => self::STATE_SOON,
             default => self::STATE_FRESH,
+        };
+    }
+
+    /**
+     * The section of the order by best before date this item belongs to: what
+     * has to be used within the next month - an expired date included, because
+     * nothing is more urgent than what is already too late -, what within the
+     * next six months, what keeps longer and, without a date, the section that
+     * closes the list.
+     */
+    public function bestBeforeGroup(): string
+    {
+        if ($this->best_before === null) {
+            return self::BEST_BEFORE_GROUP_NONE;
+        }
+
+        $date = $this->best_before->copy()->startOfDay();
+        $today = Carbon::today();
+
+        return match (true) {
+            $date->lessThanOrEqualTo($today->copy()->addMonthsNoOverflow(1)) => self::BEST_BEFORE_GROUP_MONTH,
+            $date->lessThanOrEqualTo($today->copy()->addMonthsNoOverflow(6)) => self::BEST_BEFORE_GROUP_SIX_MONTHS,
+            default => self::BEST_BEFORE_GROUP_LONGER,
         };
     }
 

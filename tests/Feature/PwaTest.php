@@ -191,6 +191,25 @@ class PwaTest extends TestCase
     }
 
     /**
+     * Die Offline-Seite lässt die Stelle des Datums so wenig leer wie die App:
+     * eine Zeile ohne MHD sagt „Kein MHD“ (mhdLabels.none, siehe
+     * public/offline.html, itemRow()). Die Wörter stehen nicht zweimal im
+     * Projekt – sie kommen mit dem Schnappschuss (siehe
+     * App\Support\OfflineInventory::labels()) –, deshalb ist hier nur die Zeile
+     * selbst gewacht.
+     */
+    public function test_the_offline_row_says_when_there_is_no_mhd(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $this->assertStringContainsString(
+            "meta = '<span>' + esc(mhdLabels.none) + '</span>';",
+            $page,
+            'Die Offline-Zeile lässt die Stelle des Datums leer.'
+        );
+    }
+
+    /**
      * What the offline page can do, in every language of the app.
      */
     public function test_the_offline_page_carries_the_editor_in_every_language(): void
@@ -198,9 +217,9 @@ class PwaTest extends TestCase
         $page = $this->publicFile('offline.html');
 
         $texts = [
-            'de' => ['Artikel hinzufügen', 'Jetzt synchronisieren', 'Artikel verschieben', 'Löschen'],
-            'it' => ['Aggiungi articolo', 'Sincronizza ora', 'Sposta articolo', 'Elimina'],
-            'en' => ['Add item', 'Sync now', 'Move item', 'Delete'],
+            'de' => ['Artikel hinzufügen', 'Jetzt synchronisieren', 'Artikel verschieben', 'Löschen', 'Hinzufügen abbrechen'],
+            'it' => ['Aggiungi articolo', 'Sincronizza ora', 'Sposta articolo', 'Elimina', "Annulla l'aggiunta"],
+            'en' => ['Add item', 'Sync now', 'Move item', 'Delete', 'Cancel adding'],
         ];
 
         foreach ($texts as $locale => $phrases) {
@@ -212,6 +231,107 @@ class PwaTest extends TestCase
                 );
             }
         }
+    }
+
+    /**
+     * The offline page is the inventory itself, so it shows the four quick
+     * choices of the MHD the way the app shows them: in four equal columns over
+     * the whole width of the field, the label in the middle of every pill
+     * (public/offline.html, .chips and .chip - the app carries the same shape in
+     * resources/css/app.css). No view test reaches the static page, so its shape
+     * is guarded here.
+     */
+    public function test_the_offline_page_offers_the_quick_choices_in_four_equal_columns(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $this->assertMatchesRegularExpression(
+            '/\.chips\s*\{[^}]*display:\s*grid;[^}]*repeat\(4,\s*minmax\(0,\s*1fr\)\)/s',
+            $page,
+            'Die vier Schnellauswahlen des MHD stehen offline nicht in vier gleich breiten Spalten.'
+        );
+
+        // The pill fills its column and puts its label in the middle of it.
+        $this->assertMatchesRegularExpression(
+            '/\.chip\s*\{[^}]*width:\s*100%;/s',
+            $page,
+            'Die Pille der Schnellauswahl füllt offline nicht ihre Spalte.'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/\.chip\s*\{[^}]*text-align:\s*center;/s',
+            $page,
+            'Das Etikett der Schnellauswahl steht offline nicht mittig.'
+        );
+    }
+
+    /**
+     * The drawer of the offline page appears the way the drawer of the app
+     * appears: with its contents, not with the form for a new item. The form
+     * waits behind the plus next to the name of the drawer (data-add hidden,
+     * data-action="add-toggle") and comes up on a tap - and the plus then is the
+     * cross that closes it again.
+     */
+    public function test_the_offline_drawer_appears_without_the_form_for_a_new_item(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $this->assertMatchesRegularExpression(
+            '/<form class="card stack" data-add hidden>/',
+            $page,
+            'Das Formular der Offline-Seite steht offen, statt hinter dem Plus zu warten.'
+        );
+
+        $this->assertStringContainsString('data-action="add-toggle"', $page);
+        $this->assertStringContainsString('data-icon="plus"', $page);
+        $this->assertStringContainsString("action === 'add-toggle'", $page);
+
+        // The plus becomes the cross of the form while it stands open, so the
+        // offline page knows that icon as well (see the icon set of the app,
+        // resources/views/components/icon.blade.php).
+        $this->assertStringContainsString("'close': '<path d=\"M6 6l12 12\"/>", $page);
+    }
+
+    /**
+     * The form for a new item is the whole drawer of the offline page while it
+     * stands open - exactly as in the app (drawer-page.blade.php): the heading
+     * "Inhalt" and the list of the drawer step aside, so nothing below the field
+     * leads away from the item that is being entered.
+     */
+    public function test_the_offline_drawer_gives_way_to_the_form_for_a_new_item(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $this->assertMatchesRegularExpression(
+            '/<h2 class="section" data-text="contents" data-contents>/',
+            $page,
+            'Die Überschrift "Inhalt" der Offline-Schublade ist nicht ansprechbar.'
+        );
+
+        $this->assertStringContainsString("contents: document.querySelector('[data-contents]')", $page);
+        $this->assertStringContainsString('show(elements.contents, !addingItem);', $page);
+        $this->assertStringContainsString('show(elements.items, !addingItem);', $page);
+    }
+
+    /**
+     * Der Weg zurück aus dem Offline-Fach führt auf die Startseite des
+     * Gefrierschranks - genau wie in der App (drawer-page.blade.php): der Pfeil
+     * verspricht „Zurück zum Gefrierschrank“ (drawers.back_aria), und die
+     * Schublade gehört zum Reiter „Gefrierschrank“ der Fußleiste. Ohne Netz
+     * zeigt die Adresse /freezer das Inventar, der Weg funktioniert also auch
+     * ohne Empfang.
+     */
+    public function test_the_offline_drawer_leads_back_to_the_start_page(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $this->assertStringContainsString(
+            '<a class="icon-btn" href="/freezer" data-icon="arrow-left" data-aria="back"></a>',
+            $page,
+            'Der Pfeil des Offline-Fachs führt nicht auf die Startseite des Gefrierschranks.'
+        );
+
+        $this->assertStringNotContainsString('href="/freezer/open"', $page);
     }
 
     /**

@@ -143,6 +143,12 @@ class ProfilePage extends Component
      * groß - für einen runden Avatar von 36 Pixeln viel zu viel und für den
      * Upload im Mobilfunknetz zu schwer. Was zu groß ist, wird deshalb vor dem
      * Speichern auf eine passende Größe gebracht (App\Support\AvatarImage).
+     *
+     * Danach wird die Seite geladen - wie beim Wechsel der Sprache: Der Avatar
+     * der Kopfzeile liegt im Layout außerhalb dieser Komponente und bliebe sonst
+     * beim alten Bild stehen (oder bei den Initialen, obwohl jetzt ein Bild da
+     * ist). Jede weitere Anfrage liest das Bild ohnehin vom Konto
+     * (User::avatarUrl()).
      */
     public function updatedAvatar(): void
     {
@@ -182,9 +188,20 @@ class ProfilePage extends Component
         }
 
         $this->reset('avatar');
-        $this->feedback = __('profile.image_saved');
+
+        session()->flash('status', __('profile.image_saved'));
+
+        $this->redirectRoute('profile.edit', navigate: true);
     }
 
+    /**
+     * Das Profilbild entfernen: Die Datei verschwindet vom Speicher, der Pfad aus
+     * dem Konto, und die Kopfzeile zeigt danach wieder die Initialen.
+     *
+     * Die Seite wird auch hier geladen, aus demselben Grund wie beim Speichern:
+     * Der Avatar der Kopfzeile liegt außerhalb dieser Komponente und bliebe sonst
+     * beim gelöschten Bild stehen.
+     */
     public function removeAvatar(): void
     {
         $user = Auth::user();
@@ -197,7 +214,9 @@ class ProfilePage extends Component
 
         $user->forceFill(['avatar_path' => null])->save();
 
-        $this->feedback = __('profile.image_removed');
+        session()->flash('status', __('profile.image_removed'));
+
+        $this->redirectRoute('profile.edit', navigate: true);
     }
 
     /**

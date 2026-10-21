@@ -7,7 +7,9 @@
     <x-notice :message="$feedback" />
 
     {{-- Avatar: the chosen image is uploaded and stored right away, so there is
-         no save button - picking another image simply replaces the current one. --}}
+         no save button - the menu of the profile picture offers what fits the
+         state: adding while there is none, changing and deleting while there is
+         one. --}}
     <section class="card space-y-3 p-4">
         <h3 class="text-sm font-semibold text-frost-900">{{ __('profile.avatar') }}</h3>
 
@@ -22,14 +24,50 @@
             @endif
 
             <div class="min-w-0 flex-1">
-                <label class="btn btn-secondary w-full cursor-pointer" for="avatar">
-                    <x-icon name="camera" class="h-4 w-4" />
-                    {{ __('profile.choose_image') }}
-                </label>
+                {{-- Ein Knopf für alles, was das Bild betrifft: er öffnet das
+                     Menü der App (components/menu.blade.php), und dessen
+                     Einträge folgen dem Zustand - hinzufügen ohne Bild, ändern
+                     und löschen mit Bild. Die Auswahl vom Gerät öffnet das
+                     unsichtbare Feld darunter; ein neues Bild ersetzt das alte
+                     sofort, einen Knopf zum Speichern gibt es nicht. --}}
+                <x-menu :label="__('profile.edit_avatar')">
+                    <x-slot:trigger>
+                        <button type="button" x-on:click="open = ! open"
+                                x-bind:aria-expanded="open ? 'true' : 'false'"
+                                aria-haspopup="menu" class="btn btn-secondary w-full">
+                            <x-icon name="camera" class="h-5 w-5" />
+                            {{ __('profile.edit_avatar') }}
+                        </button>
+                    </x-slot:trigger>
+
+                    @if ($user?->hasAvatar())
+                        <button type="button" x-on:click="document.getElementById('avatar').click()"
+                                class="menu-item" role="menuitem">
+                            <x-icon name="pencil" class="h-4 w-4" />
+                            {{ __('profile.change_avatar') }}
+                        </button>
+
+                        <button type="button"
+                                wire:click="$dispatch('confirm-dialog', { name: 'avatar-remove' })"
+                                class="menu-item menu-item-danger" role="menuitem">
+                            <x-icon name="trash" class="h-4 w-4" />
+                            {{ __('profile.delete_avatar') }}
+                        </button>
+                    @else
+                        <button type="button" x-on:click="document.getElementById('avatar').click()"
+                                class="menu-item" role="menuitem">
+                            <x-icon name="plus" class="h-4 w-4" />
+                            {{ __('profile.add_avatar') }}
+                        </button>
+                    @endif
+                </x-menu>
+
                 {{-- accept: nur die Formate, die die App verkleinern und im
                      Browser anzeigen kann - ein iPhone wandelt HEIC dabei
-                     selbst in JPEG um. --}}
-                <input id="avatar" type="file" wire:model="avatar"
+                     selbst in JPEG um. Das Feld selbst bleibt unsichtbar, es
+                     wird aus dem Menü geöffnet; sein Name sagt einem
+                     Bildschirmleser, wofür es da ist. --}}
+                <input id="avatar" type="file" wire:model="avatar" aria-label="{{ __('profile.choose_image') }}"
                        accept="image/jpeg,image/png,image/webp" class="sr-only">
 
                 @error('avatar')
@@ -46,20 +84,17 @@
             </div>
         </div>
 
+        {{-- Das Löschen fragt über den Dialog der App (siehe
+             components/confirm-dialog.blade.php): der Eintrag im Menü öffnet nur
+             die Frage, die Antwort und die Anfrage reisen zusammen mit dem Knopf
+             in diesem Dialog. --}}
         @if ($user?->hasAvatar())
-            <button type="button"
-                    wire:click="$dispatch('confirm-dialog', { name: 'avatar-remove' })"
-                    class="btn btn-ghost w-full">
-                <x-icon name="trash" class="h-5 w-5" />
-                {{ __('common.remove') }}
-            </button>
-
             <x-confirm-dialog
                 name="avatar-remove"
                 :title="__('profile.remove_avatar_title')"
                 :message="__('profile.remove_avatar_message')"
                 action="removeAvatar"
-                :confirm-label="__('common.remove')" />
+                :confirm-label="__('profile.delete_avatar')" />
         @endif
     </section>
 

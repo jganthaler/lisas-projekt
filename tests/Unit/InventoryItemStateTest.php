@@ -44,7 +44,7 @@ class InventoryItemStateTest extends TestCase
         $this->assertNull($item->daysUntilBestBefore());
         $this->assertSame(InventoryItem::STATE_UNKNOWN, $item->state());
         $this->assertSame('ohne MHD', $item->stateLabel());
-        $this->assertSame('kein MHD', $item->bestBeforeLabel());
+        $this->assertSame('Kein MHD', $item->bestBeforeLabel());
         $this->assertSame('badge-neutral', $item->stateBadgeClass());
         $this->assertFalse($item->isExpired());
         $this->assertFalse($item->isExpiringSoon());
@@ -147,5 +147,78 @@ class InventoryItemStateTest extends TestCase
         $this->assertSame('muesli', InventoryItem::sortKey('Müsli'));
         $this->assertSame('griessbrei', InventoryItem::sortKey('Grießbrei'));
         $this->assertSame('zitrone', InventoryItem::sortKey('  Zitrone '));
+    }
+
+    /**
+     * Das Inventar bietet drei Reihenfolgen an; jeder Schlüssel ist einer der
+     * Knöpfe des Panels (siehe InventoryItem::sortLabels()).
+     */
+    public function test_the_inventory_offers_three_orders(): void
+    {
+        $this->assertSame(
+            ['alphabetical', 'category', 'best_before_asc'],
+            InventoryItem::sortKeys()
+        );
+
+        $this->assertSame(InventoryItem::sortKeys(), array_keys(InventoryItem::sortLabels()));
+    }
+
+    /**
+     * Eine Reihenfolge, die die App nicht kennt, ändert nichts: die Liste bleibt
+     * alphabetisch - wie eine unbekannte Kategorie "alle Kategorien" bedeutet.
+     */
+    public function test_an_unknown_order_falls_back_to_the_alphabetical_list(): void
+    {
+        $this->assertSame(InventoryItem::SORT_ALPHABETICAL, InventoryItem::sortOrDefault(''));
+        $this->assertSame(InventoryItem::SORT_ALPHABETICAL, InventoryItem::sortOrDefault('nach-dem-zufall'));
+        $this->assertSame(InventoryItem::SORT_CATEGORY, InventoryItem::sortOrDefault(InventoryItem::SORT_CATEGORY));
+        $this->assertSame(
+            InventoryItem::SORT_BEST_BEFORE_ASC,
+            InventoryItem::sortOrDefault(InventoryItem::SORT_BEST_BEFORE_ASC)
+        );
+
+        // Das Inventar kennt nur eine Reihenfolge nach dem MHD - was zuerst
+        // abläuft, steht oben. "best_before_desc" ist damit ein Schlüssel, den
+        // die App nicht kennt, und ändert nichts.
+        $this->assertSame(InventoryItem::SORT_ALPHABETICAL, InventoryItem::sortOrDefault('best_before_desc'));
+    }
+
+    /**
+     * Die Reihenfolge nach MHD liest die restliche Haltbarkeit in zwei Fenstern
+     * ab heute: der 15.07. ist noch "innerhalb 1 Monats" (heute ist der
+     * 15.06.), der 16.07. nicht mehr, der 15.12. noch "innerhalb 6 Monate" -
+     * ab dem 16.12. hält der Artikel länger. Ein abgelaufenes Datum gehört ins
+     * erste Fenster: dringender als zu spät geht es nicht. Ohne Datum schließt
+     * der Artikel die Liste.
+     */
+    public function test_the_remaining_shelf_life_falls_into_three_windows(): void
+    {
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_MONTH, $this->item('2026-06-01')->bestBeforeGroup());
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_MONTH, $this->item('2026-06-15')->bestBeforeGroup());
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_MONTH, $this->item('2026-07-15')->bestBeforeGroup());
+
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS, $this->item('2026-07-16')->bestBeforeGroup());
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS, $this->item('2026-12-15')->bestBeforeGroup());
+
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_LONGER, $this->item('2026-12-16')->bestBeforeGroup());
+        $this->assertSame(InventoryItem::BEST_BEFORE_GROUP_NONE, $this->item(null)->bestBeforeGroup());
+    }
+
+    /**
+     * Die Fenster stehen in der Reihenfolge, in der die Liste zu lesen ist: das
+     * dringendste zuerst, "Kein MHD" zuletzt - und jeder Schlüssel hat sein
+     * Etikett für die Überschrift (siehe bestBeforeGroupLabels()).
+     */
+    public function test_the_shelf_life_windows_stand_in_the_order_of_the_list(): void
+    {
+        $this->assertSame(
+            ['month', 'six_months', 'longer', 'none'],
+            InventoryItem::bestBeforeGroupKeys()
+        );
+
+        $this->assertSame(
+            InventoryItem::bestBeforeGroupKeys(),
+            array_keys(InventoryItem::bestBeforeGroupLabels())
+        );
     }
 }

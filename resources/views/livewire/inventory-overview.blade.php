@@ -93,6 +93,34 @@
                         @endforeach
                     </div>
                 </div>
+
+                {{-- The order of the list. It stands with the filters, but it
+                     narrows nothing down: the dot on the filter button stays
+                     dark for it and a search that found nothing keeps the order
+                     that was picked. --}}
+                <div>
+                    <p class="label">{{ __('inventory.sort.label') }}</p>
+
+                    {{-- The three stand in a grid of three equal columns over
+                         the whole width of the panel, and every field fills its
+                         column and puts its label in the middle - the shape the
+                         quick choices of the MHD carry in the item form: "Name
+                         (A–Z)" is exactly as wide as "Nach MHD", however long
+                         the word is. A row of flexible fields would make every
+                         one of them as wide as its word. The side padding stays
+                         smaller than the one of the other chips of this panel:
+                         a phone leaves every column about 80 pixels, and a
+                         longer word ("Kategorie") has to fit there in one
+                         line. --}}
+                    <div class="grid grid-cols-3 gap-1.5">
+                        @foreach ($sorts as $value => $label)
+                            <button type="button" wire:click="sortBy('{{ $value }}')"
+                                    class="badge rounded-control w-full justify-center whitespace-normal px-2 py-1.5 text-center {{ $sort === $value ? 'badge-ok' : 'badge-neutral' }}">
+                                {{ $label }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
             </div>
         @endif
     </div>
@@ -121,16 +149,38 @@
             @endif
         </div>
     @else
-        <div class="space-y-2">
-            @foreach ($items as $item)
-                {{-- The row stays quiet - it names the date and warns only while
-                     it matters - and it is painted in the colour of its
-                     category (see components/item-row). --}}
-                <x-item-row :item="$item"
-                            :drawer-name="$item->drawer?->name"
-                            :freezer-name="$showFreezerNames ? $item->drawer?->freezer?->name : null"
-                            :mhd-warnings-only="true"
-                            :category-tint="true" />
+        {{-- Two orders group the list: the one by category (every category
+             becomes a heading with its items underneath, the items of one
+             category alphabetical among themselves) and the one by best before
+             date (the windows of the remaining shelf life, see
+             InventoryOverview::groups()). In every other order the list stays
+             the flat one it has always been - and the space between two groups
+             is wider than the one between two rows. --}}
+        <div class="{{ $groupedByCategory || $groupedByBestBefore ? 'space-y-4' : 'space-y-2' }}">
+            @foreach ($groups as $group)
+                <section class="space-y-2" wire:key="group-{{ $group['key'] }}">
+                    @if ($group['label'] !== null)
+                        {{-- The heading carries the number of its items, so the
+                             length of a group is visible at a glance; it has
+                             the shape of the sections of the MHD list (see
+                             expiring-items). --}}
+                        <h3 class="flex items-center gap-2 px-1 text-base font-bold text-frost-900">
+                            {{ $group['label'] }}
+                            <span class="badge badge-neutral">{{ $group['items']->count() }}</span>
+                        </h3>
+                    @endif
+
+                    @foreach ($group['items'] as $item)
+                        {{-- The row stays quiet - it names the date and warns
+                             only while it matters - and it names the place of
+                             the item on its third line (see
+                             components/item-row). --}}
+                        <x-item-row :item="$item"
+                                    :drawer-name="$item->drawer?->name"
+                                    :freezer-name="$showFreezerNames ? $item->drawer?->freezer?->name : null"
+                                    :mhd-warnings-only="true" />
+                    @endforeach
+                </section>
             @endforeach
         </div>
     @endif

@@ -219,13 +219,16 @@ class ProfileTest extends TestCase
         $user = User::factory()->create();
 
         // Choosing the file is the whole action: there is no save button, the
-        // upload of the field stores the image.
+        // upload of the field stores the image. Danach wird die Seite geladen,
+        // damit auch der Avatar der Kopfzeile das neue Bild zeigt (siehe
+        // ProfilePage::updatedAvatar()).
         $this->page($user)
             ->assertDontSee('Bild speichern')
             ->set('avatar', $this->png('ich.png'))
             ->assertHasNoErrors()
-            ->assertSet('feedback', 'Profilbild gespeichert.')
-            ->assertSet('avatar', null);
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertSame('Profilbild gespeichert.', session('status'));
 
         $user->refresh();
 
@@ -236,10 +239,154 @@ class ProfileTest extends TestCase
 
         $this->page($user)
             ->call('removeAvatar')
-            ->assertSet('feedback', 'Profilbild entfernt.');
+            ->assertRedirect(route('profile.edit'));
+
+        $this->assertSame('Profilbild entfernt.', session('status'));
 
         $this->assertFalse($user->refresh()->hasAvatar());
         Storage::disk('local')->assertMissing($path);
+    }
+
+    /**
+     * Die Bedienung des Profilbilds: ein Knopf („Profilbild bearbeiten“) öffnet
+     * das Menü der App (components/menu.blade.php), und seine Einträge folgen dem
+     * Zustand - hinzufügen ohne Bild, ändern und löschen mit Bild. Die beiden
+     * alten Knöpfe („Bild auswählen“ und „Entfernen“) gibt es nicht mehr.
+     */
+    public function test_the_picture_is_operated_through_one_menu(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->page($user)
+            // Der Knopf steht unabhängig davon, ob ein Bild da ist ...
+            ->assertSee('Profilbild bearbeiten')
+            // ... und das Menü bietet ohne Bild allein das Hinzufügen an.
+            ->assertSee('Profilbild hinzufügen')
+            ->assertDontSee('Profilbild ändern')
+            ->assertDontSee('Profilbild löschen')
+            // Das Feld für die Auswahl vom Gerät bleibt dasselbe.
+            ->assertSeeHtml('wire:model="avatar"');
+
+        $this->page($user)->set('avatar', $this->png('ich.png'))->assertHasNoErrors();
+
+        $this->page($user->refresh())
+            ->assertSee('Profilbild bearbeiten')
+            ->assertSee('Profilbild ändern')
+            ->assertSee('Profilbild löschen')
+            ->assertDontSee('Profilbild hinzufügen');
+    }
+
+    /**
+     * Der Eintrag „Profilbild löschen“ löscht nichts von sich aus: er öffnet die
+     * Rückfrage der App (components/confirm-dialog.blade.php), und erst deren
+     * Antwort ruft removeAvatar() auf - wie überall in der App (siehe
+     * tests/Feature/DeleteConfirmationTest.php).
+     */
+    public function test_the_delete_entry_of_the_picture_asks_the_dialog_of_the_app(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create();
+
+        $this->page($user)->set('avatar', $this->png('ich.png'));
+
+        $page = $this->page($user->refresh());
+
+        $page->assertSeeHtml("wire:click=\"\$dispatch('confirm-dialog', { name: 'avatar-remove' })\"")
+            ->assertSee('Profilbild entfernen?')
+            ->assertSee('avatar-remove');
+
+        // Der Eintrag selbst hat nichts gelöscht.
+        $this->assertTrue($user->refresh()->hasAvatar());
+
+        $path = $user->avatar_path;
+
+        // Erst die Antwort im Dialog der App.
+        $page->call('removeAvatar')->assertRedirect(route('profile.edit'));
+
+        $this->assertSame('Profilbild entfernt.', session('status'));
+
+        $this->assertFalse($user->refresh()->hasAvatar());
+        Storage::disk('local')->assertMissing($path);
+    }
+
+    /**
+     * Das Bild links folgt dem Menü von selbst: nach dem Hinzufügen steht dort
+     * das gespeicherte Bild (über /avatars/{user}), nach dem Löschen wieder die
+     * Initialen - beides über die geladene Seite, wie der Avatar der Kopfzeile.
+     *
+     * Der Kreis mit den Initialen bleibt dabei unter dem Bild liegen: Er ist der
+     * Rückfall, wenn das Bild nicht geladen werden kann (siehe
+     * resources/views/components/avatar.blade.php).
+     */
+    public function test_the_picture_on_the_left_follows_the_menu(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create(['name' => 'Lisa Muster']);
+
+        // Ohne Bild: die Initialen, kein Bild.
+        $this->page($user)
+            ->assertSee('LM')
+            ->assertDontSeeHtml('data-avatar-fallback class="absolute inset-0 rounded-full bg-brand-600" hidden')
+            ->assertDontSeeHtml('/avatars/'.$user->getKey());
+
+        $this->page($user)->set('avatar', $this->png('ich.png'));
+
+        // Mit Bild: es steht an derselben Stelle links, die Initialen warten
+        // verborgen darunter - sie treten hervor, wenn das Bild nicht geladen
+        // werden kann (siehe resources/views/components/avatar.blade.php).
+        $this->page($user->refresh())
+            ->assertSeeHtml('data-avatar-fallback class="absolute inset-0 rounded-full bg-brand-600" hidden')
+            ->assertSeeHtml('/avatars/'.$user->getKey())
+            ->assertSeeHtml('object-cover');
+
+        $this->page($user)->call('removeAvatar');
+
+        // Nach dem Löschen: wieder die Initialen.
+        $this->page($user->refresh())
+            ->assertSee('LM')
+            ->assertDontSeeHtml('data-avatar-fallback class="absolute inset-0 rounded-full bg-brand-600" hidden')
+            ->assertDontSeeHtml('/avatars/'.$user->getKey());
+    }
+
+    /**
+     * Der Avatar der Kopfzeile liegt im Layout außerhalb der Komponente: Ohne das
+     * Laden der Seite bliebe er beim alten Zustand stehen. Darum holt jedes Gerät
+     * die Seite vom Server - dort steht die Adresse des gespeicherten Bildes mit
+     * der Version des Pfades -, und nach dem Entfernen stehen überall wieder die
+     * Initialen. Derselbe Weg versorgt ein zweites Gerät: Es liest dasselbe Konto.
+     */
+    public function test_the_app_frame_shows_the_picture_of_the_account(): void
+    {
+        Storage::fake('local');
+
+        $user = User::factory()->create(['name' => 'Lisa Muster']);
+
+        // Ohne Bild trägt die Kopfzeile die Initialen.
+        $this->actingAs($user)
+            ->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSee('LM')
+            ->assertDontSeeHtml('/avatars/'.$user->getKey());
+
+        $this->page($user)->set('avatar', $this->png('ich.png'));
+
+        // Mit Bild steht die Adresse des gespeicherten Bildes in der Seite ...
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertSeeHtml('/avatars/'.$user->getKey().'?v=')
+            ->assertSeeHtml('object-cover');
+
+        $this->page($user)->call('removeAvatar');
+
+        // ... und nach dem Entfernen wieder die Initialen.
+        $this->get(route('profile.edit'))
+            ->assertOk()
+            ->assertDontSeeHtml('/avatars/'.$user->getKey())
+            ->assertSee('LM');
     }
 
     public function test_a_new_picture_replaces_the_old_one(): void
@@ -334,7 +481,7 @@ class ProfileTest extends TestCase
         $this->page($user)
             ->set('avatar', $upload)
             ->assertHasNoErrors()
-            ->assertSet('feedback', 'Profilbild gespeichert.');
+            ->assertRedirect(route('profile.edit'));
 
         $path = $user->refresh()->avatar_path;
 

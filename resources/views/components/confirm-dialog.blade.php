@@ -20,7 +20,7 @@
  |
  |     <button type="button"
  |             wire:click="$dispatch('confirm-dialog', { name: 'drawer-delete' })">
- |         {{ __('freezer.delete_drawer_aria') }}
+ |         {{ __('common.delete') }}
  |     </button>
  |
  |     <x-confirm-dialog name="drawer-delete"

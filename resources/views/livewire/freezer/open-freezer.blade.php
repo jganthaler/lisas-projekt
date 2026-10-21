@@ -79,16 +79,25 @@
                         @endif
                     </a>
 
-                    <button type="button" wire:click="startRenaming({{ $drawer->id }})"
-                            class="btn btn-ghost btn-icon" aria-label="{{ __('freezer.rename_drawer_aria') }}">
-                        <x-icon name="pencil" class="h-5 w-5" />
-                    </button>
+                    {{-- Everything that changes the drawer itself sits behind its
+                         menu: the row keeps the name and the count, and both
+                         actions still call the functions of this page - renaming
+                         opens the form of the drawer, deleting asks through the
+                         dialog of the app (see components/menu.blade.php). --}}
+                    <x-menu :label="__('freezer.drawer_menu_aria', ['name' => $drawer->name])">
+                        <button type="button" wire:click="startRenaming({{ $drawer->id }})"
+                                class="menu-item" role="menuitem">
+                            <x-icon name="pencil" class="h-4 w-4" />
+                            {{ __('freezer.rename_drawer') }}
+                        </button>
 
-                    <button type="button"
-                            wire:click="$dispatch('confirm-dialog', { name: 'drawer-delete-{{ $drawer->id }}' })"
-                            class="btn btn-ghost btn-icon text-danger-600 dark:text-danger-400" aria-label="{{ __('freezer.delete_drawer_aria') }}">
-                        <x-icon name="trash" class="h-5 w-5" />
-                    </button>
+                        <button type="button"
+                                wire:click="$dispatch('confirm-dialog', { name: 'drawer-delete-{{ $drawer->id }}' })"
+                                class="menu-item menu-item-danger" role="menuitem">
+                            <x-icon name="trash" class="h-4 w-4" />
+                            {{ __('common.delete') }}
+                        </button>
+                    </x-menu>
 
                     <x-confirm-dialog
                         :name="'drawer-delete-'.$drawer->id"

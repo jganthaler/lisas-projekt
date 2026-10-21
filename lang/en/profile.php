@@ -10,6 +10,15 @@ return [
     'subtitle' => 'Your details and your profile picture',
     'avatar' => 'Profile picture',
     'avatar_preview' => 'Preview',
+    // The picture is operated through one button: it opens the menu of the app,
+    // and its entries follow the state - adding while there is no picture,
+    // changing and deleting while there is one
+    // (resources/views/livewire/profile/profile-page.blade.php).
+    'edit_avatar' => 'Edit the profile picture',
+    'add_avatar' => 'Add a profile picture',
+    'change_avatar' => 'Change the profile picture',
+    'delete_avatar' => 'Delete the profile picture',
+    // The name of the invisible field the picture comes from.
     'choose_image' => 'Choose an image',
     'uploading' => 'Uploading …',
     'remove_avatar_title' => 'Remove the profile picture?',

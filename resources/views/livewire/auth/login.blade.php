@@ -12,10 +12,32 @@
             @enderror
         </div>
 
+        {{-- Das Auge rechts im Feld zeigt das eingegebene Passwort im Klartext und
+             versteckt es wieder (resources/js/app.js, window.togglePasswordVisibility).
+             Gewechselt wird allein das type-Attribut des Feldes, der Wert bleibt
+             damit stehen, wo er ist - das Feld verliert weder den Text noch den
+             Cursor, weil der Klick ihm nicht die Eingabemarke entzieht
+             (onmousedown). Der Zustand liegt als data-revealed am Feld; die beiden
+             Symbole folgen ihm über CSS (group-data-[revealed=true]), so dass der
+             Knopf selbst keinen Zustand halten muss. --}}
         <div>
             <label class="label" for="password">{{ __('common.password') }}</label>
-            <input id="password" type="password" wire:model="password" autocomplete="current-password" required
-                   class="input @error('password') input-error @enderror">
+            <div class="group relative" data-password-field data-revealed="false">
+                <input id="password" type="password" wire:model="password" autocomplete="current-password" required
+                       class="input pr-11 @error('password') input-error @enderror" data-password-input>
+
+                <button type="button" data-password-toggle
+                        class="btn btn-ghost btn-icon absolute right-1 top-1/2 -translate-y-1/2"
+                        aria-label="{{ __('common.show_password') }}" aria-pressed="false"
+                        title="{{ __('common.show_password') }}"
+                        data-label-show="{{ __('common.show_password') }}"
+                        data-label-hide="{{ __('common.hide_password') }}"
+                        onmousedown="event.preventDefault()"
+                        onclick="window.togglePasswordVisibility(this)">
+                    <x-icon name="eye" class="h-5 w-5 group-data-[revealed=true]:hidden" />
+                    <x-icon name="eye-off" class="hidden h-5 w-5 group-data-[revealed=true]:block" />
+                </button>
+            </div>
             @error('password')
                 <p class="field-error">{{ $message }}</p>
             @enderror

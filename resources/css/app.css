@@ -111,25 +111,6 @@
     --color-warning-800: #6d4414;
     --color-warning-900: #5a3914;
     --color-warning-950: #341e08;
-
-    /*
-     | Category tints of an item row in the inventory (see
-     | InventoryItem::categoryTintClass()). Each one names its food: a light red
-     | for meat, a blue for fish, a green for vegetables that is clearly deeper
-     | than the light one of fruit, a yellow for soup and a warm brown for
-     | sauces. All of them are pale enough to carry the near black name of a row
-     | (frost-900 stays above 10:1 on every one); the muted grey of the meta line
-     | would not - it steps one shade darker on a tinted card (see item-row).
-     | "Sonstiges" and an item without a category need no tint - the card of the
-     | list is already white. The dark scheme swaps the values in the ".dark"
-     | block below, so one utility class serves both schemes.
-     */
-    --color-cat-fleisch: #fadcd8;
-    --color-cat-fisch: #d8e6f5;
-    --color-cat-gemuese: #bed8b7;
-    --color-cat-suppe: #f7ecc2;
-    --color-cat-obst: #e3f1d6;
-    --color-cat-sosse: #e6d8c6;
 }
 
 @layer base {
@@ -206,18 +187,6 @@
         --color-frost-800: #e2e7e9;
         --color-frost-900: #f0f3f4;
         --color-frost-950: #fafcfc;
-
-        /*
-         | The category tints of the inventory rows keep their hue, but sink to
-         | the darkness of the scheme - the pale red of meat would glare on a
-         | dark surface, and the light text of a row has to stay readable on it.
-         */
-        --color-cat-fleisch: #3a2320;
-        --color-cat-fisch: #1d2c40;
-        --color-cat-gemuese: #1e2d18;
-        --color-cat-suppe: #332a13;
-        --color-cat-obst: #273420;
-        --color-cat-sosse: #32281c;
     }
 }
 
@@ -435,18 +404,28 @@
      | "1 Jahr", "2 Jahre"). They are buttons, not labels: the pill carries a
      | real tap target (2rem) and takes the brand colour on hover, which keeps
      | them visibly below the field they fill.
+     |
+     | The four stand in a grid of four equal columns over the whole width of
+     | that field (see the drawer page), so the pill only has to fill its column
+     | (width: 100%) and to put its label in the middle of it - a short word and
+     | a long one end up exactly as wide. The side padding stays small on
+     | purpose: a phone leaves every column about 70 pixels, and "3 Monate" has
+     | to fit there in one line as long as it can.
      */
     .chip {
         display: inline-flex;
+        width: 100%;
         align-items: center;
         justify-content: center;
         min-height: 2rem;
         border-radius: 9999px;
         background-color: var(--color-frost-200);
-        padding: 0.25rem 0.75rem;
+        padding: 0.25rem 0.375rem;
         font-size: 0.8125rem;
         font-weight: 600;
+        line-height: 1.2;
         color: var(--color-frost-700);
+        text-align: center;
         transition: background-color 150ms ease, color 150ms ease;
     }
 
@@ -458,6 +437,61 @@
     .chip:focus-visible {
         outline: none;
         box-shadow: 0 0 0 3px var(--color-brand-100);
+    }
+
+    /*
+     | The menu of a row ("⋮"): the actions that belong to one entry of a list -
+     | renaming a drawer, editing, moving or deleting an item - stay behind this
+     | button, so the row itself keeps the room for what it shows (see
+     | components/menu.blade.php).
+     |
+     | The panel floats above the list: z-index 40 keeps it over the rows below
+     | and over the bottom bar of the app frame (z-index 30, see
+     | layouts/app.blade.php), and the shadow lifts it off the card it opens in.
+     */
+    .menu-panel {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 0.375rem);
+        z-index: 40;
+        min-width: 11rem;
+        overflow: hidden;
+        border-radius: var(--radius-control);
+        border: 1px solid var(--color-frost-200);
+        background-color: var(--color-surface);
+        padding-block: 0.25rem;
+        box-shadow: 0 12px 28px -14px rgb(28 34 38 / 0.45), 0 2px 6px rgb(28 34 38 / 0.08);
+    }
+
+    /*
+     | One action inside that panel: icon and label on one line, as wide as the
+     | panel. A destructive action keeps its warning in the colour of the label,
+     | the way the trash button of a row carried it before.
+     */
+    .menu-item {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.875rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        color: var(--color-frost-700);
+        text-align: left;
+        transition: background-color 150ms ease, color 150ms ease;
+    }
+
+    .menu-item:hover {
+        background-color: var(--color-frost-100);
+    }
+
+    .menu-item-danger {
+        color: var(--color-danger-700);
+    }
+
+    .menu-item-danger:hover {
+        background-color: var(--color-danger-50);
     }
 
     .drawer-row {
@@ -618,6 +652,24 @@
 
     .dark .chip:focus-visible {
         box-shadow: 0 0 0 3px rgb(23 165 160 / 0.28);
+    }
+
+    /*
+     | The menu of a row in the dark scheme: the muted grey of the light one
+     | would sink into the surface, so the hover lifts the entry instead - and
+     | the destructive action takes the pale red of the dark scheme, as the
+     | trash button of a row does.
+     */
+    .dark .menu-item:hover {
+        background-color: var(--color-frost-50);
+    }
+
+    .dark .menu-item-danger {
+        color: var(--color-danger-300);
+    }
+
+    .dark .menu-item-danger:hover {
+        background-color: var(--color-danger-950);
     }
 
     .dark .bottom-nav-link[aria-current='page'] {

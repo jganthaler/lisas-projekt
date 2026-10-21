@@ -9,6 +9,7 @@ use App\Models\InventoryItem;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Carbon;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use Tests\TestCase;
@@ -75,6 +76,19 @@ class InventoryOverviewTest extends TestCase
     private function page()
     {
         return Livewire::actingAs($this->owner)->test(InventoryOverview::class);
+    }
+
+    /**
+     * Die Gruppen der Liste als Kategorie => Namen ihrer Artikel.
+     *
+     * @param  Testable<InventoryOverview>  $page
+     * @return array<string, list<string>>
+     */
+    private function groupNames(Testable $page): array
+    {
+        return $page->viewData('groups')->mapWithKeys(fn (array $group): array => [
+            $group['key'] => $group['items']->pluck('name')->all(),
+        ])->all();
     }
 
     public function test_the_items_of_every_accessible_freezer_are_listed_alphabetically(): void
@@ -175,6 +189,493 @@ class InventoryOverviewTest extends TestCase
         $this->assertNull($page->viewData('selectedCategory'));
         $this->assertFalse($page->viewData('hasFilterSelection'));
         $this->assertSame(4, $page->viewData('items')->count());
+    }
+
+    /**
+     * Die Reihenfolge der Liste steht im Filter-Panel zur Wahl: Name (die
+     * Voreinstellung), Kategorie oder MHD – „Nach MHD“ heißt: was zuerst
+     * abläuft, steht oben.
+     */
+    public function test_the_list_can_be_sorted_by_name(): void
+    {
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_ALPHABETICAL);
+
+        $this->assertSame(
+            ['Äpfel', 'Brot', 'Pommes', 'Zitrone'],
+            $page->viewData('items')->pluck('name')->all()
+        );
+        $this->assertSame(InventoryItem::SORT_ALPHABETICAL, $page->get('sort'));
+    }
+
+    /**
+     * Nach Kategorie heißt: in der Reihenfolge der Chips des Filters (siehe
+     * InventoryItem::categoryLabels()) – Gemüse vor Obst vor Sonstiges.
+     */
+    public function test_the_list_can_be_sorted_by_category(): void
+    {
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_CATEGORY);
+
+        $this->assertSame(
+            ['Pommes', 'Äpfel', 'Zitrone', 'Brot'],
+            $page->viewData('items')->pluck('name')->all()
+        );
+    }
+
+    /**
+     * Ein Artikel ohne Kategorie hat in der Reihenfolge der Kategorien keinen
+     * Platz: die Abfrage stellt ihn hinter „Sonstiges“ – in der Liste selbst
+     * steht er unter „Sonstiges“ (siehe
+     * test_an_item_without_a_category_is_listed_under_sonstiges).
+     */
+    public function test_an_item_without_a_category_closes_the_list_of_categories(): void
+    {
+        InventoryItem::factory()->fresh()->create([
+            'drawer_id' => $this->firstDrawer->getKey(),
+            'name' => 'Salz',
+        ]);
+
+        $this->assertSame(
+            ['Pommes', 'Äpfel', 'Zitrone', 'Brot', 'Salz'],
+            $this->page()->call('sortBy', InventoryItem::SORT_CATEGORY)
+                ->viewData('items')->pluck('name')->all()
+        );
+    }
+
+    /**
+     * Nach Kategorie steht jede Kategorie als eigene Überschrift über ihren
+     * Artikeln – in der Reihenfolge der Chips (siehe categoryLabels()), und
+     * jede Kategorie für sich alphabetisch. Eine leere Kategorie bekommt keine
+     * Überschrift: „Fleisch“ steht nicht über nichts.
+     */
+    public function test_every_category_becomes_a_heading_of_its_own(): void
+    {
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_CATEGORY);
+
+        $this->assertTrue($page->viewData('groupedByCategory'));
+
+        $this->assertSame(
+            [
+                InventoryItem::CATEGORY_GEMUESE => ['Pommes'],
+                InventoryItem::CATEGORY_OBST => ['Äpfel', 'Zitrone'],
+                InventoryItem::CATEGORY_SONSTIGES => ['Brot'],
+            ],
+            $this->groupNames($page)
+        );
+
+        // Die Überschrift steht als solche in der Liste, mit der Zahl ihrer
+        // Artikel daneben.
+        $page->assertSeeHtml('<h3 class="flex items-center gap-2 px-1 text-base font-bold text-frost-900">')
+            ->assertSee('Gemüse')
+            ->assertSee('Obst')
+            ->assertSee('Sonstiges')
+            ->assertDontSee('Fleisch');
+    }
+
+    /**
+     * Ein Artikel ohne Kategorie steht unter „Sonstiges“, alphabetisch zwischen
+     * dessen Artikeln. Die Kategorie wird dafür nicht geschrieben – das Feld
+     * bleibt leer –, und es entsteht auch keine weitere Kategorie: die Gruppen
+     * sind die bekannten sieben.
+     */
+    public function test_an_item_without_a_category_is_listed_under_sonstiges(): void
+    {
+        $salz = InventoryItem::factory()->fresh()->create([
+            'drawer_id' => $this->firstDrawer->getKey(),
+            'name' => 'Salz',
+        ]);
+
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_CATEGORY);
+
+        $this->assertSame(
+            [
+                InventoryItem::CATEGORY_GEMUESE => ['Pommes'],
+                InventoryItem::CATEGORY_OBST => ['Äpfel', 'Zitrone'],
+                InventoryItem::CATEGORY_SONSTIGES => ['Brot', 'Salz'],
+            ],
+            $this->groupNames($page)
+        );
+
+        foreach (array_keys($this->groupNames($page)) as $key) {
+            $this->assertContains($key, InventoryItem::categoryKeys());
+        }
+
+        $this->assertNull($salz->refresh()->category);
+    }
+
+    /**
+     * Die Gruppen entstehen bei jedem Aufruf aus den Daten: ein neuer Artikel
+     * steht in seiner Gruppe, ein zugeordneter wandert aus „Sonstiges“ in seine
+     * Kategorie, und ein umbenannter rutscht innerhalb seiner Gruppe an seinen
+     * alphabetischen Platz.
+     */
+    public function test_the_groups_follow_the_data(): void
+    {
+        $salz = InventoryItem::factory()->fresh()->create([
+            'drawer_id' => $this->firstDrawer->getKey(),
+            'name' => 'Salz',
+        ]);
+
+        $this->assertSame(
+            [
+                InventoryItem::CATEGORY_GEMUESE => ['Pommes'],
+                InventoryItem::CATEGORY_OBST => ['Äpfel', 'Zitrone'],
+                InventoryItem::CATEGORY_SONSTIGES => ['Brot', 'Salz'],
+            ],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_CATEGORY))
+        );
+
+        // Zugeordnet wird in der Schublade, nicht in dieser Liste - die
+        // nächste Anfrage liest die Kategorie trotzdem.
+        $salz->update(['category' => InventoryItem::CATEGORY_OBST]);
+
+        $this->assertSame(
+            [
+                InventoryItem::CATEGORY_GEMUESE => ['Pommes'],
+                InventoryItem::CATEGORY_OBST => ['Äpfel', 'Salz', 'Zitrone'],
+                InventoryItem::CATEGORY_SONSTIGES => ['Brot'],
+            ],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_CATEGORY))
+        );
+
+        $salz->update(['name' => 'Aprikose']);
+
+        $this->assertSame(
+            ['Äpfel', 'Aprikose', 'Zitrone'],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_CATEGORY))[InventoryItem::CATEGORY_OBST]
+        );
+    }
+
+    /**
+     * Gruppiert wird, was die Zeilen zeigen: ein Filter lässt nur die Gruppe
+     * stehen, die er übrig lässt – die Überschriften der anderen fallen mit
+     * ihren Artikeln weg.
+     */
+    public function test_a_filter_leaves_only_the_group_it_kept(): void
+    {
+        $page = $this->page()
+            ->call('sortBy', InventoryItem::SORT_CATEGORY)
+            ->call('filterByCategory', InventoryItem::CATEGORY_OBST);
+
+        $this->assertSame(
+            [InventoryItem::CATEGORY_OBST => ['Äpfel', 'Zitrone']],
+            $this->groupNames($page)
+        );
+
+        $page->assertSee('Obst')->assertDontSee('Sonstiges');
+    }
+
+    /**
+     * Nur die Reihenfolge nach Kategorie gruppiert: in jeder anderen bleibt die
+     * Liste die eine, flache Liste, die sie immer war – „Sonstiges“ ist dann
+     * eine Farbe, kein Abschnitt.
+     */
+    public function test_only_the_order_by_category_groups_the_list(): void
+    {
+        $page = $this->page();
+
+        $this->assertFalse($page->viewData('groupedByCategory'));
+
+        // Eine einzige Gruppe, ohne Überschrift, in der Reihenfolge der Abfrage.
+        $this->assertSame(
+            ['all' => ['Äpfel', 'Brot', 'Pommes', 'Zitrone']],
+            $this->groupNames($page)
+        );
+
+        $page->assertDontSee('Sonstiges')->assertDontSee('Gemüse')->assertDontSee('Obst');
+    }
+
+    /**
+     * Die Reihenfolge „Nach MHD“ stellt oben hin, was zuerst abläuft: der
+     * abgelaufene Artikel (Brot), dann der, der morgen abläuft (Hackfleisch),
+     * dann die frischen – die untereinander alphabetisch (Äpfel, Pommes und
+     * Zitrone laufen alle in 60 Tagen ab).
+     */
+    public function test_the_list_can_be_sorted_by_best_before_date_ascending(): void
+    {
+        InventoryItem::factory()->expiringSoon(1)->create([
+            'drawer_id' => $this->secondDrawer->getKey(),
+            'name' => 'Hackfleisch',
+        ]);
+
+        $this->assertSame(
+            ['Brot', 'Hackfleisch', 'Äpfel', 'Pommes', 'Zitrone'],
+            $this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC)
+                ->viewData('items')->pluck('name')->all()
+        );
+    }
+
+    /**
+     * „Kein MHD“ ist kein Datum, das dringend werden könnte: Artikel ohne MHD
+     * schließen die Liste.
+     */
+    public function test_items_without_a_best_before_date_close_the_list(): void
+    {
+        InventoryItem::factory()->withoutBestBefore()->create([
+            'drawer_id' => $this->firstDrawer->getKey(),
+            'name' => 'Salz',
+        ]);
+
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC);
+
+        $this->assertSame(5, $page->viewData('items')->count());
+        $this->assertSame('Salz', $page->viewData('items')->last()->name);
+    }
+
+    /**
+     * Die Reihenfolge „Nach MHD“ gruppiert die Liste in die Fenster der
+     * restlichen Haltbarkeit: was abgelaufen ist oder im nächsten Monat
+     * abläuft, was in den nächsten sechs Monaten abläuft, was länger hält –
+     * und Artikel ohne MHD schließen die Liste. Die Vorgabe kennt ein
+     * abgelaufenes Brot und drei frische Artikel, die alle am selben Tag
+     * ablaufen; der Lachs hält 300 Tage, das Salz hat kein MHD.
+     */
+    public function test_the_order_by_best_before_date_groups_the_remaining_shelf_life(): void
+    {
+        InventoryItem::factory()->fresh(300)->create([
+            'drawer_id' => $this->secondDrawer->getKey(),
+            'name' => 'Lachs',
+        ]);
+
+        InventoryItem::factory()->withoutBestBefore()->create([
+            'drawer_id' => $this->firstDrawer->getKey(),
+            'name' => 'Salz',
+        ]);
+
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC);
+
+        $this->assertTrue($page->viewData('groupedByBestBefore'));
+
+        $this->assertSame(
+            [
+                InventoryItem::BEST_BEFORE_GROUP_MONTH => ['Brot'],
+                InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Äpfel', 'Pommes', 'Zitrone'],
+                InventoryItem::BEST_BEFORE_GROUP_LONGER => ['Lachs'],
+                InventoryItem::BEST_BEFORE_GROUP_NONE => ['Salz'],
+            ],
+            $this->groupNames($page)
+        );
+
+        // Jede Gruppe ist eine Gruppe der Reihenfolge nach MHD - keine
+        // Kategorie hat sich untergemischt.
+        foreach (array_keys($this->groupNames($page)) as $key) {
+            $this->assertContains($key, InventoryItem::bestBeforeGroupKeys());
+        }
+
+        // Die Überschriften stehen als solche in der Liste, in der Reihenfolge
+        // der Fenster, in der Gestalt der Abschnitte der MHD-Warnliste.
+        $page->assertSeeHtml('<h3 class="flex items-center gap-2 px-1 text-base font-bold text-frost-900">')
+            ->assertSeeHtmlInOrder([
+                'Aufzubrauchen innerhalb 1 Monats',
+                'Aufzubrauchen innerhalb 6 Monate',
+                'Noch länger haltbar',
+                'Kein MHD hinterlegt',
+            ]);
+    }
+
+    /**
+     * In einem Fenster entscheidet das Datum: „Banane“ läuft vor „Ananas“ ab
+     * und steht darum oben, obwohl der Name später im Alphabet steht - der Name
+     * entscheidet erst, wenn zwei Artikel am selben Tag ablaufen.
+     */
+    public function test_the_items_of_a_window_follow_their_date(): void
+    {
+        InventoryItem::factory()->fresh(100)->create([
+            'drawer_id' => $this->secondDrawer->getKey(),
+            'name' => 'Ananas',
+        ]);
+
+        InventoryItem::factory()->fresh(90)->create([
+            'drawer_id' => $this->secondDrawer->getKey(),
+            'name' => 'Banane',
+        ]);
+
+        $this->assertSame(
+            [
+                InventoryItem::BEST_BEFORE_GROUP_MONTH => ['Brot'],
+                InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Äpfel', 'Pommes', 'Zitrone', 'Banane', 'Ananas'],
+            ],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC))
+        );
+    }
+
+    /**
+     * Die Fenster entstehen bei jedem Aufruf aus den Daten: ein nachgetragenes
+     * MHD bringt den Artikel in sein Fenster, ein entferntes schließt die Liste
+     * – ohne dass der Artikel eine Kategorie bekäme.
+     */
+    public function test_the_shelf_life_windows_follow_the_data(): void
+    {
+        $apfel = InventoryItem::query()->where('name', 'Äpfel')->firstOrFail();
+
+        $this->assertSame(
+            [
+                InventoryItem::BEST_BEFORE_GROUP_MONTH => ['Brot'],
+                InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Äpfel', 'Pommes', 'Zitrone'],
+            ],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC))
+        );
+
+        $apfel->update(['best_before' => Carbon::today()->addMonthsNoOverflow(8)]);
+
+        $this->assertSame(
+            [
+                InventoryItem::BEST_BEFORE_GROUP_MONTH => ['Brot'],
+                InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Pommes', 'Zitrone'],
+                InventoryItem::BEST_BEFORE_GROUP_LONGER => ['Äpfel'],
+            ],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC))
+        );
+
+        $apfel->update(['best_before' => null]);
+
+        $this->assertSame(
+            [
+                InventoryItem::BEST_BEFORE_GROUP_MONTH => ['Brot'],
+                InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Pommes', 'Zitrone'],
+                InventoryItem::BEST_BEFORE_GROUP_NONE => ['Äpfel'],
+            ],
+            $this->groupNames($this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC))
+        );
+    }
+
+    /**
+     * Ein Fenster ohne Artikel bekommt keine Überschrift: „Noch länger haltbar“
+     * steht nicht über nichts. Ein Filter lässt nur die Fenster stehen, die er
+     * übrig lässt – die Überschriften der anderen fallen mit ihren Artikeln
+     * weg, wie bei den Kategorien.
+     */
+    public function test_a_window_without_items_gets_no_heading(): void
+    {
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC);
+
+        $this->assertSame(
+            [
+                InventoryItem::BEST_BEFORE_GROUP_MONTH => ['Brot'],
+                InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Äpfel', 'Pommes', 'Zitrone'],
+            ],
+            $this->groupNames($page)
+        );
+
+        $page->assertDontSee('Noch länger haltbar')->assertDontSee('Kein MHD hinterlegt');
+
+        $filtered = $this->page()
+            ->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC)
+            ->call('filterByCategory', InventoryItem::CATEGORY_OBST);
+
+        $this->assertSame(
+            [InventoryItem::BEST_BEFORE_GROUP_SIX_MONTHS => ['Äpfel', 'Zitrone']],
+            $this->groupNames($filtered)
+        );
+
+        $filtered->assertSee('Aufzubrauchen innerhalb 6 Monate')
+            ->assertDontSee('Aufzubrauchen innerhalb 1 Monats');
+    }
+
+    /**
+     * Nur die Reihenfolge nach MHD gruppiert in Haltbarkeitsfenster: in jeder
+     * anderen – auch in der nach Kategorie – bleibt die Liste die eine, flache
+     * Liste, die sie immer war.
+     */
+    public function test_only_the_order_by_best_before_date_groups_by_shelf_life(): void
+    {
+        $page = $this->page();
+
+        $this->assertFalse($page->viewData('groupedByBestBefore'));
+
+        $this->assertSame(
+            ['all' => ['Äpfel', 'Brot', 'Pommes', 'Zitrone']],
+            $this->groupNames($page)
+        );
+
+        $page->assertDontSee('Aufzubrauchen innerhalb 1 Monats')
+            ->assertDontSee('Kein MHD hinterlegt');
+
+        $byCategory = $this->page()->call('sortBy', InventoryItem::SORT_CATEGORY);
+
+        $this->assertFalse($byCategory->viewData('groupedByBestBefore'));
+        $byCategory->assertDontSee('Aufzubrauchen innerhalb 1 Monats');
+    }
+
+    public function test_an_unknown_sort_keeps_the_list_alphabetical(): void
+    {
+        $page = $this->page()->call('sortBy', 'nach-dem-zufall');
+
+        $this->assertSame(InventoryItem::SORT_ALPHABETICAL, $page->get('sort'));
+        $this->assertSame(
+            ['Äpfel', 'Brot', 'Pommes', 'Zitrone'],
+            $page->viewData('items')->pluck('name')->all()
+        );
+    }
+
+    /**
+     * Sortieren schränkt nichts ein: die Liste bleibt vollständig, „isFiltered“
+     * bleibt falsch und der Punkt am Filter-Icon bleibt dunkel – er zeigt
+     * Filter an, nicht die Reihenfolge.
+     */
+    public function test_sorting_narrows_nothing_down(): void
+    {
+        $page = $this->page()->call('sortBy', InventoryItem::SORT_BEST_BEFORE_ASC);
+
+        $this->assertSame(4, $page->viewData('items')->count());
+        $this->assertFalse($page->viewData('isFiltered'));
+        $this->assertFalse($page->viewData('hasFilterSelection'));
+    }
+
+    /**
+     * Das Panel bietet jede Reihenfolge an; die gewählte trägt den Knopf der
+     * aktiven Wahl. „MHD: später zuerst“ steht dort nicht mehr: das Inventar
+     * kennt nur die Reihenfolge, die oben hinstellt, was zuerst abläuft.
+     */
+    public function test_the_filter_panel_offers_every_sort(): void
+    {
+        $page = $this->page()->call('toggleFilters');
+
+        $page->assertSee('Sortierung')
+            ->assertSee('Name (A–Z)')
+            ->assertSee('Nach MHD')
+            ->assertSeeHtml('wire:click="sortBy(\''.InventoryItem::SORT_CATEGORY.'\')"');
+
+        $page->assertDontSee('MHD: bald zuerst')
+            ->assertDontSee('MHD: später zuerst')
+            ->assertDontSeeHtml('best_before_desc');
+    }
+
+    /**
+     * Die drei Felder sind gleich breit: sie stehen in einem Raster aus drei
+     * gleich breiten Spalten über die ganze Breite des Panels, jedes Feld füllt
+     * seine Spalte und stellt sein Etikett mittig – so ist „Name (A–Z)“ genau so
+     * breit wie „Nach MHD“, unabhängig von der Länge des Wortes. Eine Reihe
+     * flexibler Felder machte jedes so breit wie sein Wort.
+     */
+    public function test_the_sorts_stand_in_three_equal_columns_with_centred_labels(): void
+    {
+        $page = $this->page()->call('toggleFilters');
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-3 gap-1.5'),
+            'Die drei Reihenfolgen stehen nicht in drei gleich breiten Spalten.'
+        );
+
+        $this->assertSame(
+            count(InventoryItem::sortKeys()),
+            substr_count($page->html(), 'w-full justify-center whitespace-normal px-2 py-1.5 text-center'),
+            'Nicht jedes Feld füllt seine Spalte und stellt sein Etikett mittig.'
+        );
+    }
+
+    /**
+     * „Alle Artikel zeigen“ nimmt Suche und Filter zurück, nicht die gewählte
+     * Reihenfolge: die gehört dem Leser, nicht der Suche.
+     */
+    public function test_clearing_the_filters_keeps_the_chosen_order(): void
+    {
+        $page = $this->page()
+            ->call('sortBy', InventoryItem::SORT_CATEGORY)
+            ->set('search', 'gibt-es-nicht')
+            ->call('clearFilters');
+
+        $this->assertSame(InventoryItem::SORT_CATEGORY, $page->get('sort'));
     }
 
     /**
@@ -359,7 +860,13 @@ class InventoryOverviewTest extends TestCase
         $this->assertFalse($page->viewData('hasFilterSelection'));
     }
 
-    public function test_an_item_without_a_best_before_date_shows_no_mhd_information(): void
+    /**
+     * Ein Artikel ohne MHD lässt die Stelle des Datums nicht leer: dort steht
+     * „Kein MHD“ (items.mhd.none) statt eines Etiketts ohne Datum. Zustands-Badge
+     * („ohne MHD“) und relativer Zähler bleiben weg – es gibt nichts, wovor
+     * gewarnt werden könnte (siehe resources/views/components/item-row.blade.php).
+     */
+    public function test_an_item_without_a_best_before_date_says_so(): void
     {
         InventoryItem::factory()->withoutBestBefore()->create([
             'drawer_id' => $this->firstDrawer->getKey(),
@@ -367,9 +874,17 @@ class InventoryOverviewTest extends TestCase
         ]);
 
         $this->page()
-            ->assertSee('Kräuter')
-            ->assertDontSee('ohne MHD')
-            ->assertDontSee('kein MHD');
+            ->set('search', 'Kräuter')
+            // Die zweite Zeile steht dort, wo sonst das Datum steht: zwischen
+            // dem Namen und dem Ort.
+            ->assertSeeHtmlInOrder([
+                'Kräuter',
+                '<span>Kein MHD</span>',
+                $this->firstDrawer->freezer->name.', ',
+            ])
+            // Kein Etikett ohne Datum und kein Zustand, der nichts sagt.
+            ->assertDontSee('MHD:')
+            ->assertDontSee('ohne MHD');
     }
 
     /**
@@ -406,60 +921,49 @@ class InventoryOverviewTest extends TestCase
     }
 
     /**
-     * Die Zeile des Inventars trägt die Farbe ihrer Kategorie: Rot für Fleisch,
-     * Blau für Fisch, Grün für Gemüse, Gelb für Suppe, Braun für Soßen und
-     * Hellgrün für Obst (siehe InventoryItem::categoryTintClass()).
+     * Die Zeile des Inventars ist weiß – wie jede Zeile der App: die Kategorie
+     * eines Artikels dient dem Filter (siehe InventoryOverview), sie ist keine
+     * Farbe der Zeile.
      */
-    public function test_every_row_is_painted_in_the_colour_of_its_category(): void
+    public function test_every_row_keeps_the_white_card(): void
     {
-        $tints = [
-            InventoryItem::CATEGORY_FLEISCH => 'bg-cat-fleisch',
-            InventoryItem::CATEGORY_FISCH => 'bg-cat-fisch',
-            InventoryItem::CATEGORY_GEMUESE => 'bg-cat-gemuese',
-            InventoryItem::CATEGORY_SUPPE => 'bg-cat-suppe',
-            InventoryItem::CATEGORY_SOSSE => 'bg-cat-sosse',
-            InventoryItem::CATEGORY_OBST => 'bg-cat-obst',
-        ];
-
-        foreach (array_keys($tints) as $category) {
+        foreach ([InventoryItem::CATEGORY_FLEISCH, InventoryItem::CATEGORY_OBST] as $category) {
             InventoryItem::factory()->fresh()->category($category)->create([
                 'drawer_id' => $this->firstDrawer->getKey(),
                 'name' => 'Artikel '.$category,
             ]);
         }
 
-        $page = $this->page();
-
-        foreach ($tints as $class) {
-            $page->assertSeeHtml('class="card p-3 '.$class.'"');
-        }
-
-        // Die Metazeile einer getönten Karte tritt eine Stufe dunkler, damit
-        // sie ihren Kontrast behält (siehe item-row).
-        $page->assertSeeHtml('text-xs text-frost-700');
-    }
-
-    /**
-     * „Sonstiges“ ist so weiß wie ein Artikel ohne Kategorie: beide behalten die
-     * Karte der Liste, die schon weiß ist.
-     */
-    public function test_sonstiges_and_an_item_without_a_category_keep_the_white_card(): void
-    {
+        // Brot ist „Sonstiges“, Salz hat gar keine Kategorie.
         InventoryItem::factory()->fresh()->create([
             'drawer_id' => $this->secondDrawer->getKey(),
             'name' => 'Salz',
         ]);
 
-        // Brot ist „Sonstiges“, Salz hat gar keine Kategorie.
         $this->page()
-            ->set('search', 'Brot')
             ->assertSeeHtml('class="card p-3"')
-            ->assertSeeHtml('text-xs text-frost-500');
+            ->assertSee('Artikel fleisch')
+            ->assertSee('Artikel obst')
+            ->assertSee('Salz')
+            ->assertDontSeeHtml('bg-cat-');
+    }
+
+    /**
+     * Drei Zeilen je Artikel: der Name, darunter „MHD: <Datum>“ mit dem Etikett
+     * des Feldes und darunter der Ort – Gefrierschrank und Schublade mit Komma
+     * (siehe resources/views/components/item-row.blade.php).
+     */
+    public function test_the_row_names_the_item_its_mhd_and_its_place(): void
+    {
+        $item = InventoryItem::query()->firstWhere('name', 'Pommes');
 
         $this->page()
-            ->set('search', 'Salz')
-            ->assertSeeHtml('class="card p-3"')
-            ->assertDontSeeHtml('bg-cat-');
+            ->set('search', 'Pommes')
+            ->assertSeeHtmlInOrder([
+                'Pommes',
+                'MHD: '.$item->formattedBestBefore(),
+                $this->sharedFreezer->name.', ',
+            ]);
     }
 
     public function test_an_item_can_be_deleted_from_the_overview(): void
@@ -501,13 +1005,28 @@ class InventoryOverviewTest extends TestCase
     }
 
     /**
-     * Verschoben wird in der Schublade, in der der Artikel liegt: die Übersicht
-     * kennt nur Menge und Löschen (siehe DrawerPage::moveItem()).
+     * Bearbeiten, Löschen und Verschieben stehen hinter dem Menü ihrer Zeile
+     * („⋮“, siehe resources/views/components/menu.blade.php). Bearbeiten und
+     * Verschieben sind die Funktionen der Schublade: die Zeile führt mit dem
+     * Artikel hinein – „?item=<id>“ öffnet sein Formular, „&move=1“ daneben sein
+     * Verschieben-Formular (siehe DrawerPage::mount()) –, das Löschen fragt
+     * weiterhin im Modal der App nach.
      */
-    public function test_the_overview_does_not_offer_moving_an_item(): void
+    public function test_every_row_carries_its_own_menu(): void
     {
+        $item = InventoryItem::query()->firstWhere('name', 'Brot');
+
         $this->page()
-            ->assertDontSeeHtml('startMovingItem')
-            ->assertDontSeeHtml('startEditingItem');
+            ->set('search', 'Brot')
+            // Das Menü sitzt in der Zeile und nennt sie in seinem Namen ...
+            ->assertSeeHtml('aria-haspopup="menu"')
+            ->assertSeeHtml('aria-label="Weitere Aktionen für „Brot“"')
+            ->assertSee('Bearbeiten')
+            ->assertSee('Löschen')
+            ->assertSee('Verschieben')
+            // ... und jede der drei Aktionen gehört zu genau diesem Artikel.
+            ->assertSeeHtml('href="'.route('drawers.show', $this->firstDrawer).'?item='.$item->getKey().'"')
+            ->assertSeeHtml('href="'.route('drawers.show', $this->firstDrawer).'?item='.$item->getKey().'&amp;move=1"')
+            ->assertSeeHtml("name: 'item-delete-".$item->getKey()."'");
     }
 }

@@ -15,7 +15,9 @@
         'close' => '<path d="M6 6l12 12"/><path d="M18 6 6 18"/>',
         'pencil' => '<path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16z"/><path d="M13.5 6.5 17.5 10.5"/>',
         'trash' => '<path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6.5 7l1 13h9l1-13"/><path d="M10.5 11v6"/><path d="M13.5 11v6"/>',
+        'more' => '<circle cx="12" cy="5.5" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="12" cy="18.5" r="1.4"/>',
         'chevron-right' => '<path d="M9.5 5.5 16 12l-6.5 6.5"/>',
+        'chevron-left' => '<path d="M14.5 5.5 8 12l6.5 6.5"/>',
         'chevron-down' => '<path d="M5.5 9.5 12 16l6.5-6.5"/>',
         'arrow-left' => '<path d="M19 12H5"/><path d="M11 6 5 12l6 6"/>',
         'share' => '<circle cx="17.5" cy="6" r="2.8"/><circle cx="6" cy="12" r="2.8"/><circle cx="17.5" cy="18" r="2.8"/><path d="M8.5 10.6 15 7.4"/><path d="M8.5 13.4 15 16.6"/>',
@@ -33,6 +35,8 @@
         'dot' => '<circle cx="12" cy="12" r="3.2"/>',
         'sun' => '<circle cx="12" cy="12" r="4"/><path d="M12 3v2"/><path d="M12 19v2"/><path d="M3 12h2"/><path d="M19 12h2"/><path d="M5.6 5.6 7 7"/><path d="M17 17l1.4 1.4"/><path d="M18.4 5.6 17 7"/><path d="M7 17l-1.4 1.4"/>',
         'moon' => '<path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/>',
+        'eye' => '<path d="M2.5 12c2.2-3.6 5.4-5.5 9.5-5.5s7.3 1.9 9.5 5.5c-2.2 3.6-5.4 5.5-9.5 5.5S4.7 15.6 2.5 12z"/><circle cx="12" cy="12" r="2.6"/>',
+        'eye-off' => '<path d="M2.5 12c2.2-3.6 5.4-5.5 9.5-5.5s7.3 1.9 9.5 5.5c-2.2 3.6-5.4 5.5-9.5 5.5S4.7 15.6 2.5 12z"/><path d="M4.5 20 19.5 4"/>',
     ];
 @endphp
 

@@ -11,6 +11,8 @@ return [
     'title' => 'Drawer',
     'back_aria' => 'Back to the freezer',
     'add_heading' => 'Add an item',
+    'add_aria' => 'Add an item',
+    'add_cancel_aria' => 'Cancel adding',
     'name_label' => 'What goes in?',
     'name_placeholder' => 'e.g. peas',
     'best_before_optional' => 'Best before (optional)',
@@ -21,7 +23,7 @@ return [
      | (InventoryItem::BEST_BEFORE_PRESETS) and have to stay identical to them.
      */
     'quick_best_before' => [
-        'label' => 'Quick choice',
+        'label' => 'Best before quick choice',
         '3_months' => '3 months',
         '6_months' => '6 months',
         '1_year' => '1 year',

@@ -58,9 +58,18 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
 - A list that stands outside a drawer (the inventory, the MHD watch list) leads
   into that drawer with `?item=<id>`: the name of the drawer in the row is the
   link (`resources/views/components/item-row.blade.php`) and
-  `DrawerPage::mount()` opens the form of that item. An id from another drawer
-  or an invented one changes nothing. `tests/Feature/DrawerPageTest.php` guards
-  this rule.
+  `DrawerPage::mount()` opens the form of that item - `&move=1` next to it opens
+  the move form instead, which is what the "move" entry of the menu of the row
+  uses. An id from another drawer or an invented one changes nothing.
+  `tests/Feature/DrawerPageTest.php` guards this rule.
+- A row of a list outside a drawer has three lines - the name, the best before
+  date as "MHD: <date>" and the place as "<freezer>, <drawer>" - on a white card,
+  with the quantity and the menu (⋮: edit, delete, move) on the right
+  (`resources/views/components/item-row.blade.php`). Editing and moving are the
+  functions of the drawer, so both entries of the menu lead into it with the
+  item; the category of an item serves the filter of the inventory, it is never
+  a colour of a row. `tests/Feature/InventoryOverviewTest.php` and
+  `tests/Feature/ExpiringItemsTest.php` guard this rule.
 - "−" on the last piece of an item never does nothing: the app knows no
   quantity of zero, so the row offers its delete question (the dialog of the
   app, `InteractsWithItems::decrementQuantity()`) and only the answer inside it
@@ -73,6 +82,22 @@ Boost replaces these bootstrap instructions with guidelines tailored to the appl
   the bottom bar with "Gefrierschrank", "Inventar" and "MHD" - sits outside the
   Livewire components and would keep the old language otherwise.
   `tests/Feature/LanguageTest.php` guards this rule.
+- The profile picture is stored the moment it is chosen, and its answer is a page
+  load as well (a Livewire redirect with `navigate: true`, see
+  `ProfilePage::updatedAvatar()` and `ProfilePage::removeAvatar()`), for the very
+  reason the language switch reloads: the avatar in the header sits in
+  `resources/views/layouts/app.blade.php` outside the Livewire components and
+  would keep the old picture otherwise (the initials after the first upload, the
+  deleted picture after a removal). Every page reads the address from the account
+  (`User::avatarUrl()`, with a version of the stored path, so a new picture is a
+  new address on every device), `/avatars/{user}` streams the file with the type
+  its extension names (`App\Support\AvatarImage::mimeTypeOf()`; without a type a
+  phone shows no picture), and `resources/views/components/avatar.blade.php`
+  always carries the initials behind the picture: when the picture cannot be
+  loaded, `onerror` drops it and shows them instead of the broken image of the
+  browser, without touching the stored file.
+  `tests/Feature/ProfileTest.php` and `tests/Feature/AvatarDeliveryTest.php`
+  guard these rules.
 - The app has one picture: `public/favicon.png` (512 x 512, the snowflake in the
   brand colour). The tab (`rel="icon"`), the home screen of iOS
   (`rel="apple-touch-icon"`) and the manifest of the PWA

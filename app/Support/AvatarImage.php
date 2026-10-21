@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 
 /**
  * The picture of a profile: the uploaded file, shrunk to a size that fits the
@@ -45,6 +46,20 @@ final class AvatarImage
         IMAGETYPE_JPEG => 'jpg',
         IMAGETYPE_PNG => 'png',
         IMAGETYPE_WEBP => 'webp',
+    ];
+
+    /**
+     * Der Typ, den ein gespeichertes Bild an den Browser bekommt, nach der
+     * Endung der Datei. Beide Schreibweisen von JPEG stehen hier, weil das Feld
+     * der Oberfläche auch ".jpeg" annimmt (siehe ProfilePage::AVATAR_TYPES).
+     *
+     * @var array<string, string>
+     */
+    private const MIME_TYPES = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
     ];
 
     private function __construct(
@@ -98,6 +113,18 @@ final class AvatarImage
     public function extension(): string
     {
         return $this->extension;
+    }
+
+    /**
+     * Der Typ, den ein gespeichertes Bild an den Browser bekommt - aus der
+     * Endung der Datei, nicht aus ihrem Inhalt: Ein Handy zeigt ein Bild ohne
+     * passenden Typ nicht an, und die Endung kennt die App, weil sie die Datei
+     * selbst geschrieben hat (siehe fromUpload()). Null für eine unbekannte
+     * Endung; dann entscheidet die Erkennung des Speichers.
+     */
+    public static function mimeTypeOf(string $path): ?string
+    {
+        return self::MIME_TYPES[Str::lower(pathinfo($path, PATHINFO_EXTENSION))] ?? null;
     }
 
     /**

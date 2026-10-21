@@ -11,6 +11,8 @@ return [
     'title' => 'Cassetto',
     'back_aria' => 'Torna al congelatore',
     'add_heading' => 'Aggiungi un articolo',
+    'add_aria' => 'Aggiungi un articolo',
+    'add_cancel_aria' => 'Annulla l\'aggiunta',
     'name_label' => 'Cosa ci metti?',
     'name_placeholder' => 'es. piselli',
     'best_before_optional' => 'Scadenza (facoltativa)',
@@ -21,7 +23,7 @@ return [
      | (InventoryItem::BEST_BEFORE_PRESETS) and have to stay identical to them.
      */
     'quick_best_before' => [
-        'label' => 'Scelta rapida',
+        'label' => 'Scelta rapida della scadenza',
         '3_months' => '3 mesi',
         '6_months' => '6 mesi',
         '1_year' => '1 anno',

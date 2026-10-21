@@ -11,6 +11,8 @@ return [
     'title' => 'Schublade',
     'back_aria' => 'Zurück zum Gefrierschrank',
     'add_heading' => 'Artikel hinzufügen',
+    'add_aria' => 'Artikel hinzufügen',
+    'add_cancel_aria' => 'Hinzufügen abbrechen',
     'name_label' => 'Was kommt rein?',
     'name_placeholder' => 'z. B. Erbsen',
     'best_before_optional' => 'MHD (optional)',
@@ -21,7 +23,7 @@ return [
      | (InventoryItem::BEST_BEFORE_PRESETS) and have to stay identical to them.
      */
     'quick_best_before' => [
-        'label' => 'Schnellauswahl',
+        'label' => 'MHD Schnellauswahl',
         '3_months' => '3 Monate',
         '6_months' => '6 Monate',
         '1_year' => '1 Jahr',

@@ -46,6 +46,46 @@ class AuthenticationTest extends TestCase
             ->assertDontSeeHtml('brightness-0 invert');
     }
 
+    /**
+     * The eye at the right edge of the password field reveals what was typed and
+     * hides it again: the button only flips the type attribute of the field
+     * (resources/js/app.js, window.togglePasswordVisibility), so the value stays
+     * where the user put it. Both icons follow the state on the field through
+     * CSS, which is why the field carries data-revealed and the icons their
+     * group variants - and why the button needs no state of its own. The click
+     * holds itself back, so the field keeps the caret while the password is
+     * being typed.
+     */
+    public function test_the_login_screen_offers_an_eye_that_reveals_the_password(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSeeHtml('data-password-field data-revealed="false"')
+            ->assertSeeHtml('data-password-input')
+            ->assertSeeHtml('data-password-toggle')
+            ->assertSeeHtml('onmousedown="event.preventDefault()"')
+            ->assertSeeHtml('onclick="window.togglePasswordVisibility(this)"')
+            ->assertSeeHtml('aria-pressed="false"')
+            ->assertSeeHtml('group-data-[revealed=true]:hidden')
+            ->assertSeeHtml('group-data-[revealed=true]:block')
+            ->assertSee(__('common.show_password'))
+            ->assertSee(__('common.hide_password'));
+
+        // Der Knopf ruft die Funktion des Skripts der App auf; ohne sie bliebe
+        // der Klick folgenlos.
+        $script = (string) file_get_contents(resource_path('js/app.js'));
+
+        $this->assertStringContainsString('window.togglePasswordVisibility', $script);
+
+        // Beide Symbole gehören in den Satz der Symbole - ein Name, den er nicht
+        // kennt, fiele still auf den Punkt zurück.
+        $icons = (string) file_get_contents(resource_path('views/components/icon.blade.php'));
+
+        foreach (["'eye' =>", "'eye-off' =>"] as $needle) {
+            $this->assertStringContainsString($needle, $icons, 'Dem Satz der Symbole fehlt '.$needle.'.');
+        }
+    }
+
     public function test_users_can_login_with_their_credentials(): void
     {
         $user = User::factory()->create(['password' => 'geheim1234']);

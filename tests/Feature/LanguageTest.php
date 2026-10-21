@@ -69,7 +69,7 @@ class LanguageTest extends TestCase
         $user = User::factory()->create();
 
         Livewire::actingAs($user)->test(ProfilePage::class)
-            ->assertSeeInOrder(['Bild auswählen', 'Sprache', 'Angaben', 'Passwort ändern']);
+            ->assertSeeInOrder(['Profilbild bearbeiten', 'Sprache', 'Angaben', 'Passwort ändern']);
     }
 
     public function test_the_language_can_be_changed(): void
@@ -184,6 +184,68 @@ class LanguageTest extends TestCase
     }
 
     /**
+     * Jede Reihenfolge des Inventars ist in jeder Sprache benannt: gespeichert
+     * wird der Schlüssel (siehe InventoryItem::SORT_*), angezeigt das Etikett
+     * aus lang/<Sprache>/inventory.php. Fehlt eine Übersetzung, stünde im Panel
+     * "inventory.sort.best_before_asc" statt eines Wortes.
+     */
+    public function test_every_sort_is_named_in_every_language(): void
+    {
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $labels = InventoryItem::sortLabels();
+
+            $this->assertCount(count(InventoryItem::sortKeys()), $labels);
+
+            foreach ($labels as $key => $label) {
+                $this->assertNotSame(
+                    'inventory.sort.'.$key,
+                    $label,
+                    'Die Reihenfolge "'.$key.'" fehlt in der Sprache "'.$locale.'".'
+                );
+                $this->assertNotSame('', trim($label));
+            }
+
+            // Zwei Reihenfolgen mit demselben Wort ließen sich nicht
+            // auseinanderhalten.
+            $this->assertSame(count($labels), count(array_unique($labels)));
+        }
+    }
+
+    /**
+     * Jede Gruppe der Reihenfolge nach MHD ist in jeder Sprache benannt:
+     * gespeichert wird der Schlüssel (siehe InventoryItem::BEST_BEFORE_GROUP_*),
+     * angezeigt das Etikett aus lang/<Sprache>/inventory.php. Fehlt eine
+     * Übersetzung, stünde über dem Fenster
+     * "inventory.best_before_groups.six_months" statt "Aufzubrauchen innerhalb
+     * 6 Monate".
+     */
+    public function test_every_shelf_life_group_is_named_in_every_language(): void
+    {
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $labels = InventoryItem::bestBeforeGroupLabels();
+
+            $this->assertCount(count(InventoryItem::bestBeforeGroupKeys()), $labels);
+
+            foreach ($labels as $key => $label) {
+                $this->assertNotSame(
+                    'inventory.best_before_groups.'.$key,
+                    $label,
+                    'Die Gruppe "'.$key.'" fehlt in der Sprache "'.$locale.'".'
+                );
+                $this->assertNotSame('', trim($label));
+            }
+
+            // Zwei Fenster mit demselben Wort ließen sich als Überschrift nicht
+            // auseinanderhalten.
+            $this->assertSame(count($labels), count(array_unique($labels)));
+        }
+    }
+
+    /**
      * Jede Schnellauswahl des MHD ist in jeder Sprache benannt: angezeigt wird
      * das Etikett aus lang/<Sprache>/drawers.php, gerechnet wird mit der
      * Zeitspanne aus InventoryItem::BEST_BEFORE_PRESETS. Fehlt eine
@@ -209,6 +271,101 @@ class LanguageTest extends TestCase
             }
 
             // Zwei Auswahlen mit demselben Wort ließen sich nicht unterscheiden.
+            $this->assertSame(count($labels), count(array_unique($labels)));
+        }
+    }
+
+    /**
+     * Die drei Aktionen der Artikelzeile sind in jeder Sprache benannt: die
+     * Beschriftungen des Menüs („⋮“, siehe
+     * resources/views/components/drawer-item-row.blade.php) stehen unter
+     * common.edit, common.delete und common.move. Fehlt eine Übersetzung, stünde
+     * im Menü „common.move“ statt „Verschieben“.
+     */
+    public function test_the_actions_of_an_item_are_named_in_every_language(): void
+    {
+        $actions = ['edit', 'delete', 'move'];
+
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $labels = [];
+
+            foreach ($actions as $action) {
+                $label = __('common.'.$action);
+
+                $this->assertNotSame(
+                    'common.'.$action,
+                    $label,
+                    'Die Aktion "'.$action.'" fehlt in der Sprache "'.$locale.'".'
+                );
+                $this->assertNotSame('', trim($label));
+
+                $labels[] = $label;
+            }
+
+            // Drei Aktionen mit demselben Wort ließen sich im Menü nicht
+            // auseinanderhalten.
+            $this->assertSame(count($labels), count(array_unique($labels)));
+
+            // Der Name des Menüs nennt den Artikel, zu dem es gehört.
+            $this->assertStringContainsString('X', __('items.menu_aria', ['name' => 'X']));
+        }
+    }
+
+    /**
+     * Die Stelle des Datums bleibt in keiner Sprache leer: jede Sprache kennt
+     * das Wort für einen Artikel ohne MHD (items.mhd.none). Es steht in jeder
+     * Liste dort, wo sonst das Datum steht, und reist mit dem Schnappschuss auf
+     * die Offline-Seite (siehe resources/views/components/item-row.blade.php und
+     * App\Support\OfflineInventory::labels()).
+     */
+    public function test_the_note_for_an_item_without_a_best_before_date_is_named_in_every_language(): void
+    {
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $label = __('items.mhd.none');
+
+            $this->assertNotSame(
+                'items.mhd.none',
+                $label,
+                'Das Wort für einen Artikel ohne MHD fehlt in der Sprache "'.$locale.'".'
+            );
+            $this->assertNotSame('', trim($label));
+        }
+    }
+
+    /**
+     * Das Menü des Profilbilds ist in jeder Sprache benannt: der Knopf und seine
+     * drei Einträge stehen unter profile.edit_avatar, profile.add_avatar,
+     * profile.change_avatar und profile.delete_avatar. Fehlt eine Übersetzung,
+     * stünde im Menü „profile.change_avatar“ statt „Profilbild ändern“.
+     */
+    public function test_the_menu_of_the_profile_picture_is_named_in_every_language(): void
+    {
+        $entries = ['edit_avatar', 'add_avatar', 'change_avatar', 'delete_avatar'];
+
+        foreach (Locales::codes() as $locale) {
+            app()->setLocale($locale);
+
+            $labels = [];
+
+            foreach ($entries as $entry) {
+                $label = __('profile.'.$entry);
+
+                $this->assertNotSame(
+                    'profile.'.$entry,
+                    $label,
+                    'Der Eintrag "'.$entry.'" fehlt in der Sprache "'.$locale.'".'
+                );
+                $this->assertNotSame('', trim($label));
+
+                $labels[] = $label;
+            }
+
+            // Vier Beschriftungen mit demselben Wort ließen sich im Menü nicht
+            // auseinanderhalten.
             $this->assertSame(count($labels), count(array_unique($labels)));
         }
     }

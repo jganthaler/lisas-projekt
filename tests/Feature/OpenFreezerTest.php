@@ -66,6 +66,55 @@ class OpenFreezerTest extends TestCase
     }
 
     /**
+     * Umbenennen und Löschen einer Schublade stehen hinter dem Menü ihrer Zeile
+     * ("⋮", siehe resources/views/components/menu.blade.php): die Zeile behält
+     * den Namen und die Zahl der Artikel, und beide Aktionen bleiben die
+     * Funktionen dieser Seite. Jede Zeile hat ihr eigenes Menü - die beiden
+     * Aktionen nennen die Schublade, auf die sie sich beziehen.
+     */
+    public function test_every_drawer_row_carries_its_own_menu(): void
+    {
+        $secondDrawer = $this->freezer->drawers()->skip(1)->firstOrFail();
+
+        $this->page()
+            // Das Menü sitzt in der Zeile und nennt sie in seinem Namen ...
+            ->assertSeeHtml('aria-haspopup="menu"')
+            ->assertSeeHtml('aria-label="Weitere Aktionen für „Schublade 1“"')
+            ->assertSeeHtml('aria-label="Weitere Aktionen für „Schublade 2“"')
+            ->assertSee('Umbenennen')
+            ->assertSee('Löschen')
+            // ... und die Aktionen gehören zu genau dieser Schublade.
+            ->assertSeeHtml('wire:click="startRenaming('.$this->drawer->getKey().')"')
+            ->assertSeeHtml('wire:click="startRenaming('.$secondDrawer->getKey().')"')
+            ->assertSeeHtml("name: 'drawer-delete-".$this->drawer->getKey()."'")
+            ->assertSeeHtml("name: 'drawer-delete-".$secondDrawer->getKey()."'")
+            // Die beiden Knöpfe von früher stehen nicht mehr offen in der Zeile.
+            ->assertDontSeeHtml('aria-label="Schublade umbenennen"')
+            ->assertDontSeeHtml('aria-label="Schublade löschen"');
+    }
+
+    /**
+     * Beide Aktionen des Menüs rufen die vorhandenen Funktionen dieser Seite:
+     * "Umbenennen" bringt das Formular der Schublade hoch, "Löschen" öffnet nur
+     * die Rückfrage der App - erst deren Antwort löscht die Schublade (siehe
+     * components/confirm-dialog.blade.php).
+     */
+    public function test_the_menu_calls_the_rename_form_and_the_question_of_the_app(): void
+    {
+        $this->page()
+            ->assertSee('Schublade löschen?')
+            ->assertSee('„Schublade 1“ wird entfernt. Das geht nur, solange sie leer ist.')
+            ->assertSeeHtml('wire:click="deleteDrawer('.$this->drawer->getKey().')"')
+            ->call('startRenaming', $this->drawer->getKey())
+            ->assertSet('editingDrawerId', $this->drawer->getKey())
+            ->assertSeeHtml('wire:model="editingDrawerName"')
+            ->assertSee('Name der Schublade');
+
+        // Die Schublade steht noch: die Rückfrage allein löscht nichts.
+        $this->assertDatabaseHas('drawers', ['id' => $this->drawer->getKey()]);
+    }
+
+    /**
      * The count next to a name says how much lies inside that drawer. A drawer
      * without items has no row in the summary at all - the view reads that as
      * "0 Artikel".
