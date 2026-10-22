@@ -589,6 +589,33 @@ class DrawerPageTest extends TestCase
             ->assertSet('editCategory', '');
     }
 
+    /**
+     * Die beiden Knöpfe des Formulars stehen in einer festen Ordnung und in
+     * derselben Größe: „Abbrechen“ links, „Speichern“ rechts, und jeder nimmt
+     * die halbe Breite des Formulars ein (zwei gleich breite Spalten). Ein
+     * „flex-1“ auf einem der beiden machte den einen Knopf so breit, wie es
+     * seine Beschriftung zulässt – „Abbrechen“ und „Speichern“ sind aber
+     * verschieden lang, die Knöpfe sollen es nicht sein. Die Ordnung im Markup
+     * ist die Ordnung auf dem Bildschirm (und die Reihenfolge beim Tippen).
+     */
+    public function test_the_form_of_an_item_puts_cancel_left_and_save_right_in_two_equal_columns(): void
+    {
+        $item = InventoryItem::factory()->create(['drawer_id' => $this->drawer->getKey()]);
+
+        $page = $this->page()->call('startEditingItem', $item->getKey());
+
+        $page->assertSeeHtmlInOrder([
+            'wire:click="cancelEditingItem" class="btn btn-ghost w-full"',
+            'type="submit" class="btn btn-primary w-full"',
+        ]);
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-2 gap-2'),
+            'Die beiden Knöpfe des Formulars stehen nicht in zwei gleich breiten Spalten.'
+        );
+    }
+
     public function test_an_item_can_be_deleted(): void
     {
         $item = InventoryItem::factory()->create(['drawer_id' => $this->drawer->getKey()]);
@@ -834,6 +861,32 @@ class DrawerPageTest extends TestCase
     }
 
     /**
+     * Das Verschieben-Formular trägt dasselbe Paar wie das Bearbeiten-Formular
+     * oben: „Abbrechen“ links, die Aktion rechts, beide gleich groß in zwei
+     * gleich breiten Spalten (siehe den Test des Bearbeiten-Formulars).
+     */
+    public function test_the_move_form_puts_cancel_left_and_move_right_in_two_equal_columns(): void
+    {
+        $item = InventoryItem::factory()->create(['drawer_id' => $this->drawer->getKey()]);
+
+        $page = $this->page()->call('startMovingItem', $item->getKey());
+
+        // Der Knopf des Abbrechens steht im Markup über zwei Zeilen, deshalb
+        // wacht hier seine Klasse: die Ordnung im Markup ist die Ordnung auf
+        // dem Bildschirm.
+        $page->assertSeeHtmlInOrder([
+            'class="btn btn-ghost w-full"',
+            'class="btn btn-primary w-full"',
+        ]);
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-2 gap-2'),
+            'Die beiden Knöpfe des Verschieben-Formulars stehen nicht in zwei gleich breiten Spalten.'
+        );
+    }
+
+    /**
      * Eine Zeile zeigt entweder das Bearbeiten- oder das Verschieben-Formular,
      * nie beide.
      */
@@ -868,7 +921,9 @@ class DrawerPageTest extends TestCase
             ->call('startMovingItem', $item->getKey())
             ->assertSee('Es gibt noch kein anderes Fach und keinen anderen Gefrierschrank.')
             ->assertDontSeeHtml('wire:model="moveTargetDrawerId"')
-            ->assertSeeHtml('wire:click="cancelMovingItem"');
+            ->assertSeeHtml('wire:click="cancelMovingItem"')
+            // Ohne Ziel steht „Abbrechen“ allein und nimmt die ganze Breite.
+            ->assertSeeHtml('class="btn btn-ghost w-full col-span-2"');
     }
 
     public function test_an_item_of_another_drawer_cannot_be_moved_through_this_page(): void

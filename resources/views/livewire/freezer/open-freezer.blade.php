@@ -26,7 +26,7 @@
             @enderror
         </div>
 
-        <button type="submit" class="btn btn-primary btn-icon mt-6" aria-label="{{ __('freezer.add_drawer_aria') }}">
+        <button type="submit" class="btn h-11 w-11 shrink-0 btn-primary btn-icon mt-6" aria-label="{{ __('freezer.add_drawer_aria') }}">
             <x-icon name="plus" class="h-5 w-5" />
         </button>
     </form>
@@ -53,12 +53,19 @@
                         @enderror
                     </div>
 
-                    <div class="flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-1">
+                    {{-- „Abbrechen“ links, „Speichern“ rechts - dasselbe Paar
+                         wie in jedem Formular der App, in zwei gleich breiten
+                         Spalten (siehe drawer-page.blade.php, das Formular eines
+                         Artikels). --}}
+                    <div class="grid grid-cols-2 gap-2">
+                        <button type="button" wire:click="cancelRenaming" class="btn btn-ghost w-full">
+                            {{ __('common.cancel') }}
+                        </button>
+
+                        <button type="submit" class="btn btn-primary w-full">
                             <x-icon name="check" class="h-5 w-5" />
                             {{ __('common.save') }}
                         </button>
-                        <button type="button" wire:click="cancelRenaming" class="btn btn-ghost">{{ __('common.cancel') }}</button>
                     </div>
                 </form>
             @else

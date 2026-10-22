@@ -14,7 +14,6 @@ return [
     'delete_confirm_title' => 'Delete item?',
     'delete_confirm_message' => 'Do you really want to delete “:name”?',
     'deleted' => 'Item deleted.',
-    'open_in_drawer_aria' => 'Edit the item in “:drawer”',
     'menu_aria' => 'More actions for “:name”',
 
     'state' => [

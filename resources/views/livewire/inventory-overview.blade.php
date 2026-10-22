@@ -29,9 +29,13 @@
                        class="input pl-9" aria-label="{{ __('inventory.search_aria') }}">
             </div>
 
-            {{-- The freezer filter hides behind this button. --}}
+            {{-- The freezer filter hides behind this button. The button is a
+                 square: as wide as it is high ("h-11 w-11", the square size of
+                 the app) and
+                 centred, because the search field beside it is a little taller
+                 than that. --}}
             <button type="button" wire:click="toggleFilters"
-                    class="btn btn-secondary btn-icon relative shrink-0"
+                    class="btn btn-secondary btn-icon relative h-11 w-11 shrink-0 self-center"
                     aria-label="{{ __('inventory.filter_aria') }}" aria-expanded="{{ $showFilters ? 'true' : 'false' }}">
                 <x-icon name="filter" class="h-5 w-5" />
 

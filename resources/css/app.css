@@ -25,6 +25,15 @@
     --radius-control: 0.5rem;
 
     /*
+     | One corner radius for every card of the app. It is used by the component
+     | classes below (.card, .drawer-row and the flash on a new item) and, as
+     | "rounded-card", by the views. A card never brings a radius of its own, so
+     | every card - the ones of today and the ones added tomorrow - is rounded
+     | the same way, at 8 px.
+     */
+    --radius-card: 0.5rem;
+
+    /*
      | Surfaces that are not part of the palette below: cards and bars ("surface"),
      | form fields ("field") and the layer that dims the page behind a dialog
      | ("scrim"). They switch their value with the dark class, so the views can use
@@ -139,7 +148,8 @@
     /*
      | Every control starts with the shared 8 px radius; utilities and the
      | component classes below may override it where a different shape is
-     | wanted (cards, badges, avatars).
+     | wanted (badges, avatars, the dialog). A card is not one of those: it
+     | takes the radius of the cards ("--radius-card"), which is 8 px as well.
      */
     button,
     input,
@@ -202,8 +212,14 @@
         padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
     }
 
+    /*
+     | A card of the app: the surface the lists, the fields and the forms sit
+     | on. Its corners come from "--radius-card" alone, so a card never has to
+     | name a radius itself - not the ones of today and not the ones that are
+     | added later.
+     */
     .card {
-        border-radius: 1.25rem;
+        border-radius: var(--radius-card);
         background-color: var(--color-surface);
         box-shadow: 0 1px 2px rgb(28 34 38 / 0.05), 0 10px 24px -14px rgb(28 34 38 / 0.18);
     }
@@ -494,12 +510,17 @@
         background-color: var(--color-danger-50);
     }
 
+    /*
+     | The row of a drawer in a list: a card as well (the grey band of the head
+     | and the white of the body sit inside the same corners), so it takes the
+     | radius of the cards.
+     */
     .drawer-row {
         display: flex;
         width: 100%;
         align-items: center;
         gap: 0.75rem;
-        border-radius: var(--radius-control);
+        border-radius: var(--radius-card);
         background-color: var(--color-surface);
         padding: 0.875rem 1rem;
         text-align: left;
@@ -550,9 +571,14 @@
         color: var(--color-warning-950);
     }
 
+    /*
+     | The flash on an item that was just added: the class lights up a row, so it
+     | paints the row as well - its corners are the corners of the card it lights
+     | up, taken from "--radius-card".
+     */
     .highlight-item {
         animation: highlight-pulse 1.6s ease-out 1;
-        border-radius: var(--radius-control);
+        border-radius: var(--radius-card);
     }
 
     /*

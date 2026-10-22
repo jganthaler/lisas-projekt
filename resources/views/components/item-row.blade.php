@@ -20,18 +20,20 @@
  | because there is nothing to warn about.
  |
  | The third line names the place of the item: the freezer and the drawer with a
- | comma between them. The freezer only appears where it tells rows apart (see
- | the callers) - with a single freezer the drawer alone says where the item
- | lies. The name of the drawer is the link into that drawer: the row hands the
- | item over with "?item=<id>", so the drawer opens with the form of this very
- | item (see DrawerPage::mount()).
+ | comma between them, both as plain text - the same size and the same colour, no
+ | link under either of them. The freezer only appears where it tells rows apart
+ | (see the callers) - with a single freezer the drawer alone says where the item
+ | lies. The way into the drawer is the menu on the right: its "edit" and "move"
+ | entries hand the item over with "?item=<id>", so the drawer opens with the form
+ | of this very item (see DrawerPage::mount()).
  |
- | The best before date has two shapes. The full one names the state ("frisch",
- | "bald abgelaufen", ...), the relative counter ("MHD in 3 Tagen") and the date
- | itself; the inventory overview reads the row with "mhdWarningsOnly" and keeps
- | only what carries information there - the date, and the state as long as it
- | warns. "frisch" and the counter stay on the page that lives from them (the
- | MHD watch list).
+ | The second line carries the date alone. Where the row stands in a list that
+ | warns - the inventory overview reads it with "mhdWarningsOnly" - the state
+ | comes along as long as it warns ("abgelaufen", "bald abgelaufen"); "frisch"
+ | says nothing where the date stands next to it, and a relative counter ("MHD
+ | in 3 Tagen") stands in no row of the app: the date is the answer, and the MHD
+ | watch list names the state in the headings of its sections ("Abgelaufen",
+ | "Bald abgelaufen" - see expiring-items).
  |
  | The card is white in every list: the category of an item serves the filter of
  | the inventory (see InventoryOverview), it is no colour of a row.
@@ -39,8 +41,8 @@
  | On the right the quantity keeps its place - one tap for minus, one for plus -
  | and next to it the menu ("⋮") carries the three actions of the row: editing,
  | deleting and moving. Editing and moving are the functions of the drawer (the
- | row leads into it with the item it names, the way the name of the drawer
- | does); deleting asks through the dialog of the app
+ | row leads into it with the item it names; the way in is the menu, never the
+ | name of the drawer); deleting asks through the dialog of the app
  | (components/confirm-dialog.blade.php), never through the dialog of the
  | browser: the entry in the menu only opens the question, and the answer travels
  | with the button inside that dialog.
@@ -56,49 +58,32 @@
             {{-- The second line: the best before date with the label of the
                  field. An item without a date says so instead - the place of
                  the date is never left empty (see items.mhd.none), and the
-                 badge and the counter stay away with it. --}}
+                 badge stays away with it. --}}
             <p class="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-frost-500">
                 @if ($item->best_before)
                     <span>{{ __('common.best_before') }}: {{ $item->formattedBestBefore() }}</span>
 
-                    {{-- A warning is always shown, "frisch" only where the row
-                         has room for it (see "mhdWarningsOnly"). --}}
-                    @if (! $mhdWarningsOnly || $item->isExpired() || $item->isExpiringSoon())
+                    {{-- A warning stands beside the date while it warns, and only
+                         in the list that reads the row with "mhdWarningsOnly":
+                         "frisch" says nothing where the date stands next to it,
+                         and a relative counter stands in no row of the app. --}}
+                    @if ($mhdWarningsOnly && ($item->isExpired() || $item->isExpiringSoon()))
                         <span class="badge {{ $item->stateBadgeClass() }}">{{ $item->stateLabel() }}</span>
                     @endif
-
-                    {{-- The relative counter belongs to the page that lives from
-                         it (see "mhdWarningsOnly"); the dot between the two
-                         would hang in the air without it. --}}
-                    @unless ($mhdWarningsOnly)
-                        <span class="text-frost-400">·</span>
-                        <span>{{ $item->bestBeforeLabel() }}</span>
-                    @endunless
                 @else
                     <span>{{ __('items.mhd.none') }}</span>
                 @endif
             </p>
 
-            {{-- The third line: the place of the item. The comma belongs to the
-                 freezer - it only stands there while a drawer follows. --}}
+            {{-- The third line: the place of the item, both names as plain text.
+                 The comma belongs to the freezer - it only stands there while a
+                 drawer follows. Nothing here is clickable: the way into the
+                 drawer is the menu on the right (see below). The two names are
+                 echoes, never directives: a directive would leave one of the
+                 comments of Livewire between them, and the line would read
+                 "Gefrierschrank 1<!--[if BLOCK]><![endif]-->, Schublade 2". --}}
             @if ($freezerName || $drawerName)
-                <p class="mt-0.5 truncate text-xs text-frost-500">
-                    @if ($freezerName)
-                        {{ $freezerName }}{{ $drawerName ? ', ' : '' }}
-                    @endif
-
-                    @if ($drawerName && $item->drawer)
-                        {{-- Where the item lies, as the way into it: the link
-                             carries the accent of the app, so its purpose is
-                             clear on a phone. --}}
-                        <a href="{{ route('drawers.show', $item->drawer) }}?item={{ $item->getKey() }}"
-                           wire:navigate
-                           class="font-medium text-brand-700 underline-offset-2 transition hover:underline dark:text-brand-400"
-                           aria-label="{{ __('items.open_in_drawer_aria', ['drawer' => $drawerName]) }}">{{ $drawerName }}</a>
-                    @elseif ($drawerName)
-                        {{ $drawerName }}
-                    @endif
-                </p>
+                <p class="mt-0.5 truncate text-xs text-frost-500">{{ $freezerName }}{{ $freezerName && $drawerName ? ', ' : '' }}{{ $drawerName }}</p>
             @endif
         </div>
 

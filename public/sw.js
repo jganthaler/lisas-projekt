@@ -31,7 +31,7 @@
  | deployment never has to wait for the HTTP cache of the browser.
  */
 
-const VERSION = "v9";
+const VERSION = "v11";
 
 const CACHE_PREFIX = "coolventory-";
 const SHELL_CACHE = CACHE_PREFIX + "shell-" + VERSION;

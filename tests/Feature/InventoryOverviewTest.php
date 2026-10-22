@@ -755,17 +755,18 @@ class InventoryOverviewTest extends TestCase
     }
 
     /**
-     * The name of the drawer in a row is the way into it: the row hands the item
-     * over with "?item=<id>", so the drawer opens with the form of this very item
-     * (see DrawerPage::mount()). Without it, changing something the search found
-     * would be a trip over the freezer page and the whole drawer.
+     * Der Ort einer Zeile ist reiner Text: Gefrierschrank und Schublade stehen
+     * mit Komma nebeneinander, in derselben Schrift und Farbe und ohne Link –
+     * der Name der Schublade ist kein Weg mehr in sie (siehe
+     * resources/views/components/item-row.blade.php). In die Schublade führt
+     * weiterhin das Menü der Zeile („⋮“, siehe
+     * test_every_row_carries_its_own_menu).
      */
-    public function test_the_row_leads_into_the_drawer_of_the_item(): void
+    public function test_the_place_of_the_row_is_plain_text(): void
     {
-        $item = InventoryItem::query()->firstWhere('name', 'Pommes');
-
         $this->page()->assertSeeHtml(
-            'href="'.route('drawers.show', $this->sharedDrawer).'?item='.$item->getKey().'"'
+            '<p class="mt-0.5 truncate text-xs text-frost-500">'
+            .$this->sharedFreezer->name.', '.$this->sharedDrawer->name.'</p>'
         );
     }
 
@@ -799,6 +800,18 @@ class InventoryOverviewTest extends TestCase
             ->assertSeeHtml('wire:click="filterByFreezer(\''.$this->sharedFreezer->getKey().'\')"');
 
         $page->call('toggleFilters')->assertSet('showFilters', false);
+    }
+
+    /**
+     * The button is a square: as wide as it is high ("h-11 w-11", the square
+     * size of the app - the tile of the freezer on the home page carries it as
+     * well) and centred beside the search field, which is a little taller than
+     * the square. Without "self-center" the field would stretch it into a
+     * rectangle, because a flex row stretches its items by default.
+     */
+    public function test_the_filter_button_stands_as_a_square_next_to_the_search_field(): void
+    {
+        $this->page()->assertSeeHtml('class="btn btn-secondary btn-icon relative h-11 w-11 shrink-0 self-center"');
     }
 
     /**
@@ -889,8 +902,8 @@ class InventoryOverviewTest extends TestCase
 
     /**
      * Ein frischer Artikel zeigt im Inventar nur sein Datum: "frisch" sagt
-     * nichts und der relative Zähler ("MHD in 60 Tagen") steht als Datum
-     * daneben schon da (siehe resources/views/components/item-row.blade.php).
+     * nichts, und der relative Zähler ("MHD in 60 Tagen") steht in keiner Zeile
+     * der App (siehe resources/views/components/item-row.blade.php).
      */
     public function test_a_fresh_item_shows_only_its_date(): void
     {
@@ -905,8 +918,8 @@ class InventoryOverviewTest extends TestCase
     }
 
     /**
-     * Ein abgelaufener Artikel behält seine Warnung - nur der relative Zähler
-     * fällt weg, weil das Datum daneben steht.
+     * Ein abgelaufener Artikel behält seine Warnung - sie ist das Einzige, was
+     * eine Zeile neben dem Datum sagen darf.
      */
     public function test_an_expired_item_keeps_its_warning(): void
     {

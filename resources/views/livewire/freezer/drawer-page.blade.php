@@ -196,12 +196,23 @@
                             @enderror
                         </div>
 
-                        <div class="flex gap-2">
-                            <button type="submit" class="btn btn-primary flex-1">
+                        {{-- „Abbrechen“ links, „Speichern“ rechts - und beide
+                             gleich groß: zwei gleich breite Spalten teilen die
+                             Zeile, damit die Breite eines Knopfes nicht an der
+                             Länge seiner Beschriftung hängt („Abbrechen“ und
+                             „Speichern“ sind verschieden lang). Die Zeile bleibt
+                             auf dem Telefon dieselbe wie auf dem Rechner, und
+                             die Beschriftungen stehen mittig (resources/css/app.css,
+                             .btn). --}}
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" wire:click="cancelEditingItem" class="btn btn-ghost w-full">
+                                {{ __('common.cancel') }}
+                            </button>
+
+                            <button type="submit" class="btn btn-primary w-full">
                                 <x-icon name="check" class="h-5 w-5" />
                                 {{ __('common.save') }}
                             </button>
-                            <button type="button" wire:click="cancelEditingItem" class="btn btn-ghost">{{ __('common.cancel') }}</button>
                         </div>
                     </form>
                 @elseif ($movingItemId === $item->id)
@@ -256,17 +267,26 @@
                             </div>
                         @endif
 
-                        <div class="flex gap-2">
+                        {{-- Dieselbe Reihe wie im Formular oben: „Abbrechen“
+                             links, die Aktion rechts, beide gleich groß in zwei
+                             gleich breiten Spalten. Ein Haushalt mit einem
+                             einzigen Fach hat kein Ziel - dann steht
+                             „Abbrechen“ allein und nimmt die ganze Breite. --}}
+                        @php
+                            $cancelSpansBothColumns = $moveTargets->isEmpty();
+                        @endphp
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" wire:click="cancelMovingItem"
+                                    class="btn btn-ghost w-full{{ $cancelSpansBothColumns ? ' col-span-2' : '' }}">
+                                {{ __('common.cancel') }}
+                            </button>
+
                             @if ($moveTargets->isNotEmpty())
-                                <button type="submit" class="btn btn-primary flex-1">
+                                <button type="submit" class="btn btn-primary w-full">
                                     <x-icon name="move" class="h-5 w-5" />
                                     {{ __('drawers.move_submit') }}
                                 </button>
                             @endif
-
-                            <button type="button" wire:click="cancelMovingItem" class="btn btn-ghost flex-1">
-                                {{ __('common.cancel') }}
-                            </button>
                         </div>
                     </form>
                 @else

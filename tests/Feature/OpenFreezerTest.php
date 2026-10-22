@@ -187,6 +187,27 @@ class OpenFreezerTest extends TestCase
         $this->assertSame('Schublade 1', $this->drawer->refresh()->name);
     }
 
+    /**
+     * Das Umbenennen-Formular endet wie jedes Formular der App: „Abbrechen“
+     * links, „Speichern“ rechts, beide gleich groß in zwei gleich breiten
+     * Spalten.
+     */
+    public function test_the_rename_form_puts_cancel_left_and_save_right_in_two_equal_columns(): void
+    {
+        $page = $this->page()->call('startRenaming', $this->drawer->getKey());
+
+        $page->assertSeeHtmlInOrder([
+            'wire:click="cancelRenaming" class="btn btn-ghost w-full"',
+            'type="submit" class="btn btn-primary w-full"',
+        ]);
+
+        $this->assertSame(
+            1,
+            substr_count($page->html(), 'grid grid-cols-2 gap-2'),
+            'Die beiden Knöpfe des Umbenennen-Formulars stehen nicht in zwei gleich breiten Spalten.'
+        );
+    }
+
     public function test_an_empty_drawer_can_be_deleted(): void
     {
         $this->page()

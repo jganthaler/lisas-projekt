@@ -87,6 +87,21 @@ class ClosedFreezerTest extends TestCase
         return array_map('trim', $matches[1]);
     }
 
+    /**
+     * Die Stelle eines Textes im HTML der Startseite - damit lässt sich prüfen,
+     * in welcher Reihenfolge Kopfzeile, Trennlinie und Gefrierschrank stehen.
+     */
+    private function positionOf(string $html, string $needle): int
+    {
+        $position = strpos($html, $needle);
+
+        if ($position === false) {
+            $this->fail('Die Startseite trägt nicht: '.$needle);
+        }
+
+        return $position;
+    }
+
     public function test_the_page_lists_every_freezer_of_the_user(): void
     {
         Freezer::factory()->sharedWith($this->owner)->create(['name' => 'Truhe im Keller']);
@@ -135,28 +150,182 @@ class ClosedFreezerTest extends TestCase
     }
 
     /**
-     * Das Feld zeigt den aktiven Gefrierschrank als eigenen Block: die Kachel mit
-     * dem Icon des Gefrierschranks, daneben sein Name in der größten Schrift der
-     * Seite und darunter, wem er gehört. Die Fläche des Blocks trägt den Akzent
-     * der App und hebt ihn damit über die Karte.
+     * Die Kopfzeile des Feldes: links der Titel, rechts das Plus für einen
+     * weiteren Gefrierschrank und daneben das Drei-Punkte-Menü des aktiven.
+     * Beide sitzen auf demselben Geister-Knopf mit Icon, damit sie auf dem
+     * Smartphone wie auf dem großen Bildschirm auf einer Linie stehen und gut zu
+     * treffen sind. Unter der Kopfzeile trennt eine Haarlinie über die volle
+     * Breite des Feldes sie von dem Gefrierschrank, auf den sie sich bezieht -
+     * die Karte des Feldes trägt deshalb keine eigene Polsterung.
      */
-    public function test_the_field_shows_the_active_freezer_in_its_own_block(): void
+    public function test_the_header_carries_the_title_the_plus_and_the_menu(): void
     {
         $html = $this->page($this->owner)->html();
 
-        $this->assertMatchesRegularExpression('/class="grid h-11 w-11[^"]*bg-brand-600 text-white"/', $html);
-        $this->assertStringContainsString('text-base font-bold text-frost-900">Gefrierschrank Küche</span>', $html);
-        $this->assertStringContainsString('rounded-2xl bg-brand-50', $html);
-        $this->assertStringContainsString('Dein Gefrierschrank', $html);
+        $title = $this->positionOf($html, 'text-sm font-semibold text-frost-700">Meine Gefrierschränke</h3>');
+        $plus = $this->positionOf($html, 'wire:click="startAddingFreezer"');
+        $menu = $this->positionOf($html, 'menu-panel');
+        $divider = $this->positionOf($html, '<span class="block border-t border-frost-100"></span>');
+        $block = $this->positionOf($html, 'rounded-2xl bg-brand-50');
+
+        // Der Titel steht links, die beiden Knöpfe rechts daneben ...
+        $this->assertLessThan($plus, $title);
+        $this->assertLessThan($menu, $plus);
+
+        // ... und unter der Kopfzeile folgt die Trennlinie, dann der
+        // Gefrierschrank.
+        $this->assertLessThan($divider, $menu);
+        $this->assertLessThan($block, $divider);
+
+        // Beide Aktionen sind derselbe Knopf, und das Plus nennt sich für die
+        // Vorlesehilfe: es ist der einzige Weg zu einem weiteren Gefrierschrank.
+        $this->assertSame(2, substr_count(substr($html, $title, $divider - $title), 'class="btn btn-ghost btn-icon"'));
+        $this->assertStringContainsString('aria-label="Gefrierschrank hinzufügen"', $html);
+        $this->assertStringContainsString('<section class="card">', $html);
     }
 
     /**
-     * Der Name des aktiven Gefrierschranks ist der Knopf, der die Liste aller
-     * Gefrierschränke aufzieht: jeder steht darin mit seiner Rolle, der aktive
-     * zusätzlich mit dem Häkchen und dem Wort „aktiv“. Die Liste steht im Fluss
-     * der Seite (nicht über den Schubladen), damit nichts verdeckt wird.
+     * Unter der Kopfzeile steht der aktive Gefrierschrank: die Kachel mit dem
+     * Icon des Gefrierschranks, daneben sein Name in der größten Schrift der
+     * Seite und rechts der Pfeil nach unten, der die Liste aller aufzieht. Die
+     * Kachel ist so groß wie die Kachel einer Schublade darunter (siehe den Test
+     * der beiden Icons). Die
+     * Fläche trägt den Akzent der App und hebt ihn damit über die Karte. Wem er
+     * gehört, steht nicht mehr dabei: die Liste kennzeichnet den aktiven.
      */
-    public function test_the_name_opens_the_list_of_all_freezers(): void
+    public function test_the_field_shows_the_active_freezer_below_the_header(): void
+    {
+        $html = $this->page($this->owner)->html();
+
+        // Die Kachel ist so groß wie der Kopf einer Schublade darunter, und ihr
+        // Zeichen ist dasselbe (siehe den Test der beiden Kacheln).
+        $this->assertMatchesRegularExpression(
+            '/class="grid h-10 w-10[^"]*bg-brand-600 text-white">\s*<svg class="h-5 w-5"/',
+            $html
+        );
+        $this->assertStringContainsString('text-base font-bold text-frost-900">Gefrierschrank Küche</span>', $html);
+        $this->assertStringContainsString('rounded-2xl bg-brand-50', $html);
+
+        // Der Pfeil nach unten bleibt der Weg in die Liste (siehe
+        // components/icon.blade.php) und dreht sich, sobald sie offen steht.
+        $this->assertStringContainsString('<path d="M5.5 9.5 12 16l6.5-6.5"/>', $html);
+        $this->assertStringContainsString("x-bind:class=\"{ 'rotate-180': open }\"", $html);
+
+        // Die Kennzeichnung „eigener oder geteilter Gefrierschrank“ ist fort.
+        $this->assertStringNotContainsString('Dein Gefrierschrank', $html);
+        $this->assertStringNotContainsString('Mit dir geteilt', $html);
+    }
+
+    /**
+     * Die Kachel des Gefrierschranks ist so groß wie die Kachel einer Schublade
+     * darunter: beide sind ein Quadrat von 2.5rem ("h-10 w-10") mit demselben
+     * Zeichen darin ("h-5 w-5"), damit die beiden Icons der Startseite
+     * symmetrisch untereinander stehen - die eine über der anderen, in derselben
+     * Breite und auf derselben Höhe. Nur der Ton unterscheidet sie: die Kachel
+     * des Gefrierschranks trägt den Akzent der App und kennzeichnet damit den
+     * aktiven, die Kachel einer Schublade bleibt hell.
+     */
+    public function test_the_tile_of_the_freezer_is_as_large_as_the_tile_of_a_drawer(): void
+    {
+        $html = $this->page($this->owner)->html();
+
+        // Die Kachel des aktiven Gefrierschranks: Quadrat und Zeichen.
+        preg_match(
+            '/<span class="grid (h-\d+ w-\d+) shrink-0 place-items-center rounded-control bg-brand-600 text-white">\s*'
+                .'<svg class="(h-\d+ w-\d+)"/s',
+            $html,
+            $freezerTile
+        );
+
+        // Der Kopf einer Schublade darunter: dieselbe Kachel in hellem Ton.
+        preg_match(
+            '/<span class="grid (h-\d+ w-\d+) shrink-0 place-items-center rounded-control bg-brand-50 text-brand-600[^"]*">\s*'
+                .'<svg class="(h-\d+ w-\d+)"/s',
+            $html,
+            $drawerTile
+        );
+
+        $this->assertCount(3, $freezerTile, 'Die Startseite trägt keine Kachel mit dem Icon des Gefrierschranks.');
+        $this->assertCount(3, $drawerTile, 'Die Startseite trägt keine Kachel mit dem Icon einer Schublade.');
+
+        $this->assertSame(
+            [$drawerTile[1], $drawerTile[2]],
+            [$freezerTile[1], $freezerTile[2]],
+            'Das Icon des Gefrierschranks ist nicht so groß wie das Icon einer Schublade darunter.'
+        );
+    }
+
+    /**
+     * Die Fläche unter der Haarlinie trägt denselben Ton wie der Block des
+     * aktiven Gefrierschranks: das Feld wirkt als ein Band, nicht als ein Block
+     * auf einer weißen Karte. Der Ton kommt aus der Palette der App
+     * ("bg-brand-50", im dunklen Schema "bg-brand-950") und steht deshalb an
+     * beiden Stellen als dieselbe Klasse, nie als ein eigener, ähnlicher Wert.
+     * Die Fläche bringt ihre Polsterung selbst mit und die Karte keine, also
+     * reicht das Band über die volle Breite des Feldes.
+     */
+    public function test_the_area_under_the_hairline_carries_the_tone_of_the_freezer_block(): void
+    {
+        $html = $this->page($this->owner)->html();
+
+        $divider = $this->positionOf($html, '<span class="block border-t border-frost-100"></span>');
+        $area = $this->positionOf($html, 'class="p-3 bg-brand-50 dark:bg-brand-950 rounded-b-card"');
+        $block = $this->positionOf($html, 'rounded-2xl bg-brand-50');
+
+        // Das Band beginnt an der Haarlinie und umschließt den Block des aktiven
+        // Gefrierschranks.
+        $this->assertLessThan($area, $divider);
+        $this->assertLessThan($block, $area);
+
+        // Zwischen der Haarlinie und dem Band steht nichts, was ihm Breite
+        // nähme: der Ton reicht bis an die Ränder der Karte.
+        $this->assertMatchesRegularExpression(
+            '/<span class="block border-t border-frost-100"><\/span>\s*<div class="p-3 bg-brand-50 dark:bg-brand-950 rounded-b-card"/',
+            $html
+        );
+
+        // Beide Stellen nennen dieselbe Tönung - auch im dunklen Schema.
+        $this->assertMatchesRegularExpression('/rounded-2xl bg-brand-50[^"]*dark:bg-brand-950/', $html);
+
+        // Nur dieses eine Band trägt den Ton: die Kopfzeile, die Schubladen und
+        // der Rest der Karte bleiben, wie sie waren.
+        $this->assertSame(1, substr_count($html, 'p-3 bg-brand-50'));
+        $this->assertStringContainsString('<section class="card">', $html);
+    }
+
+    /**
+     * Solange kein Formular unter dem Feld steht, ist das Band das letzte Stück
+     * der Karte und nimmt ihre unteren Ecken ("rounded-b-card", also
+     * "--radius-card"): der Ton bleibt darin. Mit einem offenen Formular
+     * schließt dessen Haarlinie das Band, und die Ecken bleiben eckig - sonst
+     * stünden weiße Bögen über dem Formular. Das Formular selbst bleibt auf dem
+     * Weiß der Karte.
+     */
+    public function test_the_band_keeps_the_bottom_corners_of_the_card(): void
+    {
+        $page = $this->page($this->owner);
+
+        $this->assertStringContainsString(
+            'class="p-3 bg-brand-50 dark:bg-brand-950 rounded-b-card"',
+            $page->html()
+        );
+
+        $html = $page->call('startAddingFreezer')->html();
+
+        // Der Ton bleibt, die unteren Ecken gehen an das Formular.
+        $this->assertStringContainsString('class="p-3 bg-brand-50 dark:bg-brand-950"', $html);
+        $this->assertStringNotContainsString('rounded-b-card"', $html);
+        $this->assertStringContainsString('class="space-y-3 border-t border-frost-100 p-3"', $html);
+    }
+
+    /**
+     * Der Block des aktiven Gefrierschranks ist der Knopf, der die Liste aller
+     * Gefrierschränke aufzieht: jeder steht darin mit seinem Namen, der aktive
+     * zusätzlich mit dem Häkchen und dem Wort „aktiv“ - wer ihn besitzt, spielt
+     * keine Rolle mehr. Die Liste steht im Fluss der Seite (nicht über den
+     * Schubladen), damit nichts verdeckt wird.
+     */
+    public function test_the_active_freezer_opens_the_list_of_all_freezers(): void
     {
         $shared = Freezer::factory()->sharedWith($this->owner)->create(['name' => 'Truhe im Keller']);
 
@@ -166,93 +335,83 @@ class ClosedFreezerTest extends TestCase
             ->assertSeeHtml('wire:click="selectFreezer('.$this->freezer->getKey().')"')
             ->assertSeeHtml('wire:click="selectFreezer('.$shared->getKey().')"')
             ->assertSeeHtml('aria-current="true"')
-            ->assertSee('Mit dir geteilt')
+            ->assertSee('Truhe im Keller')
             ->assertSee('aktiv');
     }
 
     /**
-     * Die Pfeile links und rechts neben dem Namen gehen die Gefrierschränke
-     * Schritt für Schritt durch - in der Reihenfolge der Liste, also nach dem
-     * Namen - und nach dem letzten kommt wieder der erste. Jeder Gefrierschrank
-     * ist damit auch ohne die Liste erreichbar, und die Wahl landet in der
-     * Session (siehe FreezerContext).
+     * Die Wechselpfeile links und rechts neben dem Namen sind fort: gewechselt
+     * wird allein über den Block des aktiven Gefrierschranks und seinen Pfeil
+     * nach unten, der die Liste aller Gefrierschränke aufzieht. Das Feld nennt
+     * weiterhin jeden Gefrierschrank - in der Reihenfolge der Namen - und einen
+     * Schritt ins Leere gibt es nicht mehr: selectPreviousFreezer() und
+     * selectNextFreezer() sind mit den Pfeilen verschwunden.
      */
-    public function test_the_arrows_walk_the_freezers_and_wrap_around(): void
+    public function test_the_field_offers_no_stepping_arrows(): void
     {
-        $second = Freezer::factory()->withDrawers()->create([
+        Freezer::factory()->withDrawers()->create([
             'owner_id' => $this->owner->getKey(),
             'name' => 'Truhe im Keller',
         ]);
-        $third = Freezer::factory()->withDrawers()->create([
-            'owner_id' => $this->owner->getKey(),
-            'name' => 'Vorratskammer',
-        ]);
+
+        $page = $this->page($this->owner);
 
         $this->assertSame(
-            ['Gefrierschrank Küche', 'Truhe im Keller', 'Vorratskammer'],
-            $this->page($this->owner)->viewData('freezers')->pluck('name')->all()
+            ['Gefrierschrank Küche', 'Truhe im Keller'],
+            $page->viewData('freezers')->pluck('name')->all()
         );
 
-        $this->page($this->owner)->call('selectNextFreezer')->assertRedirect(route('freezer.closed'));
-        $this->assertTrue(FreezerContext::current($this->owner)->is($second));
+        $html = $page->html();
 
-        $this->page($this->owner)->call('selectNextFreezer');
-        $this->assertTrue(FreezerContext::current($this->owner)->is($third));
+        $this->assertStringNotContainsString('selectPreviousFreezer', $html);
+        $this->assertStringNotContainsString('selectNextFreezer', $html);
+        $this->assertStringNotContainsString('Vorheriger Gefrierschrank', $html);
+        $this->assertStringNotContainsString('Nächster Gefrierschrank', $html);
 
-        // Nach dem letzten kommt wieder der erste ...
-        $this->page($this->owner)->call('selectNextFreezer');
-        $this->assertTrue(FreezerContext::current($this->owner)->is($this->freezer));
-
-        // ... und rückwärts geht es genauso.
-        $this->page($this->owner)->call('selectPreviousFreezer');
-        $this->assertTrue(FreezerContext::current($this->owner)->is($third));
+        // Der Pfeil nach unten bleibt - er zieht die Liste auf ...
+        $this->assertStringContainsString('<path d="M5.5 9.5 12 16l6.5-6.5"/>', $html);
+        // ... und der Pfeil nach links, der zu den Nachbarn führte, ist fort.
+        $this->assertStringNotContainsString('<path d="M14.5 5.5 8 12l6.5 6.5"/>', $html);
     }
 
     /**
-     * Mit einem einzigen Gefrierschrank gibt es nichts zu wechseln: das Feld
-     * zeigt keine Pfeile, und ein Schritt ins Leere ändert nichts.
-     */
-    public function test_the_field_offers_no_arrows_with_a_single_freezer(): void
-    {
-        $this->page($this->owner)
-            ->assertDontSeeHtml('selectPreviousFreezer')
-            ->assertDontSeeHtml('selectNextFreezer');
-
-        $this->page($this->owner)->call('selectNextFreezer');
-
-        $this->assertSame($this->freezer->getKey(), FreezerContext::id());
-    }
-
-    /**
-     * Das Drei-Punkte-Menü des Feldes gehört zum aktiven Gefrierschrank: es legt
-     * einen weiteren an, benennt diesen um und löscht ihn - jede Aktion mit Icon
-     * und Beschriftung. Das Löschen fragt weiterhin über den Dialog der App nach
-     * (siehe components/confirm-dialog.blade.php), nie über den Browser.
+     * Das Drei-Punkte-Menü der Kopfzeile gehört zum aktiven Gefrierschrank: es
+     * benennt ihn um und löscht ihn - jede Aktion mit Icon und Beschriftung. Das
+     * Anlegen steht nicht mehr darin, dafür gibt es das Plus neben dem Menü. Das
+     * Löschen fragt weiterhin über den Dialog der App nach (siehe
+     * components/confirm-dialog.blade.php), nie über den Browser.
      */
     public function test_the_menu_holds_the_actions_of_the_active_freezer(): void
     {
-        $this->page($this->owner)
+        $page = $this->page($this->owner);
+
+        $page
             // Der Knopf des Menüs nennt den Gefrierschrank, zu dem er gehört.
             ->assertSeeHtml('aria-label="Weitere Aktionen für „Gefrierschrank Küche“"')
-            ->assertSee('Gefrierschrank hinzufügen')
-            ->assertSeeHtml('wire:click="startAddingFreezer"')
             ->assertSee('Gefrierschrank bearbeiten')
             ->assertSeeHtml('wire:click="startRenaming('.$this->freezer->getKey().')"')
             ->assertSee('Gefrierschrank löschen')
             ->assertSeeHtml("name: 'freezer-delete-".$this->freezer->getKey()."'");
+
+        // Das Anlegen ist aus dem Menü verschwunden: „Gefrierschrank
+        // hinzufügen“ steht nur noch am Plus der Kopfzeile.
+        $this->assertSame(1, substr_count($page->html(), 'Gefrierschrank hinzufügen'));
     }
 
     /**
      * Einen geteilten Gefrierschrank darf nur sein Besitzer umbenennen und
-     * löschen (siehe FreezerPolicy): das Menü eines Mitglieds trägt deshalb nur
-     * das Anlegen eines eigenen Gefrierschranks.
+     * löschen (siehe FreezerPolicy): seit das Anlegen am Plus der Kopfzeile
+     * steht, hätte das Menü eines Mitglieds nichts mehr zu zeigen und fehlt
+     * ganz. Das Plus bleibt - jeder darf sich einen eigenen Gefrierschrank
+     * anlegen.
      */
     public function test_a_member_sees_no_edit_or_delete_entry(): void
     {
         $member = $this->member();
 
         $this->page($member)
-            ->assertSee('Gefrierschrank hinzufügen')
+            ->assertSeeHtml('wire:click="startAddingFreezer"')
+            ->assertDontSee('Weitere Aktionen')
             ->assertDontSee('Gefrierschrank bearbeiten')
             ->assertDontSee('Gefrierschrank löschen')
             ->assertDontSeeHtml('startRenaming')
@@ -389,17 +548,19 @@ class ClosedFreezerTest extends TestCase
         $html = $this->page($this->owner)->html();
 
         // Das Band: das Grau des Feldes über die volle Breite ("block"), die
-        // Ecken der Karte oben, und das Polster der Karte (1rem an den Seiten,
-        // 0.875rem oben, 0.75rem bis zur Linie).
+        // Ecken der Karte oben ("rounded-t-card" - das Band ist die obere Kante
+        // der Karte und trägt deshalb denselben Radius wie sie, siehe
+        // "--radius-card" in resources/css/app.css), und das Polster der Karte
+        // (1rem an den Seiten, 0.875rem oben, 0.75rem bis zur Linie).
         $this->assertStringContainsString(
-            '<span class="block rounded-t-control bg-frost-200 px-4 pb-3 pt-3.5">',
+            '<span class="block rounded-t-card bg-frost-200 px-4 pb-3 pt-3.5">',
             $html
         );
 
         // Jede Schublade trägt dasselbe Band.
         $this->assertSame(
             $drawers->count(),
-            substr_count($html, 'rounded-t-control bg-frost-200 px-4 pb-3 pt-3.5'),
+            substr_count($html, 'rounded-t-card bg-frost-200 px-4 pb-3 pt-3.5'),
             'Nicht jede Schublade steht auf demselben grauen Kopf.'
         );
 
@@ -579,17 +740,54 @@ class ClosedFreezerTest extends TestCase
     }
 
     /**
-     * Der Eintrag „Gefrierschrank hinzufügen“ im Menü des Feldes bringt das
-     * Formular für einen weiteren Gefrierschrank hoch.
+     * Das Plus in der Kopfzeile des Feldes bringt das Formular für einen weiteren
+     * Gefrierschrank hoch - es ist der einzige Weg dorthin, seit der Eintrag
+     * „Gefrierschrank hinzufügen“ aus dem Menü verschwunden ist.
      */
-    public function test_the_form_for_a_new_freezer_appears_from_the_menu(): void
+    public function test_the_form_for_a_new_freezer_appears_from_the_plus(): void
     {
         $this->page($this->owner)
-            ->assertSee('Gefrierschrank hinzufügen')
+            ->assertSeeHtml('aria-label="Gefrierschrank hinzufügen"')
             ->assertSeeHtml('wire:click="startAddingFreezer"')
             ->call('startAddingFreezer')
             ->assertSet('addingFreezer', true)
             ->assertSee('Neuer Gefrierschrank');
+    }
+
+    /**
+     * Beide Formulare des Feldes enden mit demselben Paar: „Abbrechen“ links, die
+     * Aktion rechts - „Erstellen“ beim Anlegen, „Speichern“ beim Umbenennen -,
+     * und beide Knöpfe sind genau gleich groß, weil zwei gleich breite Spalten
+     * die Zeile teilen. Es steht immer nur ein Formular offen, deshalb trägt die
+     * Seite auch nur eine solche Zeile.
+     */
+    public function test_the_forms_of_the_field_put_cancel_left_and_the_action_right(): void
+    {
+        $adding = $this->page($this->owner)->call('startAddingFreezer');
+
+        $adding->assertSeeHtmlInOrder([
+            'wire:click="cancelAddingFreezer" class="btn btn-ghost w-full"',
+            'type="submit" class="btn btn-primary w-full"',
+        ]);
+
+        $this->assertSame(
+            1,
+            substr_count($adding->html(), 'grid grid-cols-2 gap-2'),
+            'Die beiden Knöpfe des Formulars für einen weiteren Gefrierschrank stehen nicht in zwei gleich breiten Spalten.'
+        );
+
+        $renaming = $this->page($this->owner)->call('startRenaming', $this->freezer->getKey());
+
+        $renaming->assertSeeHtmlInOrder([
+            'wire:click="cancelRenaming" class="btn btn-ghost w-full"',
+            'type="submit" class="btn btn-primary w-full"',
+        ]);
+
+        $this->assertSame(
+            1,
+            substr_count($renaming->html(), 'grid grid-cols-2 gap-2'),
+            'Die beiden Knöpfe des Umbenennen-Formulars stehen nicht in zwei gleich breiten Spalten.'
+        );
     }
 
     public function test_adding_a_freezer_can_be_cancelled(): void

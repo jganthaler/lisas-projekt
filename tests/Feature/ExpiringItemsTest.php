@@ -82,18 +82,28 @@ class ExpiringItemsTest extends TestCase
     }
 
     /**
-     * Die Warnliste lebt vom relativen Zähler ("MHD in 2 Tagen") und nennt
-     * weiterhin Zustand, Zähler und Datum - nur das Inventar kürzt die Zeile
-     * (siehe resources/views/components/item-row.blade.php).
+     * Die Zeile der Warnliste trägt drei Zeilen und sonst nichts: den Namen, das
+     * MHD als Datum und den Ort. Weder der Zustand ("abgelaufen", "bald
+     * abgelaufen") noch der relative Zähler ("MHD in 2 Tagen") stehen an der
+     * Zeile – die Abschnitte der Seite nennen den Zustand schon (siehe
+     * resources/views/components/item-row.blade.php und
+     * resources/views/livewire/expiring-items.blade.php).
      */
-    public function test_the_watch_list_keeps_the_relative_mhd(): void
+    public function test_the_row_of_the_watch_list_names_only_the_date(): void
     {
         $item = $this->item('Erbsen', '2026-06-17');
 
-        $this->page()
-            ->assertSee($item->stateLabel())
-            ->assertSee($item->bestBeforeLabel())
-            ->assertSee($item->formattedBestBefore());
+        $page = $this->page()
+            ->assertSee('Erbsen')
+            ->assertSee('MHD: '.$item->formattedBestBefore())
+            // Weder Zustand noch Zähler stehen an der Zeile.
+            ->assertDontSee($item->stateLabel())
+            ->assertDontSee($item->bestBeforeLabel());
+
+        // Das Etikett des Abschnitts zählt seine Artikel; die Zeile selbst trägt
+        // keins.
+        $this->assertSame(1, substr_count($page->html(), 'badge badge-warn'));
+        $this->assertSame(0, substr_count($page->html(), 'badge badge-danger'));
     }
 
     /**
@@ -132,9 +142,9 @@ class ExpiringItemsTest extends TestCase
     }
 
     /**
-     * Drei Zeilen je Artikel: der Name, darunter „MHD: <Datum>“ mit Zustand und
-     * relativem Zähler und darunter der Ort – Gefrierschrank und Schublade mit
-     * Komma, der Name der Schublade als Weg in sie (siehe
+     * Drei Zeilen je Artikel: der Name, darunter „MHD: <Datum>“ ohne Zustand und
+     * ohne relativen Zähler und darunter der Ort – Gefrierschrank und Schublade
+     * mit Komma, beide als reiner Text und ohne Link (siehe
      * resources/views/components/item-row.blade.php).
      */
     public function test_the_row_names_the_place_of_the_item(): void
@@ -147,7 +157,12 @@ class ExpiringItemsTest extends TestCase
                 'MHD: '.$item->formattedBestBefore(),
                 $this->drawer->freezer->name.', ',
             ])
-            ->assertSeeHtml('href="'.route('drawers.show', $this->drawer).'?item='.$item->getKey().'"');
+            // Der Ort steht in einer Zeile: beide Namen mit dem Komma dazwischen,
+            // in derselben Schrift und Farbe, ohne Link.
+            ->assertSeeHtml(
+                '<p class="mt-0.5 truncate text-xs text-frost-500">'
+                .$this->drawer->freezer->name.', '.$this->drawer->name.'</p>'
+            );
     }
 
     /**
@@ -169,9 +184,11 @@ class ExpiringItemsTest extends TestCase
     }
 
     /**
-     * Die Zeile der Warnliste führt in die Schublade des Artikels und öffnet dort
-     * gleich sein Formular: aufbrauchen heißt oft auch, das MHD zu ändern (siehe
-     * DrawerPage::mount()).
+     * Die Zeile der Warnliste führt weiterhin in die Schublade des Artikels und
+     * öffnet dort gleich sein Formular: aufbrauchen heißt oft auch, das MHD zu
+     * ändern (siehe DrawerPage::mount()). Der Weg dorthin ist das Menü („⋮“) der
+     * Zeile – der Ort der Zeile selbst ist reiner Text (siehe
+     * resources/views/components/item-row.blade.php).
      */
     public function test_the_row_leads_into_the_drawer_of_the_item(): void
     {

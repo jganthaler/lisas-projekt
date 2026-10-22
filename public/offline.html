@@ -47,6 +47,13 @@
             --danger-tint: #fbe0de; /* danger-100 */
             --danger-text: #932a26; /* danger-700 */
             --radius: 0.5rem;
+            /*
+             | The corners of a card: the very value the app defines once
+             | ("--radius-card" in resources/css/app.css, 8 px). The page draws
+             | the inventory without the CSS of the app, so it repeats it here
+             | instead of inventing a shape of its own.
+             */
+            --radius-card: 0.5rem;
         }
 
         .dark {
@@ -139,8 +146,10 @@
             color: var(--muted);
         }
 
+        /* A card of the page, as the app draws it: the corners come from
+           "--radius-card", the one value the app uses for its cards. */
         .card {
-            border-radius: 1.25rem;
+            border-radius: var(--radius-card);
             background-color: var(--surface);
             padding: 1rem;
             box-shadow: 0 1px 2px rgb(28 34 38 / 0.05), 0 10px 24px -18px rgb(28 34 38 / 0.25);
@@ -297,8 +306,10 @@
             margin-top: 0.375rem;
         }
 
+        /* The row of an item: a card as well, so it carries the corners of the
+           cards and not a shape of its own. */
         .item {
-            border-radius: 1.25rem;
+            border-radius: var(--radius-card);
             background-color: var(--surface);
             padding: 0.75rem;
             box-shadow: 0 1px 2px rgb(28 34 38 / 0.05);
@@ -449,6 +460,21 @@
             flex-direction: column;
             gap: 0.5rem;
             margin-top: 1rem;
+        }
+
+        /*
+         | The sheet of an item - changing it or moving it: "Abbrechen" left,
+         | the action right, and both exactly the same size. Two equal columns
+         | of a grid do that whatever the labels say ("Speichern" and
+         | "Abbrechen" are not the same word), and they keep the row the same
+         | on a phone and on a big screen - the app carries the same pair
+         | (resources/views/livewire/freezer/drawer-page.blade.php,
+         | "grid grid-cols-2"). The question before deleting keeps its own
+         | row above (.actions: stacked on a phone, side by side from 40rem).
+         */
+        .actions.actions-pair {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
         }
 
         .empty {
@@ -603,7 +629,10 @@
     </main>
 
     <!-- The sheet of the app for changing or moving an item: the fields are
-         built by the script, so one sheet serves both. -->
+         built by the script, so one sheet serves both. Its two buttons stand
+         in the order and the size of the app: "Abbrechen" left, the action
+         right, each of them half of the row (.actions-pair) - the order in
+         the markup is the order on the screen. -->
     <div class="sheet" data-sheet hidden role="dialog" aria-modal="true">
         <div class="sheet-backdrop" data-sheet-cancel></div>
 
@@ -613,9 +642,9 @@
 
             <div class="stack" style="margin-top: 1rem" data-sheet-fields></div>
 
-            <div class="actions">
-                <button type="submit" class="btn btn-primary" data-sheet-submit></button>
+            <div class="actions actions-pair">
                 <button type="button" class="btn btn-ghost" data-sheet-cancel data-text="cancel">Abbrechen</button>
+                <button type="submit" class="btn btn-primary" data-sheet-submit></button>
             </div>
         </form>
     </div>

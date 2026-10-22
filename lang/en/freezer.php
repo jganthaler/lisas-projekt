@@ -18,15 +18,14 @@ return [
     'drawer_name' => 'Drawer :position',
     'mine' => 'My freezers',
     /*
-     | The field "My freezers" on the start page: its menu ("⋮") acts on the
-     | active freezer, the name opens the list of all of them, and the two arrows
-     | name the step to the neighbours of the active one.
+     | The field "My freezers" on the start page: its header carries the title,
+     | the plus for another freezer and the menu ("⋮") of the active one, which
+     | renames and deletes it. The arrow beside the name of the active freezer
+     | opens the list of all of them.
      */
     'add' => 'Add freezer',
     'edit' => 'Edit freezer',
     'delete' => 'Delete freezer',
-    'previous_aria' => 'Previous freezer',
-    'next_aria' => 'Next freezer',
     'menu_aria' => 'More actions for “:name”',
     'new_label' => 'New freezer',
     'new_placeholder' => 'e.g. the chest freezer in the cellar',

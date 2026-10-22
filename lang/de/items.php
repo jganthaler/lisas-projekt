@@ -14,7 +14,6 @@ return [
     'delete_confirm_title' => 'Artikel löschen?',
     'delete_confirm_message' => 'Möchtest du „:name“ wirklich löschen?',
     'deleted' => 'Artikel gelöscht.',
-    'open_in_drawer_aria' => 'Artikel in „:drawer“ bearbeiten',
     'menu_aria' => 'Weitere Aktionen für „:name“',
 
     'state' => [

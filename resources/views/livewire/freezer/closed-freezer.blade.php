@@ -1,118 +1,120 @@
 <div class="space-y-4">
-    {{-- The freezers of the household: the active one stands in the middle of the
-         field, the arrows walk to its neighbours, its name opens the list of all
-         of them and behind the "⋮" the active one is created, renamed and
-         deleted. --}}
-    <section class="card p-1">
-        <div class="flex items-center justify-between gap-2 px-3 pb-1 pt-3">
+    {{-- The freezers of the household: the header of the field carries its title
+         and the two actions of the field - the plus for another freezer and the
+         "⋮" of the active one -, below a hairline stands the active freezer with
+         the list of all of them. --}}
+    <section class="card">
+        <div class="flex items-center justify-between gap-2 px-4 pb-2 pt-3">
             <h3 class="text-sm font-semibold text-frost-700">{{ __('freezer.mine') }}</h3>
 
-            {{-- Everything that changes the freezer itself stays behind this menu:
-                 the field keeps its room for the name of the active freezer, and
-                 the actions belong to it - it is the freezer the page shows. --}}
-            <x-menu :label="__('freezer.menu_aria', ['name' => $freezer->name])">
-                <button type="button" wire:click="startAddingFreezer" class="menu-item" role="menuitem">
-                    <x-icon name="plus" class="h-4 w-4" />
-                    {{ __('freezer.add') }}
+            {{-- The plus and the menu are the same ghost button, so both stand on
+                 one line on a phone as well and stay easy to hit. The plus is the
+                 only way to another freezer - it left the menu - and the menu
+                 keeps what belongs to the active freezer: renaming and deleting
+                 it. A member has nothing to do here and sees no menu. --}}
+            <div class="flex items-center gap-1">
+                <button type="button" wire:click="startAddingFreezer" class="btn btn-ghost btn-icon"
+                        aria-label="{{ __('freezer.add') }}">
+                    <x-icon name="plus" class="h-5 w-5" />
                 </button>
 
                 @if ($freezer->isOwnedBy(auth()->user()))
-                    <button type="button" wire:click="startRenaming({{ $freezer->id }})"
-                            class="menu-item" role="menuitem">
-                        <x-icon name="pencil" class="h-4 w-4" />
-                        {{ __('freezer.edit') }}
-                    </button>
+                    <x-menu :label="__('freezer.menu_aria', ['name' => $freezer->name])">
+                        <button type="button" wire:click="startRenaming({{ $freezer->id }})"
+                                class="menu-item" role="menuitem">
+                            <x-icon name="pencil" class="h-4 w-4" />
+                            {{ __('freezer.edit') }}
+                        </button>
 
-                    <button type="button"
-                            wire:click="$dispatch('confirm-dialog', { name: 'freezer-delete-{{ $freezer->id }}' })"
-                            class="menu-item menu-item-danger" role="menuitem">
-                        <x-icon name="trash" class="h-4 w-4" />
-                        {{ __('freezer.delete') }}
-                    </button>
-                @endif
-            </x-menu>
-
-            {{-- The dialog of the delete sits beside the menu, never inside it: the
-                 panel of the menu is hidden and would hide the dialog with it. --}}
-            @if ($freezer->isOwnedBy(auth()->user()))
-                <x-confirm-dialog
-                    :name="'freezer-delete-'.$freezer->id"
-                    :title="__('freezer.delete_confirm_title')"
-                    :message="__('freezer.delete_confirm_message', ['name' => $freezer->name])"
-                    :action="'deleteFreezer('.$freezer->id.')'"
-                    :confirm-label="__('common.delete_forever')" />
-            @endif
-        </div>
-
-        @php
-            /* The arrows only appear with a second freezer: as long as the user
-               has one, there is nothing to step to. */
-            $switching = $freezers->count() > 1;
-        @endphp
-
-        <div class="px-3 pb-3 pt-2" x-data="{ open: false }">
-            <div class="flex items-center gap-2">
-                @if ($switching)
-                    <button type="button" wire:click="selectPreviousFreezer"
-                            class="btn btn-ghost btn-icon h-9 w-9 shrink-0 text-frost-600"
-                            aria-label="{{ __('freezer.previous_aria') }}">
-                        <x-icon name="chevron-left" class="h-5 w-5" />
-                    </button>
-                @endif
-
-                {{-- The active freezer: the tile with the icon of the app, its name
-                     in the largest weight of the page and, below it, who owns it.
-                     The name opens the list of all freezers - a tap is what a phone
-                     has, and the list stands in the flow instead of floating over
-                     the drawers, so nothing covers what follows. --}}
-                <button type="button" x-on:click="open = ! open" x-bind:aria-expanded="open ? 'true' : 'false'"
-                        aria-haspopup="true"
-                        class="flex min-w-0 flex-1 items-center gap-3 rounded-2xl bg-brand-50 px-3 py-2.5 text-left transition hover:bg-brand-100 dark:bg-brand-950 dark:hover:bg-brand-900">
-                    <span class="grid h-11 w-11 shrink-0 place-items-center rounded-control bg-brand-600 text-white">
-                        <x-icon name="freezer" class="h-6 w-6" />
-                    </span>
-
-                    <span class="min-w-0 flex-1">
-                        <span class="block truncate text-base font-bold text-frost-900">{{ $freezer->name }}</span>
-                        <span class="block truncate text-xs text-frost-500">
-                            {{ $freezer->isOwnedBy(auth()->user()) ? __('freezer.owned') : __('freezer.shared') }}
-                        </span>
-                    </span>
-
-                    <x-icon name="chevron-down"
-                            class="h-5 w-5 shrink-0 text-brand-700 transition-transform dark:text-brand-300"
-                            x-bind:class="{ 'rotate-180': open }" />
-                </button>
-
-                @if ($switching)
-                    <button type="button" wire:click="selectNextFreezer"
-                            class="btn btn-ghost btn-icon h-9 w-9 shrink-0 text-frost-600"
-                            aria-label="{{ __('freezer.next_aria') }}">
-                        <x-icon name="chevron-right" class="h-5 w-5" />
-                    </button>
+                        <button type="button"
+                                wire:click="$dispatch('confirm-dialog', { name: 'freezer-delete-{{ $freezer->id }}' })"
+                                class="menu-item menu-item-danger" role="menuitem">
+                            <x-icon name="trash" class="h-4 w-4" />
+                            {{ __('freezer.delete') }}
+                        </button>
+                    </x-menu>
                 @endif
             </div>
+        </div>
 
-            {{-- Every freezer with its role and the mark of the active one: the
-                 answer to the tap on the name above. --}}
+        {{-- The dialog of the delete sits beside the menu, never inside it: the
+             panel of the menu is hidden and would hide the dialog with it. --}}
+        @if ($freezer->isOwnedBy(auth()->user()))
+            <x-confirm-dialog
+                :name="'freezer-delete-'.$freezer->id"
+                :title="__('freezer.delete_confirm_title')"
+                :message="__('freezer.delete_confirm_message', ['name' => $freezer->name])"
+                :action="'deleteFreezer('.$freezer->id.')'"
+                :confirm-label="__('common.delete_forever')" />
+        @endif
+
+        {{-- The hairline under the header runs over the full width of the field
+             and keeps the header apart from the freezer it acts on. --}}
+        <span class="block border-t border-frost-100"></span>
+
+        {{-- The area under the hairline carries the very tone of the block of
+             the active freezer below it (bg-brand-50, in the dark scheme
+             bg-brand-950): the field reads as one band instead of a block on a
+             white card. Both places name the same class of the palette of the
+             app, never a value of their own - the block keeps its shape
+             ("rounded-2xl") and everything inside this area - icon, name, arrow,
+             list, distances - stays as it was.
+
+             The band reaches over the full width of the field: the card brings
+             no padding of its own and this area brings its own ("p-3"), as the
+             header does. As long as no form stands under it, it is the last
+             piece of the card and takes its bottom corners ("rounded-b-card",
+             the "--radius-card" of resources/css/app.css), so the tone stays
+             inside them; with a form open the hairline of that form closes the
+             band and the corners stay square. --}}
+        <div @class([
+            'bg-brand-50 overflow-hidden dark:bg-brand-950',
+            'rounded-b-card' => ! $addingFreezer && ! $editingFreezerId,
+        ]) x-data="{ open: false }">
+            {{-- The active freezer: the tile with the icon of the app, beside it its
+                 name in the largest weight of the page and, on the right, the arrow
+                 that opens the list of all freezers - a tap is what a phone has, and
+                 the list stands in the flow instead of floating over the drawers, so
+                 nothing covers what follows. Whether it is the own or a shared
+                 freezer is not written here; the list marks the active one.
+
+                 The tile is exactly as large as the tile of a drawer below it
+                 ("h-10 w-10", the glyph "h-5 w-5"), so the two icons of the page
+                 stand symmetrically one below the other - only the filled tone of
+                 the brand marks the active freezer here, the tile of a drawer
+                 stays light. --}}
+            <button type="button" x-on:click="open = ! open" x-bind:aria-expanded="open ? 'true' : 'false'"
+                    aria-haspopup="true"
+                    class="flex w-full items-center rounded-none gap-3 bg-brand-50 px-4 py-3.5 text-left transition hover:bg-brand-100 dark:bg-brand-950 dark:hover:bg-brand-900">
+                <span class="grid h-10 w-10 shrink-0 place-items-center rounded-control bg-brand-600 text-white">
+                    <x-icon name="freezer" class="h-6 w-6" />
+                </span>
+
+                <span class="min-w-0 flex-1 truncate text-base font-bold text-frost-900">{{ $freezer->name }}</span>
+
+                <x-icon name="chevron-down"
+                        class="h-5 w-5 shrink-0 text-brand-700 transition-transform dark:text-brand-300"
+                        x-bind:class="{ 'rotate-180': open }" />
+            </button>
+
+            {{-- Every freezer, with the mark of the active one: the answer to the
+                 tap on the arrow above. The list stays in the order of the names,
+                 and a member may switch between the freezers as well. --}}
             <div x-cloak x-show="open" class="mt-2 space-y-1">
                 @foreach ($freezers as $option)
                     <button type="button" wire:click="selectFreezer({{ $option->id }})"
                             wire:key="freezer-{{ $option->id }}"
                             aria-current="{{ $option->is($freezer) ? 'true' : 'false' }}"
-                            class="flex w-full items-center gap-3 rounded-control px-3 py-2.5 text-left transition hover:bg-frost-50">
+                            class="flex w-full items-center gap-3 rounded-control px-4 py-2.5 text-left transition hover:bg-frost-50">
                         <span class="grid h-9 w-9 shrink-0 place-items-center rounded-control {{ $option->is($freezer) ? 'bg-brand-600 text-white' : 'bg-frost-100 text-frost-500' }}">
                             <x-icon name="freezer" class="h-5 w-5" />
                         </span>
 
                         <span class="min-w-0 flex-1">
                             <span class="block truncate text-sm font-semibold text-frost-900">{{ $option->name }}</span>
-                            <span class="block truncate text-xs text-frost-500">
-                                {{ $option->isOwnedBy(auth()->user()) ? __('freezer.owned') : __('freezer.shared') }}
-                                @if ($option->is($freezer))
-                                    · {{ __('freezer.active') }}
-                                @endif
-                            </span>
+                            @if ($option->is($freezer))
+                                <span class="block truncate text-xs text-frost-500">{{ __('freezer.active') }}</span>
+                            @endif
                         </span>
 
                         @if ($option->is($freezer))
@@ -136,12 +138,19 @@
                     @enderror
                 </div>
 
-                <div class="flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-1">
+                {{-- „Abbrechen“ links, die Aktion rechts - das Paar, mit dem
+                     jedes Formular der App endet, in zwei gleich breiten
+                     Spalten: so hängt die Breite eines Knopfes nicht an der
+                     Länge seiner Beschriftung. --}}
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" wire:click="cancelAddingFreezer" class="btn btn-ghost w-full">
+                        {{ __('common.cancel') }}
+                    </button>
+
+                    <button type="submit" class="btn btn-primary w-full">
                         <x-icon name="check" class="h-5 w-5" />
                         {{ __('common.create') }}
                     </button>
-                    <button type="button" wire:click="cancelAddingFreezer" class="btn btn-ghost">{{ __('common.cancel') }}</button>
                 </div>
             </form>
         @endif
@@ -161,12 +170,17 @@
                     @enderror
                 </div>
 
-                <div class="flex gap-2">
-                    <button type="submit" class="btn btn-primary flex-1">
+                {{-- Dasselbe Paar wie im Formular oben: „Abbrechen“ links,
+                     „Speichern“ rechts, beide gleich groß. --}}
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" wire:click="cancelRenaming" class="btn btn-ghost w-full">
+                        {{ __('common.cancel') }}
+                    </button>
+
+                    <button type="submit" class="btn btn-primary w-full">
                         <x-icon name="check" class="h-5 w-5" />
                         {{ __('common.save') }}
                     </button>
-                    <button type="button" wire:click="cancelRenaming" class="btn btn-ghost">{{ __('common.cancel') }}</button>
                 </div>
             </form>
         @endif
@@ -197,7 +211,9 @@
                      distances the card had before - 0.875rem above and below it
                      ("pt-3.5", "pb-3.5") and 0.75rem around the hairline
                      ("pb-3" above it, "pt-3" below it). Its top corners follow
-                     the corners of the card, so the grey stays inside it.
+                     the corners of the card ("rounded-t-card", the very
+                     "--radius-card" of resources/css/app.css), so the grey stays
+                     inside it.
 
                      The names below the hairline begin on the line of the name
                      above them: the head puts its icon (2.5rem) beside the name
@@ -209,7 +225,7 @@
                    class="drawer-row flex-col items-stretch gap-0 p-0" wire:key="drawer-{{ $drawer->id }}">
                     {{-- The grey band: it carries the icon and the name of the
                          drawer and ends where the hairline closes it. --}}
-                    <span class="block rounded-t-control bg-frost-200 px-4 pb-3 pt-3.5">
+                    <span class="block rounded-t-card bg-frost-200 px-4 pb-3 pt-3.5">
                         <span class="flex items-center gap-3">
                             {{-- The icon of the drawer on the tint of the app:
                                  brand-50 lifts it off the grey, and the glyph

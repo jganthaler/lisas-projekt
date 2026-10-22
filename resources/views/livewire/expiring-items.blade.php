@@ -31,6 +31,10 @@
             </h3>
 
             @foreach ($expired as $item)
+                {{-- Three lines and nothing beside them: the name, the MHD and
+                     the place. The section above already names the state
+                     ("Abgelaufen"), so no badge and no relative counter stand at
+                     the row (see components/item-row). --}}
                 <x-item-row :item="$item"
                             :freezer-name="$item->drawer?->freezer?->name"
                             :drawer-name="$item->drawer?->name" />
@@ -47,6 +51,8 @@
             </h3>
 
             @foreach ($expiringSoon as $item)
+                {{-- The same quiet row as above - the section names the state
+                     ("Bald abgelaufen"). --}}
                 <x-item-row :item="$item"
                             :freezer-name="$item->drawer?->freezer?->name"
                             :drawer-name="$item->drawer?->name" />

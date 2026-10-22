@@ -14,9 +14,10 @@ use Livewire\Component;
 /**
  * The freezer page: the place where the freezers themselves are managed. The
  * field at its top carries the active freezer - the tile with the icon of the
- * app, its name and who owns it - and the ways to leave it: the arrows step to
- * its neighbours, its name opens the list of all freezers, and behind the "⋮"
- * another one is created, the active one is renamed and it is deleted.
+ * app, its name and the arrow that opens the list of all freezers - and the ways
+ * to leave it: the plus in the header of the field brings the form for another
+ * one up, and behind the "⋮" of that header the active one is renamed and it is
+ * deleted.
  *
  * Below the field it shows what is waiting inside the active freezer: every
  * drawer with the names of its items, alphabetically one below the other,
@@ -90,51 +91,6 @@ class ClosedFreezer extends Component
         $freezer = $this->findFreezer($freezerId);
 
         FreezerContext::select($freezer);
-
-        $this->redirectRoute('freezer.closed', navigate: true);
-    }
-
-    /**
-     * Make the freezer before the active one the active one: the arrow on the
-     * left of the field.
-     */
-    public function selectPreviousFreezer(): void
-    {
-        $this->stepToNeighbour(-1);
-    }
-
-    /**
-     * Make the freezer after the active one the active one: the arrow on the
-     * right of the field.
-     */
-    public function selectNextFreezer(): void
-    {
-        $this->stepToNeighbour(1);
-    }
-
-    /**
-     * Walk the list of the freezers by one step. The first freezer follows the
-     * last one, so the arrows never stop at an end and every freezer of the user
-     * is reachable without opening the list. With a single freezer there is
-     * nothing to step to - the field shows no arrow then - so nothing happens.
-     */
-    private function stepToNeighbour(int $step): void
-    {
-        $freezers = $this->freezers();
-
-        if ($freezers->count() < 2) {
-            return;
-        }
-
-        $active = FreezerContext::current(auth()->user());
-
-        $index = $freezers->search(fn (Freezer $freezer): bool => $freezer->is($active));
-
-        if ($index === false) {
-            return;
-        }
-
-        FreezerContext::select($freezers->get(($index + $step + $freezers->count()) % $freezers->count()));
 
         $this->redirectRoute('freezer.closed', navigate: true);
     }
@@ -233,7 +189,7 @@ class ClosedFreezer extends Component
 
     /**
      * Every freezer the user has access to, in the order the field shows them:
-     * by name, so the arrows step through the same order as the list.
+     * by name, so the list of the field reads alphabetically.
      *
      * @return Collection<int, Freezer>
      */

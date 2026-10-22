@@ -18,15 +18,14 @@ return [
     'drawer_name' => 'Cassetto :position',
     'mine' => 'I miei congelatori',
     /*
-     | The field "I miei congelatori" on the start page: its menu ("⋮") acts on
-     | the active freezer, the name opens the list of all of them, and the two
-     | arrows name the step to the neighbours of the active one.
+     | The field "I miei congelatori" on the start page: its header carries the
+     | title, the plus for another freezer and the menu ("⋮") of the active one,
+     | which renames and deletes it. The arrow beside the name of the active
+     | freezer opens the list of all of them.
      */
     'add' => 'Aggiungi congelatore',
     'edit' => 'Modifica congelatore',
     'delete' => 'Elimina congelatore',
-    'previous_aria' => 'Congelatore precedente',
-    'next_aria' => 'Congelatore successivo',
     'menu_aria' => 'Altre azioni per “:name”',
     'new_label' => 'Nuovo congelatore',
     'new_placeholder' => 'es. il freezer in cantina',

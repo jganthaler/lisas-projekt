@@ -22,15 +22,18 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   dazu Gefrierschrank und Schublade. Der MHD-Zähler der App-Hülle – die runde
   Zahl am MHD-Feld unten in der Navigation – zählt über alle zugänglichen
   Gefrierschränke hinweg, also dieselbe Menge wie die Liste. Artikel ohne Datum
-  zeigen in den Listen gar keine Angabe – statt „ohne MHD“ bleibt die Zeile
-  leer. Die Zeile einer Liste ist drei Zeilen lang: der Name, darunter das MHD
+  lassen die Stelle des Datums nicht leer: dort steht „Kein MHD“. Die Zeile
+  einer Liste ist drei Zeilen lang: der Name, darunter das MHD
   mit dem Etikett des Feldes („MHD: 15.12.2026“) und darunter der Ort –
-  Gefrierschrank und Schublade mit Komma. Wie ausführlich die zweite Zeile das
-  MHD nennt, hängt von der Seite ab: die Warnliste zeigt Zustand und relativen
-  Zähler dazu („MHD in 3 Tagen“), das Inventar nur das Datum und einen Zustand,
-  solange er warnt; die Schublade selbst nennt weiterhin nur das Datum. Der Name
-  der Schublade führt in die Schublade des Artikels – wer etwas aufbraucht, will
-  oft gleich das MHD nachtragen.
+  Gefrierschrank und Schublade mit Komma. Die zweite Zeile bleibt still: sie
+  nennt das Datum und sonst nichts. Nur das Inventar stellt daneben, was warnt
+  („abgelaufen“, „bald abgelaufen“) – die Warnliste trägt den Zustand in den
+  Überschriften ihrer Abschnitte („Abgelaufen“, „Bald abgelaufen“), und die
+  Schublade selbst nennt nur das Datum. Der Ort
+  ist reiner Text – Gefrierschrank und Schublade stehen in derselben Schrift und
+  Farbe nebeneinander und der Name der Schublade ist kein Link; in die Schublade
+  des Artikels führt das Menü (⋮) der Zeile – wer etwas aufbraucht, will oft
+  gleich das MHD nachtragen.
 - **Artikelverwaltung** – Menge erhöhen/verringern, umbenennen, verschieben,
   löschen und suchen. Jede Zeile einer Liste trägt dafür ihr Menü (⋮) mit
   Bearbeiten, Löschen und Verschieben. Ein Artikel, der im falschen Fach liegt,
@@ -51,6 +54,11 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   Formular eines Artikels, der schon liegt: dort füllen sie das MHD-Feld dieses
   Artikels (die Auswahl bleibt eine Schnellauswahl, das Datum lässt sich
   weiterhin von Hand setzen).
+  Das Formular eines Artikels, der schon liegt, endet mit zwei gleich großen
+  Knöpfen: „Abbrechen“ links, „Speichern“ rechts, jeder über die halbe Breite
+  des Formulars – die Breite eines Knopfes hängt nicht an der Länge seiner
+  Beschriftung. Dasselbe Paar trägt das Verschieben-Formular („Abbrechen“ links,
+  „Verschieben“ rechts).
   Die Schublade öffnet sich mit ihrem Inhalt, nicht mit dem Formular: das Plus
   rechts neben ihrem Namen bringt das Formular für einen neuen Artikel hoch
   (`DrawerPage::startAddingItem()`), und solange es offen steht, ist das Plus das
@@ -76,12 +84,18 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   den Gefrierschrank wechseln und ihn verlassen.
 - **Mehrere Gefrierschränke** – das Feld „Meine Gefrierschränke“ auf der Seite
   „Gefrierschrank“ zeigt den aktiven Gefrierschrank als hervorgehobenen Block
-  (die Kachel mit dem Icon der App, sein Name, wem er gehört); die Pfeile links
-  und rechts neben dem Namen gehen die Gefrierschränke durch, sein Name öffnet
-  die Liste aller, und hinter dem Menü (⋮) oben rechts entsteht ein weiterer
-  Gefrierschrank (mit drei Schubladen), lässt sich der aktive umbenennen und
-  löschen. Welcher aktiv ist, sagt in der Liste das Wort „aktiv“ – eine zweite
-  Karte mit Zählern trägt die Seite nicht. Der aktive Gefrierschrank liegt in
+  (die Kachel mit dem Icon der App – so groß wie das Icon einer Schublade
+  darunter, damit beide symmetrisch untereinander stehen –, sein Name und der
+  Pfeil nach unten). Ein Tipp auf den Block zieht die Liste aller
+  Gefrierschränke des Kontos auf – in der
+  Reihenfolge der Namen und mit dem Wort „aktiv“ am aktiven; ein Tipp auf eine
+  Zeile wechselt, danach lädt die Seite neu. Pfeile links und rechts neben dem
+  Namen gibt es nicht. Die Kopfzeile des Feldes trägt rechts das Plus für einen
+  weiteren Gefrierschrank (mit drei Schubladen) und das Menü (⋮) des aktiven,
+  hinter dem er sich umbenennen und löschen lässt – beides nur beim eigenen
+  Gefrierschrank, ein Mitglied sieht dort kein Menü. Wem ein Gefrierschrank
+  gehört, steht nur auf der Seite „Teilen“; eine zweite Karte mit Zählern trägt
+  die Seite nicht. Der aktive Gefrierschrank liegt in
   der Session (`App\Support\FreezerContext`); der eigene Gefrierschrank
   gewinnt, solange nicht explizit gewechselt wurde. Auch auf der Seite „Teilen“
   lässt sich zwischen den Gefrierschränken wechseln; die Seite bleibt dabei
@@ -89,7 +103,9 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   Gefrierschranks.
 - **Inventar über alle Gefrierschränke** – die Seite „Inventar“ listet die
   Artikel aller zugänglichen Gefrierschränke – eigene und geteilte – in einer
-  Liste. Das Filter-Icon neben dem Suchfeld öffnet die Auswahl nach
+  Liste. Das Filter-Icon neben dem Suchfeld ist ein Quadrat: so breit wie hoch
+  (`h-11 w-11`, die Quadratgröße der App), und es steht mittig neben dem Feld,
+  das ein paar Pixel höher ist als es. Es öffnet die Auswahl nach
   Gefrierschrank und nach Kategorie (Fleisch, Fisch, Gemüse, Suppe, Soßen,
   Obst, Sonstiges); ein Punkt am Icon zeigt an, dass ein Filter
   greift. Dort steht auch die Reihenfolge der Liste zur Wahl: Name (die
@@ -113,7 +129,9 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   die dritte Zeile den Gefrierschrank mit – mit Komma vor der Schublade –, sonst
   steht dort nur die Schublade. Rechts an der Zeile stehen die Menge mit ihren
   beiden Knöpfen und das Menü (⋮) mit Bearbeiten, Löschen und Verschieben.
-  Der Name der Schublade ist der Weg in diese Schublade: sie öffnet sich mit dem
+  Der Ort ist reiner Text: Gefrierschrank und Schublade stehen in derselben
+  Schrift und Farbe mit dem Komma dazwischen, der Name der Schublade ist kein
+  Link. In die Schublade führt das Menü (⋮) der Zeile – sie öffnet sich mit dem
   Formular genau dieses Artikels (`?item=<id>`, siehe `DrawerPage::mount()`),
   sodass ein gefundener Artikel
   nicht ein zweites Mal gesucht werden muss – dort lässt er sich umbenennen,
@@ -201,6 +219,18 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
   am Rand und kennt den Nachtmodus nicht. Ein schmaler Ladebalken am oberen Rand
   zeigt laufende Livewire-Requests; Seitenwechsel über `wire:navigate` nutzen die
   Leiste von Livewire in derselben Farbe.
+- **Karten** – Alle Karten der App teilen einen einzigen Eckenradius von 8 px. Der
+  Wert steht genau einmal: als `--radius-card` im `@theme`-Block von
+  `resources/css/app.css` (Tailwind macht daraus `rounded-card`, `rounded-t-card`
+  und die übrigen Seiten). Die Klassen, die eine Karte malen – `.card`,
+  `.drawer-row` (die Zeile einer Schublade) und `.highlight-item` (der Schein auf
+  einem frisch angelegten Artikel) – holen ihre Ecken von dort. Eine Ansicht
+  rundet eine Karte nie selbst, sondern trägt die Klasse `card`; wer nur eine
+  Seite braucht, nimmt dieselbe Vorgabe (`rounded-t-card` für das Band der
+  Schubladenzeile). `--radius-control` bleibt für Buttons und Felder, eine Karte
+  ist keines von beiden. Die Offline-Seite (`public/offline.html`) zeichnet ihr
+  Inventar ohne das CSS der App und wiederholt den Wert deshalb in ihren eigenen
+  Stilen. `tests/Feature/CardRadiusTest.php` wacht darüber.
 - **Farbschema** – Grau von Hellgrau bis Anthrazit trägt alles außer der
   Akzentfarbe: `frost` (in `resources/css/app.css`) liefert Seitenhintergrund,
   Karten, Linien und Texte, `brand` ist das ruhige Türkis für Aktionen und
@@ -266,7 +296,7 @@ einen Gefrierschrank teilen – inklusive Einladungen, Rollen und MHD-Ampel.
 | Tailwind CSS | 4.x über `@tailwindcss/vite` |
 | Vite | 8.x |
 | MySQL | 8.4 |
-| Tests | PHPUnit 12.5 – 349 Tests / 1805 Assertions |
+| Tests | PHPUnit 12.5 – 352 Tests / 1855 Assertions |
 
 Die Oberfläche besteht vollständig aus Livewire-Komponenten
 (`app/Livewire/**`); die einzigen klassischen Routen sind der Logout, die
@@ -337,20 +367,22 @@ automatisch angelegt) und deckt die fachlichen Zusagen der App ab:
 | `tests/Feature/EmailVerificationTest.php` | Bestätigungslink, Hinweisseite, erneutes Senden |
 | `tests/Feature/PageRenderTest.php` | Alle Seiten rendern für angemeldete Nutzer |
 | `tests/Feature/FreezerAccessTest.php` | Fremde Gefrierschränke/Schubladen/Artikel bleiben unerreichbar |
-| `tests/Feature/DrawerPageTest.php` | Artikel einer Schublade anlegen (die Schublade öffnet sich ohne Formular – das Plus neben ihrem Namen bringt es hoch und schließt es wieder, und solange es offen steht, steht es allein – der Inhalt darunter tritt weg –, Schnellauswahl für das MHD in vier gleich breiten Spalten, Kategorie bleibt für den nächsten Artikel stehen, Cursor zurück ins Namensfeld), ändern (mit denselben Schnellauswahlen für das MHD), verschieben (in ein anderes Fach oder einen anderen Gefrierschrank), löschen (Rückfrage im Modal – auch über „−“ beim letzten Stück), die Zeile eines Artikels (zwei Zeilen – der Name und darunter „MHD: <Datum>“, ohne Zustand und ohne relativen Zähler, ohne zweite Zeile ohne MHD, weiße Karte, Menge rechts, eigenes Menü (⋮) mit Bearbeiten, Löschen und Verschieben), der Weg zurück führt auf die Startseite des Gefrierschranks (nicht in das Bearbeiten der Schubladen), einen Artikel über `?item=<id>` direkt öffnen (fremde und erfundene IDs ändern nichts, `&move=1` bringt daneben das Verschieben-Formular dieses Artikels hoch) |
-| `tests/Feature/InventoryOverviewTest.php` | Übersicht über alle Gefrierschränke, Suche, Filter-Panel, Sortierung nach Name, Kategorie und MHD (nur aufsteigend – „Nach MHD“, die drei Felder in drei gleich breiten Spalten mit mittigem Etikett, Artikel ohne Kategorie und ohne MHD ans Ende der Abfrage, unbekannte Schlüssel bleiben alphabetisch, Sortieren schränkt nichts ein), Gruppierung nach Kategorie (eine Überschrift je Kategorie mit der Zahl ihrer Artikel, die Artikel einer Kategorie alphabetisch untereinander, Artikel ohne Kategorie unter „Sonstiges“ ohne Eintrag in die Datenbank, leere Kategorien ohne Überschrift, jede andere Reihenfolge bleibt die flache Liste), Gruppierung nach MHD (drei Fenster der restlichen Haltbarkeit mit „Kein MHD hinterlegt“ zuletzt, je eine Überschrift mit der Zahl ihrer Artikel in der Reihenfolge der Fenster, innerhalb eines Fensters das frühere Datum oben und erst bei gleichem Datum der Name, ein Datum, das ein Artikel nachträglich bekommt, bringt ihn in sein Fenster, ein entferntes schließt die Liste, ein leeres Fenster ohne Überschrift, ein Filter lässt nur seine Fenster stehen, jede andere Reihenfolge – auch die nach Kategorie – bleibt die flache Liste), MHD nur als Datum mit dem Etikett des Feldes („MHD: <Datum>“, ohne „frisch“ und ohne relativen Zähler), drei Zeilen je Artikel (der Name, das MHD, Gefrierschrank und Schublade mit Komma), weiße Karte, eigenes Menü (⋮) mit Bearbeiten, Löschen und Verschieben (Bearbeiten und Verschieben führen mit `?item=<id>` bzw. `&move=1` in die Schublade des Artikels), Löschen mit Rückfrage, Zeile führt in die Schublade des Artikels, leere Liste bietet den Weg zurück |
+| `tests/Feature/DrawerPageTest.php` | Artikel einer Schublade anlegen (die Schublade öffnet sich ohne Formular – das Plus neben ihrem Namen bringt es hoch und schließt es wieder, und solange es offen steht, steht es allein – der Inhalt darunter tritt weg –, Schnellauswahl für das MHD in vier gleich breiten Spalten, Kategorie bleibt für den nächsten Artikel stehen, Cursor zurück ins Namensfeld), ändern (mit denselben Schnellauswahlen für das MHD und den beiden Knöpfen „Abbrechen“ links und „Speichern“ rechts in zwei gleich breiten Spalten), verschieben (in ein anderes Fach oder einen anderen Gefrierschrank, dieselben zwei Knöpfe in derselben Größe – ohne Ziel steht „Abbrechen“ allein über die ganze Breite), löschen (Rückfrage im Modal – auch über „−“ beim letzten Stück), die Zeile eines Artikels (zwei Zeilen – der Name und darunter „MHD: <Datum>“, ohne Zustand und ohne relativen Zähler, ohne zweite Zeile ohne MHD, weiße Karte, Menge rechts, eigenes Menü (⋮) mit Bearbeiten, Löschen und Verschieben), der Weg zurück führt auf die Startseite des Gefrierschranks (nicht in das Bearbeiten der Schubladen), einen Artikel über `?item=<id>` direkt öffnen (fremde und erfundene IDs ändern nichts, `&move=1` bringt daneben das Verschieben-Formular dieses Artikels hoch) |
+| `tests/Feature/InventoryOverviewTest.php` | Übersicht über alle Gefrierschränke, Suche, Filter-Panel, Sortierung nach Name, Kategorie und MHD (nur aufsteigend – „Nach MHD“, die drei Felder in drei gleich breiten Spalten mit mittigem Etikett, Artikel ohne Kategorie und ohne MHD ans Ende der Abfrage, unbekannte Schlüssel bleiben alphabetisch, Sortieren schränkt nichts ein), Gruppierung nach Kategorie (eine Überschrift je Kategorie mit der Zahl ihrer Artikel, die Artikel einer Kategorie alphabetisch untereinander, Artikel ohne Kategorie unter „Sonstiges“ ohne Eintrag in die Datenbank, leere Kategorien ohne Überschrift, jede andere Reihenfolge bleibt die flache Liste), Gruppierung nach MHD (drei Fenster der restlichen Haltbarkeit mit „Kein MHD hinterlegt“ zuletzt, je eine Überschrift mit der Zahl ihrer Artikel in der Reihenfolge der Fenster, innerhalb eines Fensters das frühere Datum oben und erst bei gleichem Datum der Name, ein Datum, das ein Artikel nachträglich bekommt, bringt ihn in sein Fenster, ein entferntes schließt die Liste, ein leeres Fenster ohne Überschrift, ein Filter lässt nur seine Fenster stehen, jede andere Reihenfolge – auch die nach Kategorie – bleibt die flache Liste), MHD nur als Datum mit dem Etikett des Feldes („MHD: <Datum>“, ohne „frisch“ und ohne relativen Zähler), drei Zeilen je Artikel (der Name, das MHD, Gefrierschrank und Schublade mit Komma), weiße Karte, eigenes Menü (⋮) mit Bearbeiten, Löschen und Verschieben (Bearbeiten und Verschieben führen mit `?item=<id>` bzw. `&move=1` in die Schublade des Artikels), Löschen mit Rückfrage, Ort der Zeile als reiner Text (Gefrierschrank und Schublade mit Komma, kein Link – in die Schublade führt das Menü), leere Liste bietet den Weg zurück, der Filter-Knopf als Quadrat neben dem Suchfeld (`h-11 w-11`, mittig – das Feld ist ein paar Pixel höher) |
 | `tests/Feature/DeleteConfirmationTest.php` | Löschbestätigungen laufen über das Modal der App, nie über den Browser |
-| `tests/Feature/ExpiringItemsTest.php` | Seite „MHD-Warnungen“ über alle Gefrierschränke, Zähler in der Fußleiste, drei Zeilen je Artikel (der Name, „MHD: <Datum>“ mit Zustand und relativem Zähler, Gefrierschrank und Schublade mit Komma), weiße Karte, eigenes Menü (⋮) mit Bearbeiten, Löschen und Verschieben, Zeile führt in die Schublade des Artikels |
+| `tests/Feature/CardRadiusTest.php` | Der Eckenradius der Karten: genau eine Vorgabe (`--radius-card`, 8 px) im Stylesheet der App, `.card`, `.drawer-row` und `.highlight-item` nehmen ihre Ecken daraus, keine Karte in einer Ansicht bringt einen eigenen Radius mit, und die Offline-Seite rundet ihre Karten wie die App |
+| `tests/Feature/ActionPairTest.php` | Jede Zeile mit „Abbrechen“ und einer Aktion in allen Ansichten: „Abbrechen“ links, die Hauptaktion rechts, beide in zwei gleich breiten Spalten (`grid grid-cols-2 gap-2`, jeder Knopf `w-full`), keine Flex-Zeile mit `flex-1`, und hinter dem Abbrechen steht die Aktion; die Rückfrage vor dem Löschen behält ihre eigene Zeile und hält die Antwort trotzdem rechts (ab `sm` nebeneinander in umgekehrter Reihenfolge) |
+| `tests/Feature/ExpiringItemsTest.php` | Seite „MHD-Warnungen“ über alle Gefrierschränke, Zähler in der Fußleiste, drei Zeilen je Artikel (der Name, „MHD: <Datum>“ ohne Zustand und ohne relativen Zähler, Gefrierschrank und Schublade mit Komma), weiße Karte, eigenes Menü (⋮) mit Bearbeiten, Löschen und Verschieben, Ort der Zeile als reiner Text (Gefrierschrank und Schublade mit Komma), Zeile führt über ihr Menü in die Schublade des Artikels |
 | `tests/Feature/SharingPageTest.php` | Einladen (jeder Klick ein neuer Link, verbrauchte Links verlassen die Liste), Umbenennen, Gefrierschrank wechseln (bleibt auf der Seite und zeigt dessen Mitglieder), Mitglieder entfernen, Verlassen, Löschen |
-| `tests/Feature/ClosedFreezerTest.php` | Gefrierschränke anlegen, wechseln, umbenennen und löschen; das Feld „Meine Gefrierschränke“ (der aktive Gefrierschrank als eigener Block mit Kachel, Icon und Rolle, die Pfeile gehen die Gefrierschränke nach dem Namen durch und kehren am Ende um – mit einem einzigen gibt es keine Pfeile –, der Name zieht die Liste aller mit ihrer Rolle und der Markierung „aktiv“ auf, das Menü (⋮) gehört zum aktiven Gefrierschrank und trägt Anlegen, Umbenennen und Löschen, ein Mitglied sieht davon nur das Anlegen, und das Feld trägt ein Formular auf einmal); die Seite zählt nirgends; Inhalt jeder Schublade auf der Startseite (der Kopf mit Icon und fettem Namen auf dem hellen Grau des Feldes – das Band reicht über die volle Breite der Karte bis zur Trennlinie, das Icon sitzt auf der Tönung der App und die Liste darunter bleibt auf dem Weiß der Karte –, darunter die Namen alphabetisch, ohne Menge, nichts zu bearbeiten – die Namen beginnen auf der Linie des Schubladennamens, der Einzug ist Icon plus Abstand des Kopfes und bei jeder Schublade derselbe – und die Liste folgt jedem Anlegen, Umbenennen, Verschieben und Löschen) |
-| `tests/Feature/OpenFreezerTest.php` | Schubladen des geöffneten Gefrierschranks: anlegen (ohne Namen nicht), umbenennen, löschen (eine volle Schublade nicht – die Meldung nennt sie), jede Zeile trägt ihr eigenes Menü (⋮) mit Umbenennen und Löschen, das Löschen fragt weiterhin im Modal der App nach, fremde und nicht aktive Gefrierschränke bleiben unerreichbar, Mitglieder dürfen mitarbeiten |
+| `tests/Feature/ClosedFreezerTest.php` | Gefrierschränke anlegen, wechseln, umbenennen und löschen; das Feld „Meine Gefrierschränke“ (die Kopfzeile mit dem Titel, dem Plus für einen weiteren Gefrierschrank und dem Menü (⋮) des aktiven, darunter der aktive Gefrierschrank als eigener Block mit Kachel und Icon (so groß wie der Kopf einer Schublade darunter: `h-10 w-10` mit dem Zeichen `h-5 w-5`, damit beide Icons symmetrisch untereinander stehen) – wem er gehört, steht nicht dabei –, die Fläche unter der Haarlinie trägt denselben Ton wie dieser Block (`bg-brand-50`, im dunklen Schema `bg-brand-950`), reicht über die volle Breite des Feldes und nimmt die unteren Ecken der Karte (`rounded-b-card`), solange kein Formular darunter steht, der Block zieht die Liste aller mit ihrer Markierung „aktiv“ auf, Pfeile links und rechts gibt es nicht, das Menü gehört zum aktiven Gefrierschrank und trägt Umbenennen und Löschen, ein Mitglied sieht dort kein Menü, und das Feld trägt ein Formular auf einmal); die Seite zählt nirgends; Inhalt jeder Schublade auf der Startseite (der Kopf mit Icon und fettem Namen auf dem hellen Grau des Feldes – das Band reicht über die volle Breite der Karte bis zur Trennlinie und nimmt die oberen Ecken der Karte (`rounded-t-card`, also `--radius-card`), das Icon sitzt auf der Tönung der App und die Liste darunter bleibt auf dem Weiß der Karte –, darunter die Namen alphabetisch, ohne Menge, nichts zu bearbeiten – die Namen beginnen auf der Linie des Schubladennamens, der Einzug ist Icon plus Abstand des Kopfes und bei jeder Schublade derselbe – und die Liste folgt jedem Anlegen, Umbenennen, Verschieben und Löschen); beide Formulare des Feldes (einen Gefrierschrank anlegen, ihn umbenennen) enden mit „Abbrechen“ links und der Aktion rechts in zwei gleich breiten Spalten |
+| `tests/Feature/OpenFreezerTest.php` | Schubladen des geöffneten Gefrierschranks: anlegen (ohne Namen nicht), umbenennen, löschen (eine volle Schublade nicht – die Meldung nennt sie), jede Zeile trägt ihr eigenes Menü (⋮) mit Umbenennen und Löschen, das Löschen fragt weiterhin im Modal der App nach, fremde und nicht aktive Gefrierschränke bleiben unerreichbar, Mitglieder dürfen mitarbeiten; das Umbenennen-Formular endet mit „Abbrechen“ links und „Speichern“ rechts in zwei gleich breiten Spalten |
 | `tests/Feature/InvitationTest.php` | Einladungslink annehmen, Ablauf, ein Link pro Person (keine Mehrfachnutzung) |
 | `tests/Feature/AvatarDeliveryTest.php` | Auslieferung des Profilbilds an das Gerät: der Typ aus der Endung der Datei (jpg, jpeg, png, webp – ohne ihn zeigt ein Handy das Bild nicht an), inline statt Download, `private, max-age=3600`, nur für angemeldete Konten, 404 ohne Datei (das Konto bleibt dabei unberührt) |
 | `tests/Feature/ProfileTest.php` | Profilname, bestätigte E-Mail-Adresse (nur lesbar, bleibt unverändert, ihr Häkchen steht rechts davon), Passwort, Profilbild (ein Knopf „Profilbild bearbeiten“ mit dem Menü der App – hinzufügen nur ohne Bild, ändern und löschen nur mit Bild, das Löschen über die Rückfrage der App, das Bild links folgt mit der geladenen Seite, die Kopfzeile auch, und der Kreis mit den Initialen wartet als Rückfall darunter; speichert beim Auswählen, verkleinert zu große Bilder, ersetzt das alte), Konto löschen |
 | `tests/Feature/LanguageTest.php` | Sprachwahl im Profil (lädt die Seite neu, damit auch die untere Leiste folgt), Sprache aller Seiten und Mails, Texte der Kategorien, der Reihenfolgen des Inventars, der MHD-Schnellauswahl, des Profilbild-Menüs (Bearbeiten, Hinzufügen, Ändern, Löschen) und der drei Aktionen der Artikelzeile (Bearbeiten, Löschen, Verschieben) in allen drei Sprachen |
 | `tests/Feature/LegalPagesTest.php` | Impressum, Datenschutzerklärung, Nutzungsbedingungen: ohne Anmeldung lesbar, im Impressum steht nur die E-Mail-Adresse (kein Name, keine Anschrift, kein Telefon) und die öffentliche Adresse statt `localhost`, Warnhinweis ohne Kontaktadresse, italienische Vorschriften (D.Lgs. 70/2003, D.Lgs. 196/2003, Codice del Consumo), Platzhalter in allen drei Sprachen, Verlinkung |
 | `tests/Feature/OfflineTest.php` | Offline-Modus: Schnappschuss des Inventars (nur die eigenen und geteilten Gefrierschränke, in der Sprache des Kontos, mit den Wörtern der Oberfläche), Übernahme der Änderungen (Anlegen unter der `uuid` des Browsers – zweimal gesendet bleibt ein Artikel, Ändern, Verschieben, MHD entfernen, Löschen), Fremdes bleibt unberührt und wird übersprungen statt den Stapel abzubrechen, Menge nie unter 1 |
-| `tests/Feature/PwaTest.php` | App-Icon, Manifest, Service Worker und Offline-Seite: eine Bilddatei für Tab, Startbildschirm und PWA, in allen Layouts verlinkt, Offline-Seite in allen drei Sprachen (samt Inventar-Modus, denselben vier gleich breiten Schnellauswahlen des MHD und einer Schublade, deren Formular hinter dem Plus wartet und dann allein steht – die Überschrift „Inhalt“ und die Liste treten weg, der Pfeil führt auf die Startseite des Gefrierschranks –), Hinweis und Weg in den Offline-Modus, Kopie des Inventars verschwindet beim Abmelden, Installations-Hinweis im Profil |
+| `tests/Feature/PwaTest.php` | App-Icon, Manifest, Service Worker und Offline-Seite: eine Bilddatei für Tab, Startbildschirm und PWA, in allen Layouts verlinkt, Offline-Seite in allen drei Sprachen (samt Inventar-Modus, denselben vier gleich breiten Schnellauswahlen des MHD und einer Schublade, deren Formular hinter dem Plus wartet und dann allein steht – die Überschrift „Inhalt“ und die Liste treten weg, der Pfeil führt auf die Startseite des Gefrierschranks –), das Blatt eines Artikels („Abbrechen“ links, die Aktion rechts, beide in zwei gleich breiten Spalten), Hinweis und Weg in den Offline-Modus, Kopie des Inventars verschwindet beim Abmelden, Installations-Hinweis im Profil |
 
 ## Aufbau
 
@@ -553,30 +585,49 @@ Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
   `tests/Feature/DrawerPageTest.php` und `tests/Feature/PwaTest.php` wachen
   darüber.
 - **Das Feld „Meine Gefrierschränke“:** Es ist das erste Feld der Startseite
-  (`resources/views/livewire/freezer/closed-freezer.blade.php`). Oben stehen sein
-  Titel und das Menü (⋮, `resources/views/components/menu.blade.php`); darunter
+  (`resources/views/livewire/freezer/closed-freezer.blade.php`). Seine Kopfzeile
+  trägt links den Titel und rechts zwei Knöpfe auf derselben Geister-Fläche
+  (`btn btn-ghost btn-icon`): das Plus für einen weiteren Gefrierschrank
+  (`startAddingFreezer()`, benannt über `freezer.add`) und das Menü (⋮,
+  `resources/views/components/menu.blade.php`) des aktiven. Unter der Kopfzeile
+  läuft eine Haarlinie (`border-t border-frost-100`) über die volle Breite des
+  Feldes und trennt sie von dem Gefrierschrank, auf den sie sich bezieht; die
+  Karte des Feldes trägt deshalb keine Polsterung, sondern jede Zeile bringt ihre
+  eigene mit. Die Fläche unter der Haarlinie trägt denselben Ton wie der Block
+  des aktiven Gefrierschranks (`bg-brand-50`, im dunklen Schema `bg-brand-950`):
+  das Feld wirkt als ein Band und nicht als ein Block auf einer weißen Karte.
+  Beide Stellen nennen dieselbe Klasse der Palette aus `resources/css/app.css`,
+  nie einen eigenen Wert; Kopfzeile, Kachel, Name, Pfeil und Liste bleiben dabei
+  unverändert. Solange kein Formular darunter steht, ist das Band das letzte
+  Stück der Karte und nimmt ihre unteren Ecken (`rounded-b-card`, also
+  `--radius-card`), damit der Ton darin bleibt; mit einem offenen Formular
+  schließt dessen Haarlinie das Band, und die Ecken bleiben eckig. Darunter
   steht der aktive Gefrierschrank als Block auf der Fläche des Akzents
-  (`rounded-2xl bg-brand-50`, im dunklen Schema `bg-brand-950`): links die Kachel
-  mit dem Icon der App (`bg-brand-600`), daneben sein Name in der größten Schrift
-  der Seite (`text-base font-bold`) und darunter, wem er gehört (`freezer.owned`
-  bzw. `freezer.shared`). Der Name ist ein Knopf und zieht die Liste aller
-  Gefrierschränke auf (`x-data`/`x-show` in der Ansicht selbst, ohne eigenes
-  Skript): jeder mit Kachel, Name, Rolle und – beim aktiven – dem Häkchen und dem
-  Wort „aktiv“ (`aria-current`). Die Liste steht im Fluss der Seite und schiebt
-  die Schubladen nach unten, statt sie zu verdecken (ein schwebendes Panel wie
-  das Menü würde auf einem Handy über der Liste der Schubladen liegen); ein Tipp
-  auf eine Zeile wechselt (`selectFreezer()`), danach lädt die Seite neu und
-  zeigt den Inhalt des gewählten Gefrierschranks. Die Pfeile links und rechts
-  neben dem Namen gehen die Liste einen Schritt weiter – in ihrer Reihenfolge,
-  also nach dem Namen – und der erste folgt dem letzten
-  (`ClosedFreezer::selectPreviousFreezer()` / `selectNextFreezer()` über
-  `stepToNeighbour()`, das den Schritt ausrechnet und die Wahl in die Session
-  legt, siehe `App\Support\FreezerContext`); mit einem einzigen Gefrierschrank
-  gibt es nichts zu wechseln, dann fehlen die Pfeile. Das Menü gehört dem aktiven
-  Gefrierschrank: Anlegen (`startAddingFreezer()`), Umbenennen
-  (`startRenaming()`) und Löschen. Umbenennen und Löschen erscheinen nur beim
-  eigenen Gefrierschrank (siehe `App\Policies\FreezerPolicy`), und das Löschen
-  fragt über den Dialog der App nach
+  (`rounded-2xl bg-brand-50`, im dunklen Schema `bg-brand-950`): links
+  die Kachel mit dem Icon der App (`bg-brand-600`) – so groß wie der Kopf einer
+  Schublade darunter (`h-10 w-10`, das Zeichen `h-5 w-5`), damit die beiden
+  Icons der Startseite gleich groß übereinander stehen –, daneben sein Name in
+  der größten Schrift der Seite (`text-base font-bold`) und rechts der Pfeil nach
+  unten (`chevron-down`), der sich beim Aufziehen dreht (`x-bind:class`). Der
+  Block ist ein Knopf und zieht die Liste aller Gefrierschränke auf
+  (`x-data`/`x-show` in der Ansicht selbst, ohne eigenes Skript): jeder mit
+  Kachel, Name und – beim aktiven – dem Häkchen und dem Wort „aktiv“
+  (`aria-current`). Wem ein Gefrierschrank gehört, steht nirgends mehr im Feld:
+  die Liste kennzeichnet den aktiven, und `freezer.owned` bzw. `freezer.shared`
+  leben nur noch auf der Teilen-Seite
+  (`resources/views/livewire/sharing/sharing-page.blade.php`). Die Liste steht im
+  Fluss der Seite und schiebt die Schubladen nach unten, statt sie zu verdecken
+  (ein schwebendes Panel wie das Menü würde auf einem Handy über der Liste der
+  Schubladen liegen); ein Tipp auf eine Zeile wechselt (`selectFreezer()`), danach
+  lädt die Seite neu und zeigt den Inhalt des gewählten Gefrierschranks. Pfeile
+  links und rechts neben dem Namen gibt es nicht mehr: gewechselt wird allein über
+  die Liste, die jeden Gefrierschrank des Kontos in der Reihenfolge der Namen
+  nennt. Das Menü gehört dem aktiven Gefrierschrank: Umbenennen
+  (`startRenaming()`) und Löschen. Beides erscheint nur beim eigenen
+  Gefrierschrank (siehe `App\Policies\FreezerPolicy`), ein Mitglied sieht dort
+  nichts und deshalb gar kein Menü. Das Anlegen steht nicht im Menü, sondern am
+  Plus der Kopfzeile – es ist der einzige Weg zu einem weiteren Gefrierschrank.
+  Das Löschen fragt über den Dialog der App nach
   (`resources/views/components/confirm-dialog.blade.php`) – der Dialog steht
   neben dem Menü, nie darin: das Panel des Menüs ist versteckt und würde ihn
   mitverstecken. Beide Formulare (anlegen, umbenennen) stehen unter dem Feld
@@ -591,7 +642,7 @@ Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
 - **Inhalt der Schubladen auf der Startseite:** Die Zeile einer Schublade
   (`resources/views/livewire/freezer/closed-freezer.blade.php`) ist zweigeteilt.
   Oben steht ihr Kopf auf dem hellen Grau des Feldes: ein Band
-  (`rounded-t-control bg-frost-200`) umfasst das Icon und den fett gesetzten
+  (`rounded-t-card bg-frost-200`) umfasst das Icon und den fett gesetzten
   Namen, rechts die Pille der Artikel, die Aufmerksamkeit brauchen, und den Pfeil
   in die Schublade; es läuft über die volle Breite der Karte bis zu der Haarlinie
   und endet dort. Das Icon hebt sich von dem Grau ab, weil es auf der Tönung der
@@ -672,6 +723,32 @@ Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
   `tests/Feature/OpenFreezerTest.php` und `tests/Feature/DrawerPageTest.php`
   wachen über das Menü und seine Aktionen,
   `tests/Feature/DeleteConfirmationTest.php` über die Rückfrage.
+- **Die Knöpfe eines Formulars:** Jede Zeile der App, die zwischen „Abbrechen“
+  und einer Aktion wählen lässt, endet gleich: „Abbrechen“ (`common.cancel`)
+  links, die Hauptaktion rechts – „Speichern“ (`common.save`) beim Ändern,
+  „Erstellen“ (`common.create`) beim Anlegen eines Gefrierschranks,
+  „Verschieben“ (`drawers.move_submit`) beim Verschieben eines Artikels. Beide
+  Knöpfe sind genau gleich
+  groß: die Zeile ist ein Gitter aus zwei gleich breiten Spalten
+  (`grid grid-cols-2 gap-2`, jeder Knopf `w-full`) und keine Flex-Zeile mit
+  `flex-1` auf einem der beiden – dort hinge die Breite an der Länge der
+  Beschriftung, und „Abbrechen“ ist länger als „Speichern“. Der Abstand
+  zwischen ihnen ist überall derselbe, die Beschriftungen stehen mittig
+  (`.btn`), und die Zeile sieht auf dem Telefon aus wie auf dem Rechner: die
+  beiden Knöpfe stehen dort nebeneinander, nicht untereinander. Das Paar tragen
+  die Formulare der Artikel (`resources/views/livewire/freezer/drawer-page.blade.php`),
+  der Gefrierschränke (`closed-freezer.blade.php`) und der Schubladen
+  (`open-freezer.blade.php`); hat ein
+  Haushalt nur ein einziges Fach, gibt es kein Ziel – dann steht „Abbrechen“
+  allein und nimmt die ganze Breite (`col-span-2`). Die Offline-Seite trägt
+  dasselbe Paar in ihrem Blatt (`public/offline.html`, `.actions-pair`); die
+  Rückfrage vor dem Löschen behält ihre eigene Zeile
+  (`components/confirm-dialog.blade.php`) – auf dem Telefon stehen ihre beiden
+  Knöpfe untereinander, ab `sm` nebeneinander in umgekehrter Reihenfolge, damit
+  die Antwort auch dort rechts steht.
+  `tests/Feature/ActionPairTest.php` wacht über diese Ordnung in allen
+  Ansichten, `tests/Feature/DrawerPageTest.php` und `tests/Feature/PwaTest.php`
+  über die beiden Formulare eines Artikels und das Blatt der Offline-Seite.
 - **Artikel verschieben:** Ein Artikel wechselt seinen Platz, ohne neu angelegt zu
   werden – über „Verschieben“ im Menü (⋮) einer Zeile: in der Schublade öffnet es
   das Formular dort, in Inventar und Warnliste führt der Eintrag mit dem Artikel
@@ -692,7 +769,7 @@ Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
   das MHD als Datum mit dem Etikett des Feldes („MHD: 15.12.2026“, also
   `common.best_before`), sonst nichts – weder Gefrierschrank noch Schublade
   stehen noch einmal in der Zeile, der Nutzer ist ja schon dort. Ein Artikel ohne
-  MHD zeigt keine zweite Zeile: die App schreibt kein „kein MHD“ in eine Zeile.
+  MHD sagt es an der Stelle des Datums („Kein MHD“, items.mhd.none).
   Die Karte bleibt weiß – wie jede Zeile der App (die Kategorie eines Artikels
   dient dem Filter des Inventars); die Menge steht rechts mit ihren beiden
   Knöpfen, und daneben öffnet das Menü (⋮) das
@@ -703,14 +780,16 @@ Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
 - **MHD in der Zeile:** Die gemeinsame Zeile eines Artikels
   (`resources/views/components/item-row.blade.php`) nennt das MHD in der zweiten
   Zeile mit dem Etikett des Feldes („MHD: 15.12.2026“, also
-  `common.best_before`) und kennt zwei Formen davon. Die volle nennt Zustand
-  („frisch“, „bald abgelaufen“, …), den relativen Zähler („MHD in 3 Tagen“) und
-  das Datum; sie steht auf der Seite „MHD-Warnungen“. Das Inventar liest die
-  Zeile mit `:mhd-warnings-only="true"` (`InventoryOverview`): dort steht nur
-  das Datum, und der Zustand nur, solange er warnt. „frisch“ und der Zähler
-  sagen in einer Liste nichts, in der das Datum ohnehin daneben steht.
-  `tests/Feature/InventoryOverviewTest.php` wacht über die kurze Form,
-  `tests/Feature/ExpiringItemsTest.php` über die volle.
+  `common.best_before`) und kennt zwei Formen davon. Die stille nennt das Datum
+  allein; sie steht in der Warnliste, deren Abschnitte den Zustand schon in der
+  Überschrift tragen („Abgelaufen“, „Bald abgelaufen“). Die andere stellt
+  daneben, was warnt: das Inventar liest die Zeile mit
+  `:mhd-warnings-only="true"` (`InventoryOverview`) und behält den Zustand
+  („abgelaufen“, „bald abgelaufen“), solange er warnt – „frisch“ sagt in einer
+  Liste nichts, in der das Datum ohnehin daneben steht, und der relative Zähler
+  („MHD in 3 Tagen“) steht in keiner Zeile der App.
+  `tests/Feature/InventoryOverviewTest.php` und
+  `tests/Feature/ExpiringItemsTest.php` wachen über die beiden Formen.
 - **Die Zeile der Listen außerhalb einer Schublade:** Inventar und Warnliste
   lesen dieselbe Zeile (`resources/views/components/item-row.blade.php`): der
   Name, darunter das MHD und darunter der Ort – Gefrierschrank und Schublade mit
@@ -718,10 +797,14 @@ Fehlerseiten (403/404/419 kommen von Laravel auf Englisch).
   Inventars (`InventoryOverview::filterByCategory()`), sie ist keine Farbe einer
   Zeile. Rechts stehen die Menge mit ihren beiden Knöpfen und das Menü (⋮) mit
   Bearbeiten, Löschen und Verschieben. Bearbeiten und Verschieben sind die
-  Funktionen der Schublade, deshalb führt die Zeile mit dem Artikel hinein:
+  Funktionen der Schublade, deshalb führt das Menü (⋮) der Zeile mit dem Artikel
+  hinein:
   „?item=<id>“ öffnet sein Bearbeiten-Formular, „&move=1“ daneben sein
-  Verschieben-Formular (`DrawerPage::openItemFromQuery()`); der Name der
-  Schublade in der dritten Zeile geht denselben Weg. Das Löschen fragt wie
+  Verschieben-Formular (`DrawerPage::openItemFromQuery()`). Der Ort in der
+  dritten Zeile ist reiner Text: Gefrierschrank und Schublade stehen in
+  derselben Schrift und Farbe mit dem Komma dazwischen, und der Name der
+  Schublade ist kein Link – die Zeile lässt sich lesen, ohne dass ein Tipp in
+  ihrer Mitte eine Seite öffnet. Das Löschen fragt wie
   überall im Modal der App nach (`components/confirm-dialog.blade.php`).
   `tests/Feature/InventoryOverviewTest.php` und
   `tests/Feature/ExpiringItemsTest.php` wachen über die Zeile,

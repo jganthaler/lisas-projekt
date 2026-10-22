@@ -266,6 +266,35 @@ class PwaTest extends TestCase
     }
 
     /**
+     * The sheet of an item - changing it or moving it - carries the same pair
+     * of buttons as the form of the app: "Abbrechen" left, the action right,
+     * and both of exactly the same size. The app does it with two equal columns
+     * of a grid (resources/views/livewire/freezer/drawer-page.blade.php,
+     * "grid grid-cols-2"), the offline page with ".actions-pair" - the order in
+     * the markup is the order on the screen. No view test reaches the static
+     * page, so its shape is guarded here.
+     */
+    public function test_the_offline_sheet_puts_cancel_before_the_action_in_two_equal_columns(): void
+    {
+        $page = $this->publicFile('offline.html');
+
+        $this->assertMatchesRegularExpression(
+            '/<div class="actions actions-pair">\s*'
+                .'<button type="button" class="btn btn-ghost" data-sheet-cancel[^>]*>[^<]*<\/button>\s*'
+                .'<button type="submit" class="btn btn-primary" data-sheet-submit>/s',
+            $page,
+            'Das Offline-Blatt stellt „Abbrechen“ nicht vor die Aktion.'
+        );
+
+        $this->assertMatchesRegularExpression(
+            '/\.actions\.actions-pair\s*\{[^}]*display:\s*grid;[^}]*'
+                .'grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/s',
+            $page,
+            'Die beiden Knöpfe des Offline-Blatts teilen die Zeile nicht in zwei gleich breite Spalten.'
+        );
+    }
+
+    /**
      * The drawer of the offline page appears the way the drawer of the app
      * appears: with its contents, not with the form for a new item. The form
      * waits behind the plus next to the name of the drawer (data-add hidden,

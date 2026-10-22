@@ -18,15 +18,14 @@ return [
     'drawer_name' => 'Schublade :position',
     'mine' => 'Meine Gefrierschränke',
     /*
-     | The field "Meine Gefrierschränke" on the start page: its menu ("⋮") acts on
-     | the active freezer, the name opens the list of all of them, and the two
-     | arrows name the step to the neighbours of the active one.
+     | The field "Meine Gefrierschränke" on the start page: its header carries the
+     | title, the plus for another freezer and the menu ("⋮") of the active one,
+     | which renames and deletes it. The arrow beside the name of the active
+     | freezer opens the list of all of them.
      */
     'add' => 'Gefrierschrank hinzufügen',
     'edit' => 'Gefrierschrank bearbeiten',
     'delete' => 'Gefrierschrank löschen',
-    'previous_aria' => 'Vorheriger Gefrierschrank',
-    'next_aria' => 'Nächster Gefrierschrank',
     'menu_aria' => 'Weitere Aktionen für „:name“',
     'new_label' => 'Neuer Gefrierschrank',
     'new_placeholder' => 'z. B. Truhe im Keller',
